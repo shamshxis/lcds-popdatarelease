@@ -16,26 +16,22 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
-from duckduckgo_search import DDGS
 
 # --- CONFIGURATION ---
 DATA_DIR = "data"
 JSON_FILE = os.path.join(DATA_DIR, "releases.json")
-HEALTH_FILE = os.path.join(DATA_DIR, "sources_health.json")
 os.makedirs(DATA_DIR, exist_ok=True)
 
-# Logging Setup
+# Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# --- 1. LCDS THEME FILTER ---
+# --- 1. LCDS FILTER (Removes Economic Noise) ---
 class LCDSFilter:
     def __init__(self):
-        # Noise to strictly ignore
         self.NOISE = [
             "industrial", "construction", "retail", "producer price", "turnover", 
-            "trade", "gdp", "tourism", "transport", "business", "output", "electricity", "ppi"
+            "trade", "gdp", "tourism", "transport", "business", "output", "electricity", "ppi", "hicp"
         ]
-        # Core Mapping
         self.MAP = {
             "mortal": "Mortality", "death": "Mortality", "suicide": "Mortality", "life expect": "Mortality",
             "birth": "Fertility", "fertil": "Fertility", "baby": "Fertility",
@@ -53,49 +49,59 @@ class LCDSFilter:
             if key in t: return topic
         return "General Demography"
 
-# --- 2. SPECIAL AGENT: ONS (UK) JSON ---
-class ONSJsonAgent:
-    """Hits the ONS hidden data endpoint directly."""
+# --- 2. FEED AGENT (Reliable & Fast) ---
+class FeedAgent:
     def __init__(self):
         self.filter = LCDSFilter()
-        # Mimic a browser to avoid 403
+        # Header to mimic a browser (avoids ONS 403 on RSS)
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
 
-    def scrape(self):
-        # ONS uses this endpoint to render their page. We can read it directly!
-        url = "https://www.ons.gov.uk/releasecalendar/data"
-        events = []
+    def normalize_date(self, date_str):
         try:
-            logging.info("🇬🇧 ONS: Fetching JSON Data...")
-            resp = requests.get(url, headers=self.headers, timeout=15)
-            data = resp.json()
-            
-            # The JSON structure usually has a 'result' or 'sections' list
-            # We iterate through the raw list of releases
-            results = data.get('result', {}).get('results', [])
-            
-            for item in results:
-                title = item.get('description', {}).get('title') or item.get('title')
-                date_str = item.get('description', {}).get('releaseDate')
-                uri = item.get('uri')
-                
-                if title and date_str:
-                    topic = self.filter.classify(title)
-                    if topic:
-                        # Date is often ISO or close to it
-                        dt = date_parser.parse(date_str).strftime("%Y-%m-%d")
-                        link = "https://www.ons.gov.uk" + uri
-                        events.append({"title": title, "start": dt, "country": "UK", "source": "ONS", "topic": topic, "url": link})
-            
-            logging.info(f"✅ ONS: Found {len(events)} items (via JSON).")
-            return events
-        except Exception as e:
-            logging.error(f"❌ ONS JSON Failed: {e}")
-            return []
+            return date_parser.parse(date_str, fuzzy=True).strftime("%Y-%m-%d")
+        except: return None
 
-# --- 3. SELENIUM AGENT (Fallback for JS Sites) ---
+    def fetch(self, target):
+        events = []
+        name = target['name']
+        try:
+            logging.info(f"📡 {name}: Fetching Feed...")
+            
+            # Fetch content with headers (critical for ONS)
+            resp = requests.get(target['url'], headers=self.headers, timeout=15)
+            
+            # Parse
+            feed = feedparser.parse(resp.content)
+            
+            # If standard RSS parsing fails (empty entries), try manual XML
+            if not feed.entries and resp.status_code == 200:
+                logging.warning(f"⚠️ {name}: Feedparser found 0. Trying XML fallback...")
+                soup = BeautifulSoup(resp.content, 'xml')
+                for item in soup.find_all('item'):
+                    t = item.title.text
+                    topic = self.filter.classify(t)
+                    if topic:
+                        d = item.pubDate.text if item.pubDate else ""
+                        link = item.link.text if item.link else target['url']
+                        events.append({"title": t, "start": self.normalize_date(d), "country": target['country'], "source": name, "topic": topic, "url": link})
+            
+            # Standard RSS processing
+            for entry in feed.entries:
+                t = entry.title
+                topic = self.filter.classify(t)
+                if topic:
+                    d = self.normalize_date(entry.published)
+                    events.append({"title": t, "start": d, "country": target['country'], "source": name, "topic": topic, "url": entry.link})
+
+            logging.info(f"✅ {name}: Found {len(events)} items.")
+
+        except Exception as e:
+            logging.error(f"❌ {name} Failed: {e}")
+        return events
+
+# --- 3. SELENIUM AGENT (Fallback for US Census) ---
 class SeleniumAgent:
     def __init__(self):
         self.filter = LCDSFilter()
@@ -104,155 +110,91 @@ class SeleniumAgent:
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
-        # Anti-Detection Flags
-        options.add_argument("--disable-blink-features=AutomationControlled") 
         options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         self.options = options
 
-    def normalize_date(self, date_str):
-        try:
-            return date_parser.parse(date_str, fuzzy=True).strftime("%Y-%m-%d")
-        except: return None
-
-    def get_driver(self):
-        try:
-            return webdriver.Chrome(options=self.options)
-        except:
-            service = Service(ChromeDriverManager().install())
-            return webdriver.Chrome(service=service, options=self.options)
-
-    def scrape(self, target):
+    def scrape_text_scan(self, url):
+        """Dumps text and searches for dates. Robust against layout changes."""
         driver = None
         events = []
-        name = target['name']
-        
         try:
-            driver = self.get_driver()
-            logging.info(f"🌐 {name}: Visiting {target['url']}")
-            driver.get(target['url'])
+            # Driver Loader
+            try: driver = webdriver.Chrome(options=self.options)
+            except: driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=self.options)
             
-            # Random wait for JS to execute
-            time.sleep(random.uniform(4, 7))
+            logging.info(f"🌐 US Census: Scanning {url}")
+            driver.get(url)
+            time.sleep(3)
             
-            soup = BeautifulSoup(driver.page_source, 'html.parser')
+            # Get raw text
+            text = driver.find_element(By.TAG_NAME, "body").text
             
-            # --- EUROSTAT (HTML Table) ---
-            if "Eurostat" in name:
-                for row in soup.find_all('tr'):
-                    cols = row.find_all('td')
-                    if len(cols) > 1:
-                        t = cols[-1].get_text(strip=True)
-                        topic = self.filter.classify(t)
-                        if topic:
-                            d_str = self.normalize_date(row.get_text())
-                            if d_str: 
-                                events.append({"title": t, "start": d_str, "country": "EU", "source": "Eurostat", "topic": topic, "url": target['url']})
-
-            # --- CBS (Netherlands) ---
-            elif "CBS" in name:
-                # Look for cards/thumbnails
-                for item in soup.select('.thumbnail, .overview-item'):
-                    t_elem = item.select_one('h3, h2')
-                    if t_elem:
-                        t = t_elem.get_text(strip=True)
-                        topic = self.filter.classify(t)
-                        if topic:
-                            time_tag = item.select_one('time')
-                            if time_tag:
-                                d_str = self.normalize_date(time_tag.get('datetime'))
-                                link = "https://www.cbs.nl" + item.select_one('a')['href']
-                                events.append({"title": t, "start": d_str, "country": "Netherlands", "source": "CBS", "topic": topic, "url": link})
-
-            # --- US Census ---
-            elif "Census" in name:
-                text = soup.get_text("\n")
-                for line in text.split("\n"):
-                    match = re.search(r'([A-Z][a-z]+ \d{1,2}, \d{4})', line)
-                    if match:
-                        t = line.replace(match.group(0), "").strip(" -:")
-                        topic = self.filter.classify(t)
-                        if topic and len(t) > 10:
-                            events.append({"title": t, "start": self.normalize_date(match.group(0)), "country": "USA", "source": "US Census", "topic": topic, "url": target['url']})
-
-            logging.info(f"✅ {name}: Found {len(events)} items.")
-
+            for line in text.split('\n'):
+                # Look for "March 12, 2026" pattern
+                match = re.search(r'([A-Z][a-z]+ \d{1,2}, \d{4})', line)
+                if match:
+                    title = line.replace(match.group(0), "").strip(" -:")
+                    topic = self.filter.classify(title)
+                    # Filter short garbage lines
+                    if topic and len(title) > 10 and len(title) < 150:
+                        d_str = date_parser.parse(match.group(0)).strftime("%Y-%m-%d")
+                        events.append({
+                            "title": title, "start": d_str, 
+                            "country": "USA", "source": "US Census", 
+                            "topic": topic, "url": url
+                        })
+            
+            logging.info(f"✅ US Census: Found {len(events)} items.")
+            
         except Exception as e:
-            logging.error(f"❌ {name} Failed: {e}")
+            logging.error(f"❌ US Census Failed: {e}")
         finally:
             if driver: driver.quit()
         return events
 
-# --- 4. RSS AGENT (Feeds) ---
-class RSSAgent:
-    def __init__(self):
-        self.filter = LCDSFilter()
-
-    def scrape(self, target):
-        events = []
-        name = target['name']
-        try:
-            logging.info(f"📡 {name}: Checking Feed...")
-            feed = feedparser.parse(target['url'])
-            for entry in feed.entries:
-                topic = self.filter.classify(entry.title)
-                if topic:
-                    d = date_parser.parse(entry.published).strftime("%Y-%m-%d")
-                    events.append({
-                        "title": entry.title, "start": d, 
-                        "country": target['country'], "source": name, 
-                        "topic": topic, "url": entry.link
-                    })
-            logging.info(f"✅ {name}: Found {len(events)} items.")
-        except Exception as e:
-            logging.error(f"❌ {name} RSS Failed: {e}")
-        return events
-
 # --- ORCHESTRATOR ---
-def run_scraper_system():
-    print("🚀 Starting API/Hybrid System...")
+def run():
+    print("🚀 Starting Feed-First Engine...")
     
-    # 1. SPECIAL AGENTS
-    ons_agent = ONSJsonAgent()
-    
-    # 2. SELENIUM TARGETS
-    selenium_targets = [
-        {"name": "Eurostat", "url": "https://ec.europa.eu/eurostat/news/release-calendar"},
-        {"name": "CBS (Netherlands)", "url": "https://www.cbs.nl/en-gb/publication-calendar"},
-        {"name": "US Census", "url": "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"}
-    ]
-    
-    # 3. RSS TARGETS
-    rss_targets = [
-        {"name": "CDC (Vital Stats)", "url": "https://tools.cdc.gov/api/v2/resources/media/132608.rss", "country": "USA"}
+    # 1. RSS TARGETS (The Reliable Ones)
+    feed_targets = [
+        # ONS: The RSS feed is the most stable entry point (if headers are used)
+        {"name": "ONS (UK)", "url": "https://www.ons.gov.uk/releasecalendar/rss", "country": "UK"},
+        
+        # CDC: Your logs proved this works perfectly
+        {"name": "CDC (Vital Stats)", "url": "https://tools.cdc.gov/api/v2/resources/media/132608.rss", "country": "USA"},
+        
+        # CBS: Use their English News RSS. It contains release notifications.
+        {"name": "CBS (Netherlands)", "url": "https://www.cbs.nl/en-gb/service/news-releases-rss", "country": "Netherlands"},
+        
+        # Eurostat: Use their General News RSS. It lists major releases.
+        {"name": "Eurostat", "url": "https://ec.europa.eu/eurostat/cache/RSS/rss.xml", "country": "EU"}
     ]
 
     all_data = []
 
-    # EXECUTION
-    # ONS runs on main thread (fast)
-    all_data.extend(ons_agent.scrape())
-
-    # Parallelize the rest
+    # Run Feeds
+    agent = FeedAgent()
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        sel_agent = SeleniumAgent()
-        sel_futures = [executor.submit(sel_agent.scrape, t) for t in selenium_targets]
-        
-        rss_agent = RSSAgent()
-        rss_futures = [executor.submit(rss_agent.scrape, t) for t in rss_targets]
-        
-        for future in concurrent.futures.as_completed(sel_futures + rss_futures):
-            all_data.extend(future.result())
+        futures = [executor.submit(agent.fetch, t) for t in feed_targets]
+        for f in concurrent.futures.as_completed(futures):
+            all_data.extend(f.result())
 
-    # SAVE
+    # Run Selenium (Only for US Census which has no feed)
+    sel_agent = SeleniumAgent()
+    census_data = sel_agent.scrape_text_scan("https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html")
+    all_data.extend(census_data)
+
+    # Save
     if all_data:
         unique = {f"{x['start']}_{x['title'][:15]}": x for x in all_data}.values()
         final_list = list(unique)
         final_list.sort(key=lambda x: x['start'])
         
         with open(JSON_FILE, 'w') as f: json.dump(final_list, f, indent=4)
-        print(f"💾 Saved {len(final_list)} unique datasets.")
+        print(f"💾 Saved {len(final_list)} datasets.")
     else:
         print("⚠️ No data collected.")
 
 if __name__ == "__main__":
-    run_scraper_system()
+    run()
