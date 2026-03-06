@@ -15,7 +15,7 @@ DATA_DIR = "data"
 JSON_FILE = os.path.join(DATA_DIR, "releases.json")
 CSV_FILE = os.path.join(DATA_DIR, "releases.csv")
 
-# Temporary files (Invisible to the app)
+# Temporary files (Invisible to the app, used for safe writing)
 JSON_TEMP = os.path.join(DATA_DIR, "releases.tmp.json")
 CSV_TEMP = os.path.join(DATA_DIR, "releases.tmp.csv")
 
@@ -233,20 +233,19 @@ def run_scrapers():
         return
 
     # --- ATOMIC WRITE PROCESS ---
-    
     # 1. Write to TEMP files first
     print("Writing to temporary files...")
     with open(JSON_TEMP, 'w') as f:
         json.dump(final_list, f, indent=4)
         
     df = pd.DataFrame(final_list)
+    # Ensure consistent column order
     cols = ['start', 'country', 'source', 'title', 'topic', 'summary', 'url', 'scraped_at']
     df = df.reindex(columns=cols) 
     df.to_csv(CSV_TEMP, index=False)
     
-    # 2. Atomic Swap (The "Magic" Step)
-    # os.replace is atomic on POSIX (Linux/Mac) and generally safe on Windows
-    # It renames the temp file to the real file instantly.
+    # 2. Atomic Swap
+    # os.replace is atomic on POSIX (Linux/Mac) and safe on Windows
     print("Performing atomic swap...")
     os.replace(JSON_TEMP, JSON_FILE)
     os.replace(CSV_TEMP, CSV_FILE)
