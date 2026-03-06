@@ -5,115 +5,147 @@ import os
 import pandas as pd
 from datetime import datetime
 
-st.set_page_config(layout="wide", page_title="Global Data Calendar", page_icon="🌍")
+# --- Page Config ---
+st.set_page_config(layout="wide", page_title="PopData Tracker", page_icon="🧬")
+
 DATA_FILE = os.path.join("data", "releases.json")
 
-# --- Styles ---
+# --- CSS: Clean & Compact ---
 st.markdown("""
 <style>
-    .stMetric {background-color: #f8f9fa; border: 1px solid #ddd; padding: 10px; border-radius: 8px;}
-    .block-container {padding-top: 1rem;}
+    .block-container {padding-top: 1rem;} 
+    div[data-testid="stMetricValue"] {font-size: 1.2rem;}
 </style>
 """, unsafe_allow_html=True)
 
-@st.cache_data(ttl=600)
-def load_data():
+# --- Load Data & Force Refresh Logic ---
+@st.cache_data(ttl=3600)
+def get_data_from_file(timestamp):
+    # Timestamp arg forces cache invalidation when changed
     if not os.path.exists(DATA_FILE): return []
     with open(DATA_FILE, 'r') as f: return json.load(f)
 
-data = load_data()
+# Sidebar: Admin & Filters
+with st.sidebar:
+    st.title("⚙️ Controls")
+    
+    # 1. FORCE REFRESH BUTTON
+    if st.button("🔄 Force Refresh Data", type="primary", use_container_width=True):
+        with st.status("Running Scrapers...", expanded=True) as status:
+            os.system("python scraper.py")
+            st.cache_data.clear() # Clear Streamlit cache
+            status.update(label="✅ Data Updated!", state="complete", expanded=False)
+        st.rerun()
 
-# --- TOP BAR: SEARCH & FILTERS ---
-col_title, col_search = st.columns([2, 3])
-with col_title:
-    st.title("🌍 Global Data Tracker")
-    st.caption("Tracking ONS, Eurostat, BLS, NBS China, StatJapan, IBGE Brazil")
-
-with col_search:
-    # THE POWER FEATURE: Free text search
-    search_term = st.text_input("🔍 Global Search", placeholder="Try 'Mortality Spain', 'China GDP', 'US Inflation'...")
-
-# --- ADVANCED FILTERS (Sidebar) ---
-st.sidebar.header("Filter Options")
-all_regions = sorted(list(set(d.get('region', 'Other') for d in data))) if data else []
-sel_region = st.sidebar.multiselect("Continent/Region", all_regions)
-
-all_countries = sorted(list(set(d['country'] for d in data))) if data else []
-# Filter countries based on region selection
-if sel_region:
-    available_countries = sorted(list(set(d['country'] for d in data if d.get('region') in sel_region)))
-else:
-    available_countries = all_countries
-sel_country = st.sidebar.multiselect("Country", available_countries)
-
-all_topics = sorted(list(set(d['topic'] for d in data))) if data else []
-sel_topic = st.sidebar.multiselect("Topic", all_topics)
+    st.divider()
+    
+    # 2. DATA FILTERS
+    st.subheader("🔍 Filters")
+    
+    # Load raw data first
+    raw_data = get_data_from_file(os.path.getmtime(DATA_FILE) if os.path.exists(DATA_FILE) else 0)
+    
+    # Source Filter
+    all_sources = sorted(list(set(d['source'] for d in raw_data)))
+    sel_sources = st.multiselect("Agency", all_sources, default=all_sources)
+    
+    # Topic Filter (Crucial for hiding Economy)
+    all_topics = sorted(list(set(d['topic'] for d in raw_data)))
+    # Default: Select everything EXCEPT 'Economy' if possible, or all if mixed
+    default_topics = [t for t in all_topics if t != "Economy"]
+    if not default_topics: default_topics = all_topics
+    
+    sel_topics = st.multiselect("Topic", all_topics, default=default_topics)
+    
+    # Country Filter
+    all_countries = sorted(list(set(d['country'] for d in raw_data)))
+    sel_countries = st.multiselect("Country", all_countries, default=all_countries)
 
 # --- FILTERING LOGIC ---
 filtered = []
-if data:
-    terms = search_term.lower().split() # Split "Spain Mortality" -> ["spain", "mortality"]
-    
-    for d in data:
-        # 1. Sidebar Filters
-        if sel_region and d.get('region') not in sel_region: continue
-        if sel_country and d['country'] not in sel_country: continue
-        if sel_topic and d['topic'] not in sel_topic: continue
-        
-        # 2. Search Bar (AND Logic: Must match ALL terms)
-        if terms:
-            text_corpus = f"{d['title']} {d['country']} {d['topic']} {d['summary']}".lower()
-            if not all(term in text_corpus for term in terms):
-                continue
-        
+for d in raw_data:
+    if d['source'] in sel_sources and d['topic'] in sel_topics and d['country'] in sel_countries:
         filtered.append(d)
 
-# --- DISPLAY ---
+# --- MAIN DASHBOARD ---
+st.title("🧬 Global Population Data Calendar")
+
 if not filtered:
-    st.warning("No datasets match your filters.")
-else:
-    # Metrics
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Datasets Found", len(filtered))
-    c2.metric("Countries", len(set(d['country'] for d in filtered)))
-    
-    # Next Release
-    today = datetime.now().strftime("%Y-%m-%d")
-    future = sorted([x for x in filtered if x['start'] >= today], key=lambda x: x['start'])
-    next_up = future[0] if future else None
-    
-    c3.metric("Next Release", next_up['start'] if next_up else "-")
-    c4.metric("Key Dataset", next_up['title'][:20]+"..." if next_up else "-")
-    
-    st.divider()
+    st.warning("No data matches your filters. Try selecting more Topics or Agencies.")
+    st.stop()
 
-    # Calendar & List
-    cal_col, list_col = st.columns([2, 1])
+# Metrics Row
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("Datasets", len(filtered))
+c2.metric("Mortality/Health", len([x for x in filtered if x['topic'] in ['Mortality', 'Health']]))
+c3.metric("Migration", len([x for x in filtered if x['topic'] == 'Migration']))
+
+# Find Next Release
+today = datetime.now().strftime("%Y-%m-%d")
+future = sorted([x for x in filtered if x['start'] >= today], key=lambda x: x['start'])
+if future:
+    c4.metric("Next Release", f"{future[0]['start']} ({future[0]['source']})")
+
+st.divider()
+
+# Calendar & List Layout
+col_cal, col_list = st.columns([2, 1])
+
+with col_cal:
+    events = []
+    # Color Coding by Topic (Visual Clues)
+    topic_colors = {
+        "Mortality": "#d62728", # Red
+        "Births": "#e377c2",    # Pink
+        "Migration": "#ff7f0e", # Orange
+        "Population": "#2ca02c",# Green
+        "Economy": "#7f7f7f",   # Grey (Boring)
+        "Health": "#1f77b4"     # Blue
+    }
     
-    with cal_col:
-        events = []
-        # Region Color Mapping
-        colors = {"Europe": "#004494", "Americas": "#B31B1B", "Asia": "#EB6608"}
+    for item in filtered:
+        events.append({
+            "title": f"[{item['topic']}] {item['title']}",
+            "start": item['start'],
+            "color": topic_colors.get(item['topic'], "#555"),
+            "extendedProps": item
+        })
         
-        for item in filtered:
-            events.append({
-                "title": f"{item['country']}: {item['title']}",
-                "start": item['start'],
-                "color": colors.get(item.get('region'), "#555"),
-                "extendedProps": item
-            })
-            
-        calendar_ops = {
-            "headerToolbar": {"left": "prev,next today", "center": "title", "right": "dayGridMonth,listMonth"},
-            "initialView": "dayGridMonth",
-            "height": 600
-        }
-        state = calendar(events=events, options=calendar_ops, key="cal")
+    calendar_ops = {
+        "headerToolbar": {"left": "prev,next today", "center": "title", "right": "dayGridMonth,listMonth"},
+        "initialView": "dayGridMonth",
+        "height": 650
+    }
+    state = calendar(events=events, options=calendar_ops, key="cal")
 
-    with list_col:
-        st.subheader("Results List")
-        for item in filtered[:10]: # Show top 10
-            with st.expander(f"{item['start']} | {item['country']} {item['topic']}"):
-                st.markdown(f"**{item['title']}**")
-                st.caption(item['summary'])
-                st.link_button("Go to Source", item['url'])
+with col_list:
+    st.subheader("📌 Release Details")
+    
+    selected = None
+    if state.get("eventClick"):
+        selected = state["eventClick"]["event"]["extendedProps"]
+    elif future:
+        selected = future[0]
+        st.caption("🚀 Next Upcoming Release")
+        
+    if selected:
+        with st.container(border=True):
+            # Header Badge
+            color = topic_colors.get(selected['topic'], "#555")
+            st.markdown(f"<span style='background:{color}; padding:4px 8px; border-radius:4px; color:white; font-weight:bold'>{selected['topic']}</span>", unsafe_allow_html=True)
+            
+            st.markdown(f"### {selected['title']}")
+            st.write(f"**🗓 Date:** {selected['start']}")
+            st.write(f"**🏛 Agency:** {selected['source']} ({selected['country']})")
+            st.info(selected.get('summary', 'No summary available.'))
+            
+            if selected['url']:
+                st.link_button("🔗 Open Official Page", selected['url'])
+    else:
+        st.write("Select an event to see details.")
+
+# --- Data Grid for Power Users ---
+st.divider()
+with st.expander("📊 View as Spreadsheet", expanded=False):
+    df = pd.DataFrame(filtered)[['start', 'country', 'topic', 'title', 'source', 'url']]
+    st.dataframe(df, use_container_width=True, hide_index=True, column_config={"url": st.column_config.LinkColumn()})
