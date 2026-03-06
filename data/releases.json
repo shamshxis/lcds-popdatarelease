@@ -1,266 +1,32 @@
 [
     {
-        "title": "CDC's National Firefighter Registry for Cancer is Now the Largest in the Nation",
-        "start": "2026-02-10",
-        "country": "USA",
-        "source": "CDC (Vital Stats)",
-        "topic": "Health",
-        "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=763455"
-    },
-    {
-        "title": "Extensively drug-resistant\u00a0<em>Salmonella</em> outbreak linked to moringa powder capsules",
-        "start": "2026-02-13",
-        "country": "USA",
-        "source": "CDC (Vital Stats)",
-        "topic": "General Demography",
-        "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=763536"
-    },
-    {
-        "title": "Deaths registered weekly in England and Wales, provisional: week ending",
-        "start": "2026-02-20",
-        "country": "UK",
-        "source": "ONS (UK)",
-        "topic": "Mortality",
-        "url": "https://www.ons.gov.uk/releasecalendar"
-    },
-    {
-        "title": "Statement on the Resignation of the CDC Principal Deputy Director",
-        "start": "2026-02-23",
-        "country": "USA",
-        "source": "CDC (Vital Stats)",
-        "topic": "General Demography",
-        "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=763678"
-    },
-    {
-        "title": "Release date:  9:30am | Published",
-        "start": "2026-02-27",
-        "country": "UK",
-        "source": "ONS (UK)",
-        "topic": "General Demography",
-        "url": "https://www.ons.gov.uk/releasecalendar"
-    },
-    {
-        "title": "Secretary Kennedy Appoints Two Physicians to CDC's Advisory Committee on Immunization Practices",
-        "start": "2026-02-28",
-        "country": "USA",
-        "source": "CDC (Vital Stats)",
-        "topic": "General Demography",
-        "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=763817"
-    },
-    {
-        "title": "Foreign direct investment - stocks, 2023",
-        "start": "2026-03-01",
-        "country": "EU",
-        "source": "Eurostat",
-        "topic": "General Demography",
-        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-    },
-    {
-        "title": "World direct investment patterns, 2023",
-        "start": "2026-03-01",
-        "country": "EU",
-        "source": "Eurostat",
-        "topic": "General Demography",
-        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-    },
-    {
-        "title": "Women in management, 2024",
-        "start": "2026-03-01",
-        "country": "EU",
-        "source": "Eurostat",
-        "topic": "General Demography",
-        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-    },
-    {
-        "title": "Flash estimate inflation euro area, February 2026",
-        "start": "2026-03-02",
-        "country": "EU",
-        "source": "Eurostat",
-        "topic": "General Demography",
-        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-    },
-    {
-        "title": "Building permits, November 2025",
-        "start": "2026-03-02",
-        "country": "EU",
-        "source": "Eurostat",
-        "topic": "General Demography",
-        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-    },
-    {
-        "title": "Gender gap by type of employment, 2024",
-        "start": "2026-03-02",
-        "country": "EU",
-        "source": "Eurostat",
-        "topic": "General Demography",
-        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-    },
-    {
-        "title": "Release date:  9:30am | Published",
-        "start": "2026-03-03",
-        "country": "UK",
-        "source": "ONS (UK)",
-        "topic": "General Demography",
-        "url": "https://www.ons.gov.uk/releasecalendar"
-    },
-    {
-        "title": "Nights spent at tourist accommodation establishments, December 2025",
-        "start": "2026-03-03",
-        "country": "EU",
-        "source": "Eurostat",
-        "topic": "General Demography",
-        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-    },
-    {
-        "title": "Unemployment, January 2026",
-        "start": "2026-03-03",
-        "country": "EU",
-        "source": "Eurostat",
-        "topic": "General Demography",
-        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-    },
-    {
-        "title": "Release date:  9:30am | Published",
-        "start": "2026-03-04",
-        "country": "UK",
-        "source": "ONS (UK)",
-        "topic": "General Demography",
-        "url": "https://www.ons.gov.uk/releasecalendar"
-    },
-    {
-        "title": "Women in parliaments and governments, 2024",
-        "start": "2026-03-04",
-        "country": "EU",
-        "source": "Eurostat",
-        "topic": "General Demography",
-        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-    },
-    {
-        "title": "Release date: 6 March 2026 9:30am | Published",
-        "start": "2026-03-05",
-        "country": "UK",
-        "source": "ONS (UK)",
-        "topic": "General Demography",
-        "url": "https://www.ons.gov.uk/releasecalendar"
-    },
-    {
-        "title": "Release date:  9:30am | Published",
-        "start": "2026-03-05",
-        "country": "UK",
-        "source": "ONS (UK)",
-        "topic": "General Demography",
-        "url": "https://www.ons.gov.uk/releasecalendar"
-    },
-    {
-        "title": "Economic activity and social change in the UK, real-time indicators",
-        "start": "2026-03-05",
-        "country": "UK",
-        "source": "ONS (UK)",
-        "topic": "General Demography",
-        "url": "https://www.ons.gov.uk/releasecalendar"
-    },
-    {
-        "title": "Slaughtering other than in slaughterhouses, October 2025",
-        "start": "2026-03-05",
-        "country": "EU",
-        "source": "Eurostat",
-        "topic": "General Demography",
-        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-    },
-    {
-        "title": "Slaughtering in slaughterhouses, December 2025",
-        "start": "2026-03-05",
-        "country": "EU",
-        "source": "Eurostat",
-        "topic": "General Demography",
-        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-    },
-    {
-        "title": "Activity of hatcheries, January 2026",
-        "start": "2026-03-05",
-        "country": "EU",
-        "source": "Eurostat",
-        "topic": "General Demography",
-        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-    },
-    {
-        "title": "Services production, December 2025",
-        "start": "2026-03-05",
-        "country": "EU",
-        "source": "Eurostat",
-        "topic": "General Demography",
-        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-    },
-    {
-        "title": "Total market production index, December 2025",
-        "start": "2026-03-05",
-        "country": "EU",
-        "source": "Eurostat",
-        "topic": "General Demography",
-        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-    },
-    {
-        "title": "Gender equality in the EU, 2024",
-        "start": "2026-03-05",
-        "country": "EU",
-        "source": "Eurostat",
-        "topic": "General Demography",
-        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-    },
-    {
-        "title": "Fertility, 2024",
-        "start": "2026-03-05",
-        "country": "EU",
-        "source": "Eurostat",
-        "topic": "Fertility",
-        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-    },
-    {
-        "title": "Page Last Revised",
-        "start": "2026-03-05",
-        "country": "USA",
-        "source": "US Census",
-        "topic": "General Demography",
-        "url": "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
-    },
-    {
-        "title": "Last Reviewed",
-        "start": "2026-03-05",
-        "country": "USA",
-        "source": "CDC (Vital Stats)",
-        "topic": "General Demography",
-        "url": "https://www.cdc.gov/nchs/nvss/deaths.htm"
-    },
-    {
-        "title": "Release date:  9:30am | Published",
-        "start": "2026-03-06",
-        "country": "UK",
-        "source": "ONS (UK)",
-        "topic": "General Demography",
-        "url": "https://www.ons.gov.uk/releasecalendar"
-    },
-    {
-        "title": "December 2026",
-        "start": "2027-01-05",
+        "title": "Caribbean NL: health and disorders; personal characteristics",
+        "start": "2022-12-15T02:00:00",
         "country": "Netherlands",
-        "source": "CBS (Netherlands)",
-        "topic": "General Demography",
-        "url": "https://www.cbs.nl/en-gb/publication-calendar"
+        "source": "CBS API"
     },
     {
-        "title": "December 2026",
-        "start": "2027-01-11",
+        "title": "Caribbean Netherlands; births, fertility, age mother",
+        "start": "2025-11-07T15:30:00",
         "country": "Netherlands",
-        "source": "CBS (Netherlands)",
-        "topic": "General Demography",
-        "url": "https://www.cbs.nl/en-gb/publication-calendar"
+        "source": "CBS API"
     },
     {
-        "title": "December 2026",
-        "start": "2027-01-27",
+        "title": "Caribbean Netherlands; deaths, sex, age, marital status",
+        "start": "2025-05-19T02:00:00",
         "country": "Netherlands",
-        "source": "CBS (Netherlands)",
-        "topic": "General Demography",
-        "url": "https://www.cbs.nl/en-gb/publication-calendar"
+        "source": "CBS API"
+    },
+    {
+        "title": "Caribbean Netherlands; migration, sex, age and country of birth",
+        "start": "2025-05-27T15:30:00",
+        "country": "Netherlands",
+        "source": "CBS API"
+    },
+    {
+        "title": "Caribbean Netherlands; population, births, deaths, migration",
+        "start": "2025-05-19T02:00:00",
+        "country": "Netherlands",
+        "source": "CBS API"
     }
 ]
