@@ -1,983 +1,13 @@
 [
     {
-        "title": "Decline in Perinatal Mortality in the United States, 2017\u20132019",
-        "start": "2022-01-18",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Fetal Mortality in the United States: Trends From 2014 Through 2019 and Changes Between 2018\u20132019 and 2019\u20132020 [PDF \u2013 550 KB]",
-        "start": "2022-01-20",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Exploring the Decline in the Singleton Preterm Birth Rate in the United States, 2019\u20132020",
-        "start": "2022-01-21",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Births: Final Data for 2020 [PDF \u2013 1 MB] Supplemental Tables [PDF \u2013 681 KB]",
-        "start": "2022-02-07",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Maternal Mortality Rates in the United States, 2020",
-        "start": "2022-02-23",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
         "title": "Changes in Births by Month: United States, January 2019\u2013June 2021 [PDF \u2013 572 KB]",
-        "start": "2022-03-01",
+        "start": "2019-01-06",
         "country": "USA",
         "source": "CDC",
         "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
         "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Suicide Mortality in the United States, 2000\u20132020",
-        "start": "2022-03-03",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "A Reference Guide for Certification of Deaths Associated With Pregnancy on Death Certificates [PDF \u2013 4 MB]",
-        "start": "2022-03-21",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Births: Provisional Data for 2021 [PDF \u2013 454 KB]",
-        "start": "2022-05-24",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Changes in Births by Month: United States, 2021 [PDF \u2013 692 KB]",
-        "start": "2022-07-19",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Urban\u2013Rural Differences in Drug Overdose Death Rates, 2020",
-        "start": "2022-07-21",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Fetal Mortality: United States, 2020 [PDF \u2013 804 KB]",
-        "start": "2022-08-04",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Births in the United States, 2021",
-        "start": "2022-08-29",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Provisional Life Expectancy Estimates for 2021 [PDF \u2013 1 MB] Supplemental Tables [PDF \u2013 1 MB]",
-        "start": "2022-08-31",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Infant Mortality in the United States, 2020: Data From the Period Linked Birth/Infant Death File [PDF \u2013 1 MB]",
-        "start": "2022-09-29",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Provisional Numbers and Rates of Suicide by Month and Demographic Characteristics: United States, 2021 [PDF \u2013 419 KB]",
-        "start": "2022-09-30",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "COVID-19 Mortality in Adults Aged 65 and Over: United States, 2020",
-        "start": "2022-10-14",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Cause-of-death Data from the Fetal Death File, 2018\u20132020 [PDF \u2013 2 MB]",
-        "start": "2022-10-19",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "COVID-19 Death Rates in Urban and Rural Areas: United States, 2020",
-        "start": "2022-10-25",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "COVID-19 Mortality by Usual Occupation and Industry: 46 States and New York City, United States, 2020 [PDF \u2013 791 KB]",
-        "start": "2022-10-28",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Death Rates for Leading Causes of Death for People Aged 25\u201344 Among the Three Largest Race and Ethnicity Groups: United States, 2000\u20132020",
-        "start": "2022-11-16",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Suicide Rates for the Three Leading Methods by Race and Ethnicity: United States, 2000\u20132020",
-        "start": "2022-11-16",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Changes in Home Births by Race and Hispanic Origin and State of Residence of Mother: United States, 2019\u20132020 and 2020\u20132021 [PDF \u2010 1.2 MB]",
-        "start": "2022-11-17",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Drug Overdose Deaths in Adults Aged 65 and Over: United States, 2000\u20132020",
-        "start": "2022-11-30",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Unintentional Fall Deaths Among Adults Aged 65 and Over: United States, 2020",
-        "start": "2022-11-30",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Alcohol-induced Deaths in Adults Aged 65 and Over: United States, 2019 and 2020",
-        "start": "2022-11-30",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Changes in Twin Births in the United States, 2019\u20132021 [PDF \u2013 392 KB]",
-        "start": "2022-12-07",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Identification of Deaths With Post-acute Sequelae of COVID-19 From Death Certificate Literal Text: United States, January 1, 2020\u2013June 30, 2022 [PDF \u2013 674 KB]",
-        "start": "2022-12-14",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Mortality in the United States, 2021",
-        "start": "2022-12-22",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Drug Overdose Deaths in the United States, 2001\u20132021",
-        "start": "2022-12-22",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Fetal Mortality in the United States: Final 2019\u20132020 and 2020\u2013Provisional 2021 [PDF \u2013 1.4 MB]",
-        "start": "2023-01-12",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Infant Mortality Among Non-Hispanic Asian Subgroups in the United States, 2018\u20132020",
-        "start": "2023-01-13",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Birth: Final Data for 2021 [PDF \u2013 1 MB]",
-        "start": "2023-01-31",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Guidance for Certifying Deaths Due to Coronavirus Disease 2019  [PDF \u2013 403 KB]",
-        "start": "2023-02-27",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Estimates of Drug Overdose Deaths Involving Fentanyl, Methamphetamine, Cocaine, Heroin, and Oxycodone: United States, 2021 [PDF \u2013 690 KB]",
-        "start": "2023-05-03",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Changes in Prenatal Care Utilization: United States, 2019\u20132021 [PDF \u2013 425 KB]",
-        "start": "2023-05-04",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Births: Provisional Data for 2022 [PDF \u2013 485 KB]",
-        "start": "2023-06-01",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Suicide and Homicide Death Rates Among Youth and Young Adults Aged 10\u201324: United States, 2001\u20132021",
-        "start": "2023-06-15",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Drug Overdose Deaths Involving Xylazine: United States, 2018\u20132021 [PDF \u2013 661KB]",
-        "start": "2023-06-30",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Co-involvement of Opioids in Drug Overdose Deaths Involving Cocaine and Psychostimulants, 2011\u20132021",
-        "start": "2023-07-19",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Fetal Mortality: United States, 2021 [PDF \u2013 550 KB]",
-        "start": "2023-07-26",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Drug Overdose Mortality by Usual Occupation and Industry: 46 U.S. States and New York City, 2020 [PDF \u2013 657 KB]",
-        "start": "2023-08-22",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Births in the United States, 2022",
-        "start": "2023-08-23",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Physician\u2019s Handbook on Medical Certification of Death [PDF \u2013 1.8 MB]",
-        "start": "2023-09-11",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Infant Mortality in the United States, 2021: Data From the Period Linked Birth/Infant Death File [PDF \u2013 634 KB]",
-        "start": "2023-09-12",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Deaths: Final Data for 2020 [PDF \u2013 2,221 KB]",
-        "start": "2023-09-25",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Infant Mortality in the United States: Provisional Data From the 2022 Period Linked Birth/Infant Death File [PDF \u2013 455]",
-        "start": "2023-11-01",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Fetal Mortality in the United States: Final 2020\u20132021 and 2021\u2013Provisional 2022 [PDF \u2013 455 KB]",
-        "start": "2023-11-08",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Suicide Among Adults Ages 55 and Older, 2021",
-        "start": "2023-11-15",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Declines in Cancer Death Rates Among Youth: United States, 2001\u20132021",
-        "start": "2023-11-16",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Provisional Numbers and Rates of Suicide by Demographic Characteristics: United States, 2022 [PDF \u2013 600 KB]",
-        "start": "2023-11-29",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Provisional Life Expectancy Estimates for 2022 [PDF 666 KB]",
-        "start": "2023-11-29",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Deaths: Leading Causes for 2020 [PDF \u2013 2.2 MB]",
-        "start": "2023-12-05",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Perinatal Mortality in the United States, 2020\u20132021",
-        "start": "2023-12-07",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Mortality in Adults Age 65 and Older: United States, 2000\u20132019 [PDF 1.1 MB]",
-        "start": "2023-12-15",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Shifts in the Distribution of Births by Gestational Age: United States, 2014\u20132022 [PDF \u2013 404 KB]",
-        "start": "2024-01-31",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Infant Mortality by Selected Maternal Characteristics and Race and Hispanic Origin in the United States, 2019\u20132021 [PDF 336 KB]",
-        "start": "2024-03-05",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Mortality in the United States, 2022",
-        "start": "2024-03-21",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Drug Overdose Deaths in the United States, 2002\u20132022",
-        "start": "2024-03-21",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Provisional birth data for Puerto Rico",
-        "start": "2024-04-02",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Births: Final Data for 2022 [PDF \u2013 1.1 MB]",
-        "start": "2024-04-04",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Deaths: Leading Causes for 2021 [PDF \u2013 2.8 MB]",
-        "start": "2024-04-08",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Suicide Mortality in the United States, 2001\u20132021",
-        "start": "2024-04-13",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Maternal Mortality Rates in the United States, 2022",
-        "start": "2024-05-02",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "2016-2020 Matched Multiple Birth and Fetal Death Data File",
-        "start": "2024-05-29",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Changes in First and Second Births to U.S. Teenagers From 2000 to 2022 [PDF \u2013 251 KB]",
-        "start": "2024-07-24",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Infant Mortality in the United States, 2022: Data From the Period Linked Birth/Infant Death File [PDF \u2013 1.2 MB]",
-        "start": "2024-07-25",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Stroke Death Rates Among Adults Ages 45\u201364 by Region and Race and Hispanic Origin: United States, 2002\u20132022",
-        "start": "2024-08-08",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Births in the United States, 2023",
-        "start": "2024-08-20",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Fetal Mortality: United States, 2022 [PDF \u2013 1.1 MB]",
-        "start": "2024-09-12",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Suicide Mortality in the United States, 2002\u20132022",
-        "start": "2024-09-26",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Deaths: Final Data for 2021 [PDF \u2013 3,250 KB]",
-        "start": "2024-10-04",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Fetal Mortality in the United States: Final 2021\u20132022 and 2022\u2013Provisional 2023 [PDF \u2013 618 KB]",
-        "start": "2024-10-15",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Declines in Triplet and Higher-order Multiple Births in the United States, 1998\u20132023",
-        "start": "2024-10-31",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Dementia Mortality in Adults Age 65 and Older: United States, 2018\u20132022",
-        "start": "2024-11-13",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Deaths: Leading Causes for 2022 [PDF \u2013 2.1 MB]",
-        "start": "2024-12-09",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Drug Overdose Deaths in the United States, 2003\u20132023",
-        "start": "2024-12-19",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Mortality in the United States, 2023",
-        "start": "2024-12-19",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Maternal Mortality Rates in the United States, 2023",
-        "start": "2025-02-05",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Effects of Age-specific Fertility Trends on Overall Fertility Trends: United States, 1990\u20132023 [PDF \u2013 528 KB]",
-        "start": "2025-03-06",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Increases in Neonatal Intensive Care Admissions in the United States, 2016\u20132023",
-        "start": "2025-03-19",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Trends in Early-term Singleton Births in the United States, 2014 to 2023",
-        "start": "2025-06-04",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Deaths: Final Data for 2022",
-        "start": "2025-06-10",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Infant Mortality in the United States, 2023: Data From the Period Linked Birth/Infant Death File",
-        "start": "2025-06-12",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Fetal Mortality: United States, 2023",
-        "start": "2025-06-17",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Perinatal Mortality in the United States, 2022 and 2023",
-        "start": "2025-07-09",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Trends and Differences in Infant Mortality Rates in Rural and Metropolitan Counties in the United States, 2021-2023",
-        "start": "2025-07-23",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Births in the United States, 2024",
-        "start": "2025-07-24",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Trends in Births and Deaths: United States, 2010\u20132023 [PDF \u2013 366 KB]",
-        "start": "2025-08-27",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Mortality in the United States: Provisional Data, 2024 [PDF \u2013 389 KB]",
-        "start": "2025-09-10",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Deaths: Leading Causes for 2023 [PDF \u2013 14 MB]",
-        "start": "2025-09-16",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Timeliness of Death Certificate Data by Jurisdiction and Selected Causes of Death: United States and Puerto Rico, 2023 [PDF \u2013 569 KB]",
-        "start": "2025-09-23",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Changes in Suicide Rates in the United States From 2022 to 2023",
-        "start": "2025-09-24",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Fetal Mortality in the United States: Final 2022\u20132023 and 2023\u2013Provisional 2024",
-        "start": "2025-12-03",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Infant Mortality in the United States: Provisional Data From the 2024 Period Linked Birth/Infant Death Files",
-        "start": "2026-01-22",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Drug Overdose Deaths in the United States, 2023\u20132024",
-        "start": "2026-01-29",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Mortality in the United States, 2024",
-        "start": "2026-01-29",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Drugs Most Frequently Involved in Drug Overdose Deaths: United States, 2017\u20132023",
-        "start": "2026-03-05",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Mortality",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "summary": "CDC Vital Statistics",
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Provisional death counts, January 2024 to December 2025 (Owen Philips, 613-371-5781)",
@@ -987,7 +17,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Mortality",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Annual update of the Longitudinal Immigration Database Express Entry module, 2024 (John Leung, 343-575-3268)",
@@ -997,7 +27,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Migration",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Canada's population estimates, fourth quarter 2025 (Stacey Hallman, 343-597-5447)",
@@ -1007,27 +37,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Population",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Characteristics of Mothers Admitted to Intensive Care Units During Hospitalization for Delivery of a Live-born Infant: United States, 2020\u20132022",
-        "start": "2023-12-07",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Health",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Health E-Stat 110: Change in the Maternal Syphilis Rate: United States, 2022\u20132024",
-        "start": "2026-01-27",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Health",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Canadian Health Measures Survey: Non-environmental and environmental laboratory data, 2022 to 2024 (Janine Clarke, 343-597-8476)",
@@ -1037,7 +47,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Health",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Functional health of Canadian adults, 2015 to 2024 (Gillian Smith, 647-454-0205)",
@@ -1047,7 +57,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Health",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Health Reports, March 2026 (Janice Felman, 613-799-7746) Assessing obesity beyond body mass index: Integrating physiological and functional indicators of impairment in national health surveillance Validating the Warwick-Edinburgh Mental Well-being Scale for the positive mental health surveillance of adults in Canada",
@@ -1057,7 +67,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Health",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Canadian Social Environment Typology: A geographic classification tool to measure health and social inequalities in Canada, 2021 (Vijata Sharma, 403-464-1639)",
@@ -1067,7 +77,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Health",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Job vacancies after the peak \u2013 a look at the changing educational composition since 2022 (Joahnathan Bridekirk, 705-795-1226)",
@@ -1077,7 +87,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Labor",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Job vacancies, fourth quarter 2025 (Eesha Kirubaharan, 343-553-3893)",
@@ -1087,7 +97,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Labor",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Employer pension plans (trusteed pension funds), third quarter 2025 (Anna Twardowski, 613-296-7644)",
@@ -1097,7 +107,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Labor",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Employment by industry in rural Canada: Interactive dashboard (Jacqueline Ha, 438-466-0671)",
@@ -1107,7 +117,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Labor",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Farm product prices, January 2026 (Guiying Zhao, 613-851-5724)",
@@ -1117,7 +127,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Economy",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Electric Power Selling Price Index, January 2026 (Hussam Al-Husseini, 613-302-8342)",
@@ -1127,7 +137,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Economy",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "(lockup) Canadian international merchandise trade, January 2026 (Beno\u00eet Carri\u00e8re, 613-415-5305)",
@@ -1137,7 +147,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Economy",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Wholesale trade, January 2026 (Jeff Paul, 343-571-4172)",
@@ -1147,7 +157,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Economy",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Canadian international trade in services, January 2026 (Alec Forbes, 343-575-1548)",
@@ -1157,7 +167,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Economy",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Canadian Economic News, February 2026 (Sean Clarke, 613-850-5262)",
@@ -1167,7 +177,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Economy",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Infrastructure economic account, 2025 (S\u00e9bastien Faubert, 613-299-8650)",
@@ -1177,7 +187,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Economy",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "(lockup) Consumer Price Index, February 2026 (Andrew Barclay, 613-404-1818)",
@@ -1187,7 +197,17 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Economy",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
+    },
+    {
+        "title": "National balance sheet and financial flow accounts, fourth quarter 2025 (Matthew Hoffarth, 613-852-4656)",
+        "start": "2026-03-16",
+        "country": "Canada",
+        "source": "StatCan",
+        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
+        "topic": "Economy",
+        "summary": "The Daily Release",
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Telecommunications services producer price indexes, fourth quarter 2025 (Hussam Al-Husseini, 613-302-8342)",
@@ -1197,7 +217,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Economy",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "(lockup) Retail trade, January 2026 (Erika Rodrigues, 343-548-1606)",
@@ -1207,7 +227,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Economy",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Industrial product and raw materials price indexes, February 2026 (Hussam Al-Husseini, 613-302-8342)",
@@ -1217,7 +237,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Economy",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "New Housing Price Index, February 2026 (Hussam Al-Husseini, 613-302-8342)",
@@ -1227,7 +247,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Economy",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Reconciliation Tables: From Public Accounts of Canada to the Government Finance Statistics (Philippe Samborski, 343-224-7852)",
@@ -1237,237 +257,17 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "Economy",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
-        "title": "U.S. State Life Tables, 2019 [PDF \u2013 829 KB]",
-        "start": "2022-02-10",
+        "title": "Trends in Characteristics of Mothers with Confirmed or Presumed COVID",
+        "start": "2020-07-06",
         "country": "USA",
         "source": "CDC",
         "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
         "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "United States Life Tables, 2019 [PDF \u2013 1 MB]",
-        "start": "2022-03-22",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Maternal Characteristics and Infant Outcomes of Women Born in and Outside the United States: United States, 2020 [PDF \u2013 1 MB]",
-        "start": "2022-06-29",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Changes in Primary and Repeat Cesarean Delivery: United States, 2016\u20132021 [PDF \u2013 592 KB]",
-        "start": "2022-07-06",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Trends and Characteristics in Gestational Diabetes: United States, 2016\u20132020 [PDF \u2013 774 KB]",
-        "start": "2022-07-19",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "United States Life Tables, 2020 [PDF \u2013 3 MB]",
-        "start": "2022-08-08",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "U.S. State Life Tables, 2020",
-        "start": "2022-08-22",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Maternal Characteristics and Infant Outcomes by Hispanic Subgroup and Nativity: United States, 2021 [PDF \u2013 949 KB]",
-        "start": "2023-01-24",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Trends and Characteristics in Maternal Hepatitis C Virus Infection Rates During Pregnancy: United States, 2016\u20132021 [PDF \u2013 361 KB]",
-        "start": "2023-04-11",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Autopsies in the United States in 2020 [PDF \u2013 431 KB]",
-        "start": "2023-05-24",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Characteristics of Mothers by Source of Payment for the Delivery: United States, 2021",
-        "start": "2023-05-25",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Trends and Characteristics in Prepregnancy Diabetes: United States, 2016-2021 [PDF \u2013 431]",
-        "start": "2023-05-31",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Provisional Estimates for Selected Maternal and Infant Outcomes by Month, 2019-2022",
-        "start": "2023-06-01",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Trends in Characteristics of Mothers with Confirmed or Presumed COVID-19 During Pregnancy: 14 States and District of Columbia, July 2020\u2013June 2022 [PDF \u2013 589 KB]",
-        "start": "2023-06-28",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Homicides Among Infants in the United States, 2017\u20132020 [PDF \u2013 330 KB]",
-        "start": "2023-07-26",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Trends in Cesarean Delivery in Puerto Rico, 2018\u20132022",
-        "start": "2024-01-10",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Trends and Characteristics in Maternal Syphilis Rates During Pregnancy: United States, 2016\u20132022",
-        "start": "2024-02-13",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "U.S. State Life Tables, 2021 [PDF \u2013 1.1 MB]",
-        "start": "2024-08-21",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Differences in Cesarean Delivery Rates for Puerto Rican Mothers in Puerto Rico and the U.S. Mainland, 2023",
-        "start": "2025-01-28",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "United States Life Tables, 2022 [PDF \u2013 2,533 KB]",
-        "start": "2025-04-08",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "Trends in Mean Age of Mothers: United States, 2016\u20132023 [PDF \u2013 317 KB]",
-        "start": "2025-06-13",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "United States Life Tables, 2023 [PDF \u2013 2 MB]",
-        "start": "2025-07-15",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "U.S. State Life Tables, 2022",
-        "start": "2025-12-04",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "summary": "CDC Vital Statistics",
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Food services and drinking places, annual, 2024 (Larry Arbenser, 613-218-0504)",
@@ -1477,7 +277,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Automotive equipment rentals and leasing, 2024 (Andrew Wade, 416-805-1744)",
@@ -1487,7 +287,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Canadian Coroner and Medical Examiner Database, January 2006 to December 2025 (Maria Quadri, 647-938-4942)",
@@ -1497,7 +297,17 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
+    },
+    {
+        "title": "View current release",
+        "start": "2026-03-10",
+        "country": "Australia",
+        "source": "ABS",
+        "url": "https://www.abs.gov.au/statistics/industry/building-and-construction/building-approvals-australia/jan-2026",
+        "topic": "General Stats",
+        "summary": "Australian Bureau of Statistics",
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Annual Survey of Environmental Goods and Services, 2024 (final) (Sharon Lepage, 343-548-5689)",
@@ -1507,7 +317,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Real estate agents and brokers, 2024 (Terilyn Ebert, 613-323-4694)",
@@ -1517,7 +327,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Leading indicator of international arrivals to Canada, February 2026 (Laura Presley, 343-596-8260)",
@@ -1527,7 +337,17 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
+    },
+    {
+        "title": "View current release",
+        "start": "2026-03-11",
+        "country": "Australia",
+        "source": "ABS",
+        "url": "https://www.abs.gov.au/statistics/labour/earnings-and-working-conditions/industrial-disputes-australia/sep-2025",
+        "topic": "General Stats",
+        "summary": "Australian Bureau of Statistics",
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Business Counts in Rural and Small Town Canada: Interactive Dashboard, December 2025 (Stanley Yu Su, 613-296-6028)",
@@ -1537,7 +357,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Business Conditions in Rural and Small Town Canada: Interactive Dashboard, first quarter 2026 (Jacqueline Ha, 438-466-0671)",
@@ -1547,7 +367,17 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
+    },
+    {
+        "title": "View current release",
+        "start": "2026-03-12",
+        "country": "Australia",
+        "source": "ABS",
+        "url": "https://www.abs.gov.au/statistics/people/crime-and-justice/personal-fraud/2023-24",
+        "topic": "General Stats",
+        "summary": "Australian Bureau of Statistics",
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Building permits, January 2026 (Malik Johnson-Clarke, 613-859-1439)",
@@ -1557,7 +387,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Child care arrangements of children aged 6 to 12 years, 2025 (Sampson Reid, 343-553-7739)",
@@ -1567,7 +397,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "New motor vehicle registrations, fourth quarter 2025 (Saman Rudgar, 343-552-6750)",
@@ -1577,7 +407,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Canadian potato production, 2024 and 2025 (revised data) (Brad Mckay, 613-799-7634)",
@@ -1587,7 +417,17 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
+    },
+    {
+        "title": "View current release",
+        "start": "2026-03-13",
+        "country": "Australia",
+        "source": "ABS",
+        "url": "https://www.abs.gov.au/statistics/labour/jobs/multiple-job-holders/sep-2025",
+        "topic": "General Stats",
+        "summary": "Australian Bureau of Statistics",
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "(lockup) Labour Force Survey, February 2026 (Andrew Fields, 613-290-1655)",
@@ -1597,7 +437,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Canada's international investment position, fourth quarter 2025 (Fran\u00e7ois Couture, 343-572-0825)",
@@ -1607,7 +447,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Monthly Survey of Manufacturing, January 2026 (Javad Sadeghzadeh, 613-698-7324)",
@@ -1617,7 +457,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Industrial capacity utilization rates, fourth quarter 2025 (S\u00e9bastien Faubert, 613-299-8650)",
@@ -1627,7 +467,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Non-profit organizations in rural and small town Canada, 2023 (Jacqueline Ha, 438-466-0671)",
@@ -1637,7 +477,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Crushing statistics of major oilseeds, Canada and United States, 2025 (Eric Davidson, 343-572-8254)",
@@ -1647,17 +487,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
-    },
-    {
-        "title": "National balance sheet and financial flow accounts, fourth quarter 2025 (Matthew Hoffarth, 613-852-4656)",
-        "start": "2026-03-16",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Traffic Flow Dashboard (J\u00e9r\u00f4me Blanchet, 819-576-5502)",
@@ -1667,7 +497,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "New motor vehicle sales, January 2026 (Andrew Dormer, 613-218-9925)",
@@ -1677,7 +507,17 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
+    },
+    {
+        "title": "View current release",
+        "start": "2026-03-17",
+        "country": "Australia",
+        "source": "ABS",
+        "url": "https://www.abs.gov.au/statistics/industry/tourism-and-transport/overseas-arrivals-and-departures-australia/dec-2025",
+        "topic": "General Stats",
+        "summary": "Australian Bureau of Statistics",
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Disability Measurement Technical Report (Carrly McDiarmid, 343-549-4469)",
@@ -1687,7 +527,17 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
+    },
+    {
+        "title": "View current release",
+        "start": "2026-03-18",
+        "country": "Australia",
+        "source": "ABS",
+        "url": "https://www.abs.gov.au/statistics/people/crime-and-justice/recorded-crime-offenders/2023-24",
+        "topic": "General Stats",
+        "summary": "Australian Bureau of Statistics",
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Canada's international transactions in securities, January 2026 (Natacha McGuire, 343-542-9305)",
@@ -1697,7 +547,17 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
+    },
+    {
+        "title": "View current release",
+        "start": "2026-03-19",
+        "country": "Australia",
+        "source": "ABS",
+        "url": "https://www.abs.gov.au/statistics/labour/employment-and-unemployment/labour-force-australia/jan-2026",
+        "topic": "General Stats",
+        "summary": "Australian Bureau of Statistics",
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Investment in building construction, January 2026 (Joshua Sun, 647-745-2631)",
@@ -1707,7 +567,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Screen time and children's well-being: a longitudinal study, 2019 and 2023 (Cait Brunton, 613-413-6858)",
@@ -1717,7 +577,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Monthly credit aggregates, January 2026 (Matthew Hoffarth, 613-852-4656)",
@@ -1727,7 +587,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Municipal Operating Costs: Water, Waste, Recreation and Culture, 2020/2021 to 2023/2024 (Nicolas Courcy, 343-598-0622)",
@@ -1737,7 +597,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Study: Satisfaction with time use, 2022 (Rachel Leistra, 343-576-6036)",
@@ -1747,7 +607,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Monthly Energy Transportation and Storage Survey, January 2026 (Adam Najmala, 613-709-5897)",
@@ -1757,7 +617,7 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
     },
     {
         "title": "Urban public transit, January 2026 (Marlene Simeus-Kabo, 613-951-3789)",
@@ -1767,6 +627,46 @@
         "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
         "topic": "General Stats",
         "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 17:43:04"
+        "scraped_at": "2026-03-06 18:20:24"
+    },
+    {
+        "title": "View current release",
+        "start": "2026-03-25",
+        "country": "Australia",
+        "source": "ABS",
+        "url": "https://www.abs.gov.au/statistics/people/crime-and-justice/crime-victimisation/2023-24",
+        "topic": "General Stats",
+        "summary": "Australian Bureau of Statistics",
+        "scraped_at": "2026-03-06 18:20:24"
+    },
+    {
+        "title": "View current release",
+        "start": "2026-03-26",
+        "country": "Australia",
+        "source": "ABS",
+        "url": "https://www.abs.gov.au/statistics/labour/employment-and-unemployment/labour-force-australia-detailed/jan-2026",
+        "topic": "General Stats",
+        "summary": "Australian Bureau of Statistics",
+        "scraped_at": "2026-03-06 18:20:24"
+    },
+    {
+        "title": "View current release",
+        "start": "2026-03-27",
+        "country": "Australia",
+        "source": "ABS",
+        "url": "https://www.abs.gov.au/statistics/people/education/preschool-attendance/2024",
+        "topic": "General Stats",
+        "summary": "Australian Bureau of Statistics",
+        "scraped_at": "2026-03-06 18:20:24"
+    },
+    {
+        "title": "View current release",
+        "start": "2026-03-31",
+        "country": "Australia",
+        "source": "ABS",
+        "url": "https://www.abs.gov.au/statistics/people/population/regional-population/2023-24",
+        "topic": "General Stats",
+        "summary": "Australian Bureau of Statistics",
+        "scraped_at": "2026-03-06 18:20:24"
     }
 ]

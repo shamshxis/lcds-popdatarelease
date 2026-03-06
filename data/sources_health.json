@@ -1,0 +1,32 @@
+{
+    "ABS (Australia)": {
+        "status": "ok",
+        "last_run": "2026-03-06 18:20:24",
+        "count": 21
+    },
+    "Eurostat (EU)": {
+        "status": "warning",
+        "last_run": "2026-03-06 18:20:24",
+        "error": "Zero items found"
+    },
+    "CDC (USA)": {
+        "status": "ok",
+        "last_run": "2026-03-06 18:20:24",
+        "count": 2
+    },
+    "StatCan (Canada)": {
+        "status": "ok",
+        "last_run": "2026-03-06 18:20:24",
+        "count": 54
+    },
+    "ONS (UK)": {
+        "status": "warning",
+        "last_run": "2026-03-06 18:20:24",
+        "error": "Zero items found"
+    },
+    "Destatis (Germany)": {
+        "status": "warning",
+        "last_run": "2026-03-06 18:20:24",
+        "error": "Zero items found"
+    }
+}
