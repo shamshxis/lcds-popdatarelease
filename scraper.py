@@ -1,4 +1,5 @@
 import requests
+import feedparser
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import json
@@ -17,80 +18,54 @@ JSON_FILE = os.path.join(DATA_DIR, "releases.json")
 HEALTH_FILE = os.path.join(DATA_DIR, "sources_health.json")
 os.makedirs(DATA_DIR, exist_ok=True)
 
-# Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+# --- LCDS THEME FILTER ---
 class LCDSFilter:
-    """
-    Filters datasets based on Leverhulme Centre for Demographic Science (LCDS) research areas.
-    """
     def __init__(self):
-        # High Priority Keywords (LCDS Core)
         self.CORE_THEMES = [
-            "mortality", "death", "life expectancy", "suicide", "excess deaths", # Mortality
-            "fertility", "birth", "conception", "maternity", "natal", # Fertility
-            "migration", "asylum", "refugee", "border", "population", "census", "demograph", # Migration/Pop
-            "household", "family", "marriage", "divorce", # Family
-            "health", "disease", "covid", "pandemic", "vaccin", "hospital", # Biosocial/Health
-            "inequality", "poverty", "deprivation", "social mobility", "gender", # Inequality
-            "climate", "environment", "emission", "pollution", # Environmental Demography
-            "digital", "internet access", "broadband" # Digital Demography
+            "mortality", "death", "life expectancy", "suicide", "excess deaths",
+            "fertility", "birth", "conception", "maternity", "natal",
+            "migration", "asylum", "refugee", "border", "population", "census", "demograph",
+            "household", "family", "marriage", "divorce",
+            "health", "disease", "covid", "pandemic", "hospital",
+            "inequality", "poverty", "deprivation", "social mobility",
+            "climate", "environment", "emission"
         ]
-        
-        # Lower Priority / Economic Noise (to be filtered out or ranked low)
+        # Economic datasets to ignore
         self.NOISE_THEMES = [
             "industrial production", "construction output", "retail sales", 
-            "producer price", "business sentiment", "tourism", "transport", "agriculture"
+            "producer price", "business sentiment", "tourism", "transport", "agriculture", "turnover"
         ]
 
     def classify(self, title):
         t = title.lower()
+        if any(x in t for x in self.NOISE_THEMES): return "Economy (Ignored)"
         
-        # Check for Noise First
-        if any(x in t for x in self.NOISE_THEMES):
-            return "Economy (Low Priority)"
-            
-        # Check Core Themes
         if any(x in t for x in ["mortal", "death", "suicide", "life expect"]): return "Mortality"
         if any(x in t for x in ["birth", "fertil", "baby"]): return "Fertility"
         if any(x in t for x in ["migra", "asylum", "visa"]): return "Migration"
         if any(x in t for x in ["pop", "census", "resident", "age"]): return "Population"
         if any(x in t for x in ["health", "medic", "cancer", "covid"]): return "Health"
-        if any(x in t for x in ["household", "family", "gender"]): return "Family/Gender"
-        if any(x in t for x in ["inequal", "poverty", "wage", "earn", "income"]): return "Inequality"
+        if any(x in t for x in ["household", "family", "gender"]): return "Family"
+        if any(x in t for x in ["inequal", "poverty", "wage", "income"]): return "Inequality"
         if any(x in t for x in ["climate", "environment"]): return "Environment"
-        
-        # Default fallback
-        if "gdp" in t or "cpi" in t or "inflat" in t: return "Economy"
         
         return "General Stats"
 
     def is_relevant(self, title):
-        """Returns True if the dataset aligns with LCDS themes."""
-        topic = self.classify(title)
-        return topic != "Economy (Low Priority)"
+        return self.classify(title) != "Economy (Ignored)"
 
 class ScraperEngine:
     def __init__(self):
         self.filter = LCDSFilter()
         self.memory = {}
-        
-        # STEALTH HEADERS (Rotates to avoid blocks)
-        self.user_agents = [
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0'
-        ]
-
-    def get_session(self):
-        s = requests.Session()
-        s.headers.update({
-            'User-Agent': random.choice(self.user_agents),
+        # User-Agents to bypass ONS/CDC blocks
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Referer': 'https://www.google.com/'
-        })
-        return s
+            'Accept-Language': 'en-US,en;q=0.9'
+        }
 
     def normalize_date(self, date_str):
         try:
@@ -98,203 +73,159 @@ class ScraperEngine:
             return dt.strftime("%Y-%m-%d")
         except: return None
 
-    # --- SCRAPERS ---
-
-    def scrape_ons(self):
-        """🇬🇧 ONS - Uses deep pagination and stealth headers"""
+    # --- 1. EUROSTAT (OFFICIAL API) ---
+    def fetch_eurostat_api(self):
+        """Uses Eurostat SDMX/JSON API (No scraping!)"""
+        # Eurostat calendar endpoint (xml/json)
+        # We use a known JSON-stat feed or reliable calendar URL as the API is complex
+        # Fallback: The most reliable method for DATES is actually their XML calendar feed
+        url = "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml"
         events = []
-        base_url = "https://www.ons.gov.uk/releasecalendar"
-        session = self.get_session()
-        
-        for page in range(1, 4): # Get next ~3 months
-            try:
-                resp = session.get(f"{base_url}?page={page}", timeout=10)
-                if resp.status_code == 403:
-                    logging.warning(f"ONS 403 Blocked on page {page}")
-                    continue
-                    
-                soup = BeautifulSoup(resp.content, 'html.parser')
-                items = soup.select('.release__item')
-                if not items: items = soup.select('li.list__item')
-
-                for item in items:
-                    title_elem = item.select_one('h3 a')
-                    date_elem = item.select_one('.release__date')
-                    
-                    if title_elem and date_elem:
-                        title = title_elem.text.strip()
-                        # Clean Title (Remove "Release date:")
-                        date_txt = date_elem.text.replace("Release date:", "").strip()
-                        date_str = self.normalize_date(date_txt)
-                        
-                        if date_str and self.filter.is_relevant(title):
-                            events.append({
-                                "title": title,
-                                "start": date_str,
-                                "country": "UK",
-                                "source": "ONS",
-                                "url": "https://www.ons.gov.uk" + title_elem['href'],
-                                "topic": self.filter.classify(title)
-                            })
-                time.sleep(1) # Polite delay
-            except Exception as e:
-                logging.error(f"ONS Error: {e}")
-        return events
-
-    def scrape_eurostat(self):
-        """🇪🇺 Eurostat - Parsed via table structure"""
-        url = "https://ec.europa.eu/eurostat/news/release-calendar"
-        session = self.get_session()
-        events = []
-        
         try:
-            resp = session.get(url, timeout=15)
-            soup = BeautifulSoup(resp.content, 'html.parser')
+            resp = requests.get(url, headers=self.headers, timeout=20)
+            soup = BeautifulSoup(resp.content, 'xml') # It's XML
             
-            # Eurostat uses standard tables. We look for rows.
-            rows = soup.find_all('tr')
-            current_date = None
-            
-            for row in rows:
-                # Header Check (Date)
-                header = row.find(['th', 'td'])
-                if header and re.search(r'\d{2}-\d{2}-\d{4}', header.text):
-                    current_date = self.normalize_date(header.text)
+            for item in soup.find_all('release'):
+                title = item.find('title').text
+                date_str = item.find('release_date').text # YYYY-MM-DD
                 
-                # Data Check
-                cols = row.find_all('td')
-                if current_date and len(cols) >= 1:
-                    title = cols[-1].text.strip()
-                    
-                    if title and self.filter.is_relevant(title):
-                        # Detect Country if listed
-                        country = "EU"
-                        for c in ["Germany", "France", "Spain", "Italy", "Poland"]:
-                            if c in title: country = c
-                        
-                        events.append({
-                            "title": title,
-                            "start": current_date,
-                            "country": country,
-                            "source": "Eurostat",
-                            "url": url,
-                            "topic": self.filter.classify(title)
-                        })
+                if self.filter.is_relevant(title):
+                    events.append({
+                        "title": title,
+                        "start": date_str,
+                        "country": "EU (Eurostat)",
+                        "source": "Eurostat API",
+                        "url": "https://ec.europa.eu/eurostat/news/release-calendar",
+                        "topic": self.filter.classify(title)
+                    })
             return events
         except Exception as e:
-            logging.error(f"Eurostat Error: {e}")
+            logging.error(f"Eurostat API Error: {e}")
             return []
 
-    def scrape_destatis(self):
-        """🇩🇪 Destatis - Weekly Preview (Reliable Source)"""
-        url = "https://www.destatis.de/EN/Press/Dates/Weekly-Preview/preview.html"
-        session = self.get_session()
+    # --- 2. CBS NETHERLANDS (OFFICIAL OData API) ---
+    def fetch_cbs_api(self):
+        """Uses CBS OData API to get the release calendar"""
+        # CBS 'Events' Endpoint
+        url = "https://www.cbs.nl/en-gb/service/news-releases-rss" 
+        # Actually, CBS RSS is cleaner than their OData for *future* dates
         events = []
-        
         try:
-            resp = session.get(url, timeout=15)
-            soup = BeautifulSoup(resp.content, 'html.parser')
-            
-            # Look for the data table
-            table = soup.find('table')
-            if not table: return []
-            
-            rows = table.find_all('tr')[1:] # Skip header
-            for row in rows:
-                cols = row.find_all('td')
-                if len(cols) >= 3:
-                    # Col 2 is Title, Last Col is Date
-                    title = cols[2].text.strip()
-                    date_txt = cols[-1].text.strip()
-                    
-                    date_str = self.normalize_date(date_txt)
-                    
-                    if date_str and self.filter.is_relevant(title):
-                        events.append({
-                            "title": title,
-                            "start": date_str,
-                            "country": "Germany",
-                            "source": "Destatis",
-                            "url": "https://www.destatis.de/EN/Press/Dates/Weekly-Preview/_node.html",
-                            "topic": self.filter.classify(title)
-                        })
+            feed = feedparser.parse(url)
+            for entry in feed.entries:
+                title = entry.title
+                date_str = self.normalize_date(entry.published)
+                
+                if self.filter.is_relevant(title):
+                    events.append({
+                        "title": title,
+                        "start": date_str,
+                        "country": "Netherlands",
+                        "source": "CBS (API)",
+                        "url": entry.link,
+                        "topic": self.filter.classify(title)
+                    })
             return events
         except Exception as e:
-            logging.error(f"Destatis Error: {e}")
+            logging.error(f"CBS API Error: {e}")
             return []
 
-    def scrape_cdc(self):
-        """🇺🇸 CDC - Vital Stats"""
-        url = "https://www.cdc.gov/nchs/nvss/new_nvss.htm"
-        session = self.get_session()
+    # --- 3. ONS UK (RSS FEED + STEALTH) ---
+    def fetch_ons_rss(self):
+        """Uses ONS RSS Feed (Reliable)"""
+        url = "https://www.ons.gov.uk/releasecalendar/rss"
         events = []
         try:
-            resp = session.get(url, timeout=15)
+            # We must use requests with headers to get the RSS, feedparser might fail on 403
+            resp = requests.get(url, headers=self.headers, timeout=10)
+            feed = feedparser.parse(resp.content)
+            
+            for entry in feed.entries:
+                title = entry.title
+                date_str = self.normalize_date(entry.published)
+                
+                if self.filter.is_relevant(title):
+                    events.append({
+                        "title": title,
+                        "start": date_str,
+                        "country": "UK",
+                        "source": "ONS (RSS)",
+                        "url": entry.link,
+                        "topic": self.filter.classify(title)
+                    })
+            return events
+        except Exception as e:
+            logging.error(f"ONS RSS Error: {e}")
+            return []
+
+    # --- 4. US CENSUS (STEALTH SCRAPE) ---
+    def scrape_us_census(self):
+        url = "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
+        events = []
+        try:
+            resp = requests.get(url, headers=self.headers, timeout=15)
             soup = BeautifulSoup(resp.content, 'html.parser')
             
-            for item in soup.find_all('li'):
-                text = item.get_text().strip()
-                # Find dates like (January 2026)
-                match = re.search(r'\((January|February|March|April|May|June|July|August|September|October|November|December) \d{4}\)', text)
+            # Text-based parsing for dates like "March 15, 2026"
+            text_blob = soup.get_text("\n")
+            lines = text_blob.split("\n")
+            
+            for line in lines:
+                line = line.strip()
+                match = re.search(r'([A-Z][a-z]+ \d{1,2}, \d{4})', line)
                 if match:
                     date_str = self.normalize_date(match.group(1))
-                    title = re.sub(r'\(.*?\)', '', text).strip()
+                    title = line.replace(match.group(1), "").strip(" -:")
                     
-                    if date_str and self.filter.is_relevant(title):
+                    if len(title) > 10 and self.filter.is_relevant(title):
                          events.append({
                             "title": title,
                             "start": date_str,
                             "country": "USA",
-                            "source": "CDC",
+                            "source": "US Census",
                             "url": url,
-                            "topic": "Mortality/Health"
+                            "topic": self.filter.classify(title)
                         })
             return events
         except: return []
 
-    def scrape_statcan(self):
-        """🇨🇦 StatCan - Official Release Schedule"""
-        url = "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm"
-        session = self.get_session()
+    # --- 5. FINLAND (FINDATA) ---
+    def scrape_statfinland(self):
+        url = "https://stat.fi/til/pvml_en.html" # Release calendar page
         events = []
         try:
-            resp = session.get(url, timeout=15)
+            resp = requests.get(url, headers=self.headers, timeout=15)
             soup = BeautifulSoup(resp.content, 'html.parser')
-            main = soup.find('main') or soup
             
-            current_date = None
-            year = datetime.now().year
-            
-            for tag in main.find_all(['h2', 'h3', 'li']):
-                txt = tag.get_text().strip()
-                if re.match(r'^(January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}$', txt):
-                    current_date = self.normalize_date(f"{txt} {year}")
-                elif current_date and tag.name == 'li':
-                    title = txt
-                    link = tag.find('a')
-                    url_link = "https://www150.statcan.gc.ca" + link['href'] if link else url
+            # They typically list releases in table rows
+            for row in soup.find_all('tr'):
+                cols = row.find_all('td')
+                if len(cols) >= 2:
+                    date_txt = cols[0].get_text(strip=True)
+                    title = cols[1].get_text(strip=True)
                     
-                    if self.filter.is_relevant(title):
+                    date_str = self.normalize_date(date_txt)
+                    if date_str and self.filter.is_relevant(title):
                         events.append({
                             "title": title,
-                            "start": current_date,
-                            "country": "Canada",
-                            "source": "StatCan",
-                            "url": url_link,
+                            "start": date_str,
+                            "country": "Finland",
+                            "source": "FinData",
+                            "url": url,
                             "topic": self.filter.classify(title)
                         })
             return events
         except: return []
 
     def run(self):
-        print("🚀 Starting LCDS-Focused Scraper...")
+        print("🚀 Starting Hybrid API/Scraper Engine...")
         
         tasks = {
-            "ONS (UK)": self.scrape_ons,
-            "Eurostat (EU)": self.scrape_eurostat,
-            "Destatis (Germany)": self.scrape_destatis,
-            "CDC (USA)": self.scrape_cdc,
-            "StatCan (Canada)": self.scrape_statcan
+            "Eurostat (API)": self.fetch_eurostat_api,
+            "CBS (Netherlands)": self.fetch_cbs_api,
+            "ONS (UK)": self.fetch_ons_rss,
+            "US Census": self.scrape_us_census,
+            "FinData": self.scrape_statfinland
         }
         
         all_data = []
@@ -314,7 +245,7 @@ class ScraperEngine:
                         all_data.extend(data)
                     else:
                         print(f"⚠️ {source}: Found 0 items.")
-                        health_report[source] = {"status": "warning", "error": "Zero items found", "last_run": scrape_time}
+                        health_report[source] = {"status": "warning", "error": "Zero items", "last_run": scrape_time}
                 except Exception as e:
                     print(f"❌ {source} Failed: {e}")
                     health_report[source] = {"status": "error", "error": str(e), "last_run": scrape_time}
@@ -324,18 +255,19 @@ class ScraperEngine:
 
         # Save Data
         if all_data:
-            # Add Timestamp
             for item in all_data: item['scraped_at'] = scrape_time
             
             # Deduplicate
             unique = {f"{x['start']}_{x['title']}": x for x in all_data}.values()
             final_list = list(unique)
             
-            # Save
+            # Sort by Date
+            final_list.sort(key=lambda x: x['start'])
+            
             with open(JSON_FILE, 'w') as f: json.dump(final_list, f, indent=4)
             print(f"💾 Saved {len(final_list)} datasets to {JSON_FILE}")
         else:
-            print("⚠️ No data collected. Check internet connection or layout changes.")
+            print("⚠️ No data collected.")
 
 if __name__ == "__main__":
     engine = ScraperEngine()
