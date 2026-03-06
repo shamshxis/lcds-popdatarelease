@@ -2,16 +2,14 @@ name: Global PopData Scraper
 
 on:
   schedule:
-    # Run every 6 hours (00:00, 06:00, 12:00, 18:00 UTC)
     - cron: '0 0,6,12,18 * * *'
-  # Allows you to manually trigger it from the "Actions" tab for testing
   workflow_dispatch:
 
 jobs:
   scrape-and-update:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Crucial: Allows the bot to commit changes back to the repo
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -22,6 +20,12 @@ jobs:
         with:
           python-version: '3.10'
 
+      # --- NEW STEP: Install Chrome & Driver System-Wide ---
+      - name: Setup Chrome & ChromeDriver
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -34,22 +38,11 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
-          
-          # 1. Stash changes (save the new data temporarily)
-          git add data/releases.json data/releases.csv data/sources_health.json
+          git add data/releases.json data/releases.csv data/sources_health.json || true
           git stash
-          
-          # 2. Pull latest changes from remote (rebase to keep history clean)
           git pull --rebase origin main
-          
-          # 3. Apply our new data back on top
-          git stash pop || echo "No stash found or conflict ignored"
-          
-          # 4. Add files again (in case stash pop didn't stage them)
-          git add data/releases.json data/releases.csv data/sources_health.json
-          
-          # 5. Commit and Push
-          # Only commit if there are actual changes
+          git stash pop || echo "No stash to pop"
+          git add data/releases.json data/releases.csv data/sources_health.json || true
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
