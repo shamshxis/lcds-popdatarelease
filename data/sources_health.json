@@ -1,27 +1,27 @@
 {
-    "CDC (USA)": {
-        "status": "warning",
-        "error": "Zero items found",
-        "last_run": "2026-03-06 18:30:34"
+    "US Census": {
+        "status": "ok",
+        "count": 1,
+        "last_run": "2026-03-06 18:35:12"
     },
-    "Eurostat (EU)": {
+    "Eurostat (API)": {
         "status": "warning",
-        "error": "Zero items found",
-        "last_run": "2026-03-06 18:30:34"
-    },
-    "StatCan (Canada)": {
-        "status": "warning",
-        "error": "Zero items found",
-        "last_run": "2026-03-06 18:30:34"
+        "error": "Zero items",
+        "last_run": "2026-03-06 18:35:12"
     },
     "ONS (UK)": {
         "status": "warning",
-        "error": "Zero items found",
-        "last_run": "2026-03-06 18:30:34"
+        "error": "Zero items",
+        "last_run": "2026-03-06 18:35:12"
     },
-    "Destatis (Germany)": {
+    "CBS (Netherlands)": {
         "status": "warning",
-        "error": "Zero items found",
-        "last_run": "2026-03-06 18:30:34"
+        "error": "Zero items",
+        "last_run": "2026-03-06 18:35:12"
+    },
+    "FinData": {
+        "status": "ok",
+        "count": 211,
+        "last_run": "2026-03-06 18:35:12"
     }
 }

@@ -1,672 +1,1910 @@
 [
     {
-        "title": "Changes in Births by Month: United States, January 2019\u2013June 2021 [PDF \u2013 572 KB]",
-        "start": "2019-01-06",
-        "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "Births",
-        "summary": "CDC Vital Statistics",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "First registrations of motor vehicles 2021, SeptemberIn September 2021 the number of new passenger cars registered was 6,534",
+        "start": "2021-10-06",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Provisional death counts, January 2024 to December 2025 (Owen Philips, 613-371-5781)",
-        "start": "2026-03-12",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Mortality",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Culture satellite accounts 2019Share of culture in the economy decreased further in 2019",
+        "start": "2021-10-07",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Annual update of the Longitudinal Immigration Database Express Entry module, 2024 (John Leung, 343-575-3268)",
-        "start": "2026-03-16",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Migration",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Merchant Fleet 2021, SeptemberVessels in the regular merchant fleet numbered 675 in September 2021",
+        "start": "2021-10-07",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Canada's population estimates, fourth quarter 2025 (Stacey Hallman, 343-597-5447)",
-        "start": "2026-03-18",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
+        "title": "New orders in manufacturing 2021, AugustNew orders in manufacturing grew by 47.7 per cent year-on-year in August",
+        "start": "2021-10-08",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Volume index of industrial output 2021, AugustIndustrial output grew in August both from the previous month and from one year back",
+        "start": "2021-10-08",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Structure of Earnings 2020Median earnings of wage and salary earners were EUR 3,217 per month in 2020",
+        "start": "2021-10-11",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
         "topic": "Population",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Canadian Health Measures Survey: Non-environmental and environmental laboratory data, 2022 to 2024 (Janine Clarke, 343-597-8476)",
-        "start": "2026-03-10",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Health",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Balance of payments and international investment position 2021, AugustCurrent account in surplus in August, net capital outflow from Finland to abroad",
+        "start": "2021-10-13",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Functional health of Canadian adults, 2015 to 2024 (Gillian Smith, 647-454-0205)",
-        "start": "2026-03-16",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Health",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Consumer price index 2021, SeptemberInflation 2.5 per cent in September",
+        "start": "2021-10-14",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Health Reports, March 2026 (Janice Felman, 613-799-7746) Assessing obesity beyond body mass index: Integrating physiological and functional indicators of impairment in national health surveillance Validating the Warwick-Edinburgh Mental Well-being Scale for the positive mental health surveillance of adults in Canada",
-        "start": "2026-03-18",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Health",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Dwellings and housing conditions 2020Three out of five persons aged under 40 live in rented dwellings",
+        "start": "2021-10-14",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Canadian Social Environment Typology: A geographic classification tool to measure health and social inequalities in Canada, 2021 (Vijata Sharma, 403-464-1639)",
-        "start": "2026-03-19",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Health",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Subject choices of students 2020Share of pupils studying English continued growing in lower grades of comprehensive school",
+        "start": "2021-10-14",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Job vacancies after the peak \u2013 a look at the changing educational composition since 2022 (Joahnathan Bridekirk, 705-795-1226)",
-        "start": "2026-03-13",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Labor",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Wage and salary indices 2021, AugustWages and salaries sum grew by 7.3 per cent year-on-year in June to August",
+        "start": "2021-10-14",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Job vacancies, fourth quarter 2025 (Eesha Kirubaharan, 343-553-3893)",
-        "start": "2026-03-17",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Labor",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Building cost index 2021, SeptemberBuilding costs rose by 9.3 per cent in September",
+        "start": "2021-10-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Employer pension plans (trusteed pension funds), third quarter 2025 (Anna Twardowski, 613-296-7644)",
-        "start": "2026-03-17",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Labor",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Index of wage and salary earnings 2021, 3rd quarterWage and salary earners earnings for regular working hours rose by 2.4 percent in July-September",
+        "start": "2021-10-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Employment by industry in rural Canada: Interactive dashboard (Jacqueline Ha, 438-466-0671)",
-        "start": "2026-03-18",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Labor",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Productivity surveys 2020Labour productivity grew in the corona year 2020",
+        "start": "2021-10-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Farm product prices, January 2026 (Guiying Zhao, 613-851-5724)",
-        "start": "2026-03-10",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Economy",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Statistics on offences and coercive measures 2021, 3rd quarterNumber of sexual offences recorded grew by 20 per cent",
+        "start": "2021-10-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Electric Power Selling Price Index, January 2026 (Hussam Al-Husseini, 613-302-8342)",
-        "start": "2026-03-11",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Economy",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Trend Indicator of Output 2021, AugustOutput of the national economy grew in August",
+        "start": "2021-10-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "(lockup) Canadian international merchandise trade, January 2026 (Beno\u00eet Carri\u00e8re, 613-415-5305)",
-        "start": "2026-03-12",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Economy",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Employment 2019Large regional differences in the number of employed persons in industries with the highest and lowest pay levels in 2019",
+        "start": "2021-10-21",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Wholesale trade, January 2026 (Jeff Paul, 343-571-4172)",
-        "start": "2026-03-12",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Economy",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Enterprise openings and closures 2021, 2nd quarterNumber of enterprise openings grew by 23 per cent in the second quarter of 2021 from one year ago",
+        "start": "2021-10-21",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Canadian international trade in services, January 2026 (Alec Forbes, 343-575-1548)",
-        "start": "2026-03-12",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Economy",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Financial statement statistics on credit institutions 2021, 2nd quarterOperating profit of banks operating in Finland grew to EUR 1,4 billion in the second quarter of 2021",
+        "start": "2021-10-21",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Canadian Economic News, February 2026 (Sean Clarke, 613-850-5262)",
-        "start": "2026-03-12",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Economy",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Finnish Travel 2021, 14Domestic trips increased by nearly one third in the hot summer of 2021",
+        "start": "2021-10-21",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Infrastructure economic account, 2025 (S\u00e9bastien Faubert, 613-299-8650)",
-        "start": "2026-03-13",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Economy",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "General government deficit and debt 2020General government deficit 5.5 per cent and debt 69.5 per cent relative to GDP in 2020",
+        "start": "2021-10-21",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "(lockup) Consumer Price Index, February 2026 (Andrew Barclay, 613-404-1818)",
-        "start": "2026-03-16",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Economy",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Investment service companies 2021, 2nd quarterInvestment service companies commission income and operating profit continued to grow in the second quarter of 2021",
+        "start": "2021-10-21",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Inequality",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "National balance sheet and financial flow accounts, fourth quarter 2025 (Matthew Hoffarth, 613-852-4656)",
-        "start": "2026-03-16",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Economy",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Preliminary population statistics 2021, SeptemberBirth rate rose slightly from last year",
+        "start": "2021-10-21",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Fertility",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Telecommunications services producer price indexes, fourth quarter 2025 (Hussam Al-Husseini, 613-302-8342)",
-        "start": "2026-03-18",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Economy",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Rents of dwellings 2021, 3rd quarterNon-subsidised rents increased in July to September",
+        "start": "2021-10-21",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "(lockup) Retail trade, January 2026 (Erika Rodrigues, 343-548-1606)",
-        "start": "2026-03-20",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Economy",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Statistics on road traffic accidents 2021, SeptemberRoad traffic accidents claimed 15 lives in September",
+        "start": "2021-10-21",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Industrial product and raw materials price indexes, February 2026 (Hussam Al-Husseini, 613-302-8342)",
-        "start": "2026-03-20",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Economy",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Deaths 2020Average life expectancy at birth was exactly 79 years for boys and 84.6 years for girls in 2020",
+        "start": "2021-10-22",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Mortality",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "New Housing Price Index, February 2026 (Hussam Al-Husseini, 613-302-8342)",
-        "start": "2026-03-20",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Economy",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Students and qualifications 2020Students in education leading to a qualification or degree number 1.3 million",
+        "start": "2021-10-22",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Reconciliation Tables: From Public Accounts of Canada to the Government Finance Statistics (Philippe Samborski, 343-224-7852)",
-        "start": "2026-03-20",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "Economy",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
+        "title": "Building and dwelling production 2021, AugustCubic volume covered of granted building permits lower in June to August than one year earlier",
+        "start": "2021-10-26",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
     },
     {
-        "title": "Trends in Characteristics of Mothers with Confirmed or Presumed COVID",
-        "start": "2020-07-06",
+        "title": "Labour force survey 2021, SeptemberGrowth in employment slowed down in September",
+        "start": "2021-10-26",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Consumer Confidence 2021, OctoberConsumer confidence fell but remained on a strong level in October",
+        "start": "2021-10-27",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Accommodation statistics 2021, SeptemberOvernight stays continued to recover in September 2021",
+        "start": "2021-10-28",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Enterprise openings and closures 2020Number of enterprise openings and closures increased in 2020 from one year ago",
+        "start": "2021-10-28",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Environmental protection expenditure accounts 2019Significant drop in environmental protection investments in 2019",
+        "start": "2021-10-28",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Environment",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Insurance Activities 2020Profits of insurance companies declined in 2020",
+        "start": "2021-10-28",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Prices of dwellings in housing companies 2021, SeptemberPrices of old dwellings in housing companies rose in the biggest towns in third quarter",
+        "start": "2021-10-28",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Research and development 2020Enterprises' research and development expenditure growing",
+        "start": "2021-10-28",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Consumption of hard coal 2021, SeptemberConsumption of hard coal increased by 4 per cent in January to September",
+        "start": "2021-10-29",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Energy use in manufacturing 2020Energy use in manufacturing decreased by 6 per cent in 2020",
+        "start": "2021-11-01",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Labour force survey 2020, 14Employment rate rose among mothers of small children",
+        "start": "2021-11-02",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Production of electricity and heat 2020Over one-half of Finland's electricity was produced with renewable energy sources in 2020",
+        "start": "2021-11-02",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Educational structure of population 2020Share of population with educational qualifications has multiplied in 50 years",
+        "start": "2021-11-03",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "First registrations of motor vehicles 2021, OctoberIn October 2021 the number of new passenger cars registered was 6,611",
+        "start": "2021-11-04",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Merchant Fleet 2021, OctoberVessels in the regular merchant fleet numbered 672 in October 2021",
+        "start": "2021-11-05",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "New orders in manufacturing 2021, SeptemberNew orders in manufacturing grew by 37.9 per cent year-on-year in September",
+        "start": "2021-11-10",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Volume index of industrial output 2021, SeptemberIndustrial output grew in September both from the previous month and from one year back",
+        "start": "2021-11-10",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Value of household production 2020Value of household production grew - some effects of the coronavirus period will be visible in calculations only later",
+        "start": "2021-11-11",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Family",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Balance of payments and international investment position 2021, SeptemberCurrent account in surplus in September, net capital inflow to Finland from abroad",
+        "start": "2021-11-12",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Wage and salary indices 2021, SeptemberWages and salaries sum grew by 6.0 per cent year-on-year in July to September",
+        "start": "2021-11-12",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Building cost index 2021, OctoberGrowth in building costs slowed down in October",
+        "start": "2021-11-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Consumer price index 2021, OctoberInflation 3.2 per cent in October",
+        "start": "2021-11-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Job vacancy survey 2021, 3rd quarterClearly more open job vacancies in the third quarter than one year ago",
+        "start": "2021-11-16",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Trend Indicator of Output 2021, SeptemberOutput of the national economy grew in September",
+        "start": "2021-11-16",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Economy-wide material flow accounts 2020Mining of minerals and soil materials increased domestic material consumption in 2020",
+        "start": "2021-11-18",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Employment 2019Persons having become laid off or unemployed in the corona year 2020 by occupation",
+        "start": "2021-11-18",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Real estate prices 2021, 3rd quarterPrices of old single-family houses rose by 5.5 per cent in July to September from the previous year",
+        "start": "2021-11-18",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Family",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Building and dwelling production 2021, SeptemberCubic volume covered of granted building permits lower in July to September than one year earlier",
+        "start": "2021-11-23",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Labour force survey 2021, OctoberGrowth in employment strengthened in October",
+        "start": "2021-11-23",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Preliminary population statistics 2021, OctoberFinland's preliminary population figure 5,548,097 at the end of October",
+        "start": "2021-11-23",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Statistics on road traffic accidents 2021, OctoberRoad traffic accidents claimed 21 lives in October",
+        "start": "2021-11-23",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Accommodation statistics 2021, OctoberNights spent by residents increased in October 2021",
+        "start": "2021-11-25",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Consumer Confidence 2021, NovemberConsumer confidence has fallen slightly - inflation acceleration in sight",
+        "start": "2021-11-29",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Occupational accident statistics 2019Number of accidents at work 137,000 in Finland in 2019",
+        "start": "2021-11-30",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Prices of dwellings in housing companies 2021, OctoberSales of old dwellings in housing companies evened out in October",
+        "start": "2021-11-30",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Quarterly national accounts 2021, 3rd quarterGross domestic product grew by 0.8 per cent from the previous quarter",
+        "start": "2021-11-30",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Use of information and communications technology by individuals 2021E-commerce at a turning point",
+        "start": "2021-11-30",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Adult education of educational institutions 2020Number of participants in open university of applied sciences education continued growing in 2020",
+        "start": "2021-12-01",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Environmental goods and services sector 2020Manufacturing boosted growth in the environmental goods and services sector in 2020",
+        "start": "2021-12-02",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Environment",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Births 2020Turn in the birth rate was especially visible among persons aged over 30 and highly educated",
+        "start": "2021-12-03",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Fertility",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Mass media statistics 2020Mass media market contracted in 2020",
+        "start": "2021-12-03",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Use of information technology in enterprises 2021Sixteen per cent of enterprises use artificial intelligence",
+        "start": "2021-12-03",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "First registrations of motor vehicles 2021, NovemberIn November 2021 the number of new passenger cars registered was 6,676",
+        "start": "2021-12-07",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Merchant Fleet 2021, NovemberVessels in the regular merchant fleet numbered 669 in November 2021",
+        "start": "2021-12-08",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Energy prices 2021, 3rd quarterMonthly market price of electricity almost record high in the third quarter",
+        "start": "2021-12-09",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Entrance to education 2020Entrance to further studies by new passers of the matriculation examination was easier in 2020 than in the year before",
+        "start": "2021-12-09",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Labour cost index 2021, 3rd quarterPrivate sector cost of an hour worked increased by 4.2 per cent in July to September year-on-year",
+        "start": "2021-12-09",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Renovation building 2020Value of renovation projects of construction enterprises directed to buildings was EUR 7.7 billion in 2020",
+        "start": "2021-12-09",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Waste statistics 2020Amount of municipal waste continued growing in 2020 - most of waste was still recovered as energy",
+        "start": "2021-12-09",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Causes of death 2020No major changes in causes of death compared to the previous year",
+        "start": "2021-12-10",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Mortality",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "New orders in manufacturing 2021, OctoberNew orders in manufacturing grew by 16.0 per cent year-on-year in October",
+        "start": "2021-12-10",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Volume index of industrial output 2021, OctoberIndustrial output grew in October both from the previous month and from one year back",
+        "start": "2021-12-10",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Balance of payments and international investment position 2021, OctoberCurrent account in deficit in October, net capital inflow to Finland from abroad",
+        "start": "2021-12-13",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Consumer price index 2021, NovemberInflation 3.7 per cent in November",
+        "start": "2021-12-14",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Wage and salary indices 2021, OctoberWages and salaries sum grew by 5.6 per cent in August to October year-on-year",
+        "start": "2021-12-14",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Building cost index 2021, NovemberBuilding costs rose by 9.6 per cent in November, price of wood declining slowly",
+        "start": "2021-12-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Income distribution statistics 2020Income differentials decreased slightly in 2020",
+        "start": "2021-12-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Inequality",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Trend Indicator of Output 2021, OctoberOutput of the national economy grew year-on-year, decreased month-on-month",
+        "start": "2021-12-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Employment 2020Number of employed persons fell most among young students in 2020",
+        "start": "2021-12-16",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Energy consumption in households 2020Decrease in heating consumption covered the effect of remote work on energy consumption in households in 2020",
+        "start": "2021-12-16",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Family",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Energy supply and consumption 2020Finland exceeded its target for 2020 - share of renewable energy in final consumption rose to 44.6 per cent",
+        "start": "2021-12-16",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Financial statement statistics on credit institutions 2021, 3rd quarterOperating profit of banks operating in Finland grew to EUR 1.0 billion in the third quarter of 2021",
+        "start": "2021-12-16",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Greenhouse gases 2020Greenhouse gas emissions fell in 2020, international commitments attainable for 2013 to 2020",
+        "start": "2021-12-16",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Income distribution statistics 2020Corona virus stagnated the income development of household-dwelling units in large towns in Southern Finland",
+        "start": "2021-12-16",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Family",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Income distribution statistics 2020Number of persons at risk of poverty fell in 2020",
+        "start": "2021-12-16",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Inequality",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Investment service companies 2021, 3rd quarterInvestment service companies commission income and operating profit continued to grow in the third quarter of 2021",
+        "start": "2021-12-16",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Inequality",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Regional statistics on entrepreneurial activity 2020Establishments gross value of output contracted in 2020",
+        "start": "2021-12-16",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Structural business and financial statement statistics 2020Profitability of enterprises improved in manufacturing, trade and construction measured by operating margin in 2020",
+        "start": "2021-12-16",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Annual national accounts 2020Gross domestic product fell by 2.8 per cent in 2020",
+        "start": "2021-12-17",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Balance of payments and international investment position 2021, 43The current account was in surplus and the net international investment position strengthened in the third quarter of 2021",
+        "start": "2021-12-17",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "General government expenditure by function 2020Government expenditure grew strongly in 2020",
+        "start": "2021-12-17",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "General government revenue and expenditure by quarter 2021, 3rd quarterFinancial position of general government improved by EUR 1.8 billion from the quarter one year ago",
+        "start": "2021-12-17",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Indebtedness 2020Average indebtedness ratio of household dwelling units with housing loans 227 percent",
+        "start": "2021-12-17",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Index of real estate maintenance costs 2021, 3rd quarterReal estate maintenance costs rose by 4.3 per cent year-on-year",
+        "start": "2021-12-17",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "International trade in goods and services 2021, 3rd quarterGoods exports grew past pre-pandemic levels in the third quarter of 2021 but service exports did not",
+        "start": "2021-12-17",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Quarterly sector accounts 2021, 3rd quarterHouseholds saving rate declined in the third quarter",
+        "start": "2021-12-17",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Family",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Statistics on road traffic accidents 2021, NovemberRoad traffic accidents claimed 23 lives in November",
+        "start": "2021-12-17",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Energy supply and consumption 2021, 3rd quarterTotal energy consumption grew by 3 per cent in January to September",
+        "start": "2021-12-20",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Migration 2020Net immigration by Finnish citizens turned positive in 2020",
+        "start": "2021-12-20",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Migration",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Building and dwelling production 2021, OctoberCubic volume covered of granted building permits lower in August to October than one year earlier",
+        "start": "2021-12-21",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Financial accounts 2021, 3rd quarterHouseholds net financial assets increased in the third quarter of 2021",
+        "start": "2021-12-21",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Family",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "General government debt by quarter 2021, 3rd quarterGeneral government debt grew by EUR 1.4 billion in the third quarter of 2021",
+        "start": "2021-12-21",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "General government financial accounts 2021, 3rd quarterGeneral governments net financial assets increased in the third quarter of 2021",
+        "start": "2021-12-21",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Labour force survey 2021, NovemberEmployment increased and unemployment decreased in November",
+        "start": "2021-12-21",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Preliminary population statistics 2021, NovemberFinland's preliminary population figure 5,549,599 at the end of November",
+        "start": "2021-12-21",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Accommodation statistics 2021, NovemberOvernight stays decreased in November 2021",
+        "start": "2021-12-23",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Consumer Confidence 2021, DecemberConsumer confidence dropped well below zero before Christmas",
+        "start": "2021-12-27",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Prices of dwellings in housing companies 2021, NovemberPrices of old dwellings in housing companies rose in large towns in November",
+        "start": "2021-12-30",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Railway Statistics 2021Number of trips by train in passenger traffic increased by two per cent in the third quarter of 2021",
+        "start": "2021-12-30",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "First registrations of motor vehicles 2021, DecemberIn December 2021 the number of new passenger cars registered was 6,526",
+        "start": "2022-01-05",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "New orders in manufacturing 2021, NovemberNew orders in manufacturing grew by 38.5 per cent year-on-year in November",
+        "start": "2022-01-10",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Volume index of industrial output 2021, NovemberIndustrial output grew in November both from the previous month and from one year back",
+        "start": "2022-01-10",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Balance of payments and international investment position 2021, NovemberCurrent account in surplus in November, net capital inflow to Finland from abroad",
+        "start": "2022-01-12",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Merchant Fleet 2021, DecemberVessels in the regular merchant fleet numbered 669 in December 2021",
+        "start": "2022-01-12",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Building cost index 2021, DecemberBuilding costs rose by 10,2 per cent in December year-on-year",
+        "start": "2022-01-14",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Consumer price index 2021, DecemberInflation 3.5 per cent in December",
+        "start": "2022-01-14",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "County elections 2022A total of 10,584 candidates in County elections 2022",
+        "start": "2022-01-14",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Trend Indicator of Output 2021, NovemberOutput of the national economy grew in November",
+        "start": "2022-01-14",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Wage and salary indices 2021, NovemberWages and salaries sum grew by 5.4 per cent year-on-year in September to November",
+        "start": "2022-01-14",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Enterprise openings and closures 2021, 3rd quarterNumber of enterprise openings grew by 1,1 percent in the third quarter of 2021 from one year ago",
+        "start": "2022-01-18",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Statistics on offences and coercive measures 2021, 4th quarterNumber of offences against property decreased by 13.6 per cent",
+        "start": "2022-01-19",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Input-output 2019Share of imported products in intermediate consumption 27 per cent in 2019",
+        "start": "2022-01-20",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Rents of dwellings 2021, 4th quarterNon-subsidised rents increased in October to December",
+        "start": "2022-01-20",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Statistics on road traffic accidents 2020A total of 223 persons died in road traffic accidents in 2020",
+        "start": "2022-01-20",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Statistics on road traffic accidents 2021, DecemberRoad traffic accidents claimed 11 lives in December",
+        "start": "2022-01-20",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Transition from school to further education and work 2020Employment of recent graduates with initial vocational qualifications weakened by 8 percentage points",
+        "start": "2022-01-20",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Building and dwelling production 2021, NovemberCubic volume covered of granted building permits lower in September to November than one year earlier",
+        "start": "2022-01-25",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "County elections 2022County elections 2022, result of the preliminary calculation",
+        "start": "2022-01-25",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Labour force survey 2021, DecemberClearly more employed persons in December than one year before",
+        "start": "2022-01-25",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Consumer Confidence 2022, JanuaryConsumer confidence average in January",
+        "start": "2022-01-27",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Preliminary population statistics 2021, DecemberBirth rate rose from the previous year",
+        "start": "2022-01-27",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Fertility",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Income distribution statistics 2020Altogether 10.4 per cent of people living in rental dwellings burdened by housing costs in 2020",
+        "start": "2022-01-28",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Inequality",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Prices of dwellings in housing companies 2021, DecemberHousing market calmed down toward the end of year",
+        "start": "2022-01-28",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Consumption of hard coal 2021, DecemberConsumption of hard coal increased by 19 per cent in 2021",
+        "start": "2022-01-31",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "County elections 2022County elections 2022, result of the control calculation",
+        "start": "2022-02-01",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "First registrations of motor vehicles 2022, JanuaryIn January 2022 the number of new passenger cars registered was 7,881",
+        "start": "2022-02-04",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Index of wage and salary earnings 2021, 4th quarterWage and salary earners real earnings decreased by 1.1 per cent in October-December",
+        "start": "2022-02-04",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Merchant Fleet 2022, JanuaryVessels in the regular merchant fleet numbered 671 in January 2022",
+        "start": "2022-02-09",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "New orders in manufacturing 2021, DecemberNew orders in manufacturing grew by 19.2 per cent year-on-year in December",
+        "start": "2022-02-10",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Volume index of industrial output 2021, DecemberIndustrial output grew in December both from the previous month and from one year back",
+        "start": "2022-02-10",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Balance of payments and international investment position 2021, DecemberCurrent account in surplus in December, net capital inflow to Finland from abroad",
+        "start": "2022-02-11",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Wage and salary indices 2021, DecemberWages and salaries sum grew by 5.2 per cent in October to December year-on-year",
+        "start": "2022-02-14",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Building cost index 2022, JanuaryBuilding costs rose by 6,9 per cent in January year-on-year",
+        "start": "2022-02-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Trend Indicator of Output 2021, DecemberOutput of the national economy grew in December",
+        "start": "2022-02-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "County elections 2022Background analysis of candidates and elected councillors in County elections 2022",
+        "start": "2022-02-16",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Job vacancy survey 2021, 4th quarterClearly more open job vacancies in the last quarter than one year previously",
+        "start": "2022-02-17",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Statistics on road traffic accidents 2022, JanuaryRoad traffic accidents claimed 10 lives in January",
+        "start": "2022-02-17",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Consumer price index 2022, JanuaryInflation 4.4 per cent in January",
+        "start": "2022-02-18",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Providers of education and educational institutions 2021Number of comprehensive schools decreased further",
+        "start": "2022-02-18",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Real estate prices 2021, 4th quarterPrices of old single-family houses rose by 3.8 per cent year-on-year in October to December",
+        "start": "2022-02-18",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Family",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Building and dwelling production 2021, DecemberCubic volume covered of granted building permits lower in October to December than one year earlier",
+        "start": "2022-02-22",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Labour force survey 2022, JanuaryEmployment continued to grow in January",
+        "start": "2022-02-22",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Preliminary population statistics 2022, JanuaryFinland's preliminary population figure 5,549,807 at the end of January",
+        "start": "2022-02-22",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Government R&D funding in the state budget 2022RD funding grows in the 2022 budget",
+        "start": "2022-02-24",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Consumer Confidence 2022, FebruaryConsumer confidence continued to strengthen in February",
+        "start": "2022-02-25",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Merchant Fleet 2021Gross tonnage of the regular Finnish merchant fleet increased in 2021",
+        "start": "2022-02-25",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Prices of dwellings in housing companies 2022, JanuaryPrices of old dwellings in housing companies continued to rise in January",
+        "start": "2022-02-25",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Statistics on offences and coercive measures 2021, 14Number of coercive measures performed went down by 11.6 per cent",
+        "start": "2022-02-25",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Annual national accounts 2020Gross domestic product fell by 2.3 per cent in 2020",
+        "start": "2022-02-28",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Quarterly national accounts 2021, 4th quarterGross domestic product grew in the last quarter of 2021",
+        "start": "2022-02-28",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Motor vehicle stock 2021Vehicle stock grew in 2021",
+        "start": "2022-03-01",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Households' assets 2020Nearly every third person owned listed shares or mutual funds in 2020",
+        "start": "2022-03-02",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Family",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "First registrations of motor vehicles 2022, FebruaryIn February 2022 the number of new passenger cars registered was 6,303",
+        "start": "2022-03-04",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Merchant Fleet 2022, FebruaryVessels in the regular merchant fleet numbered 671 in February 2022",
+        "start": "2022-03-09",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Employment 2020Long-term unemployment grew in the corona year 2020",
+        "start": "2022-03-10",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Energy prices 2021, 4th quarterMonthly price of Nordic electricity rose record high in the last quarter of 2021",
+        "start": "2022-03-10",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "New orders in manufacturing 2022, JanuaryNew orders in manufacturing grew by 24.9 per cent year-on-year in January",
+        "start": "2022-03-10",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Volume index of industrial output 2022, JanuaryIndustrial output decreased month-on-month in January but increased year-on-year",
+        "start": "2022-03-10",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Balance of payments and international investment position 2022, JanuaryCurrent account was in surplus and net capital inflow to Finland from abroad in January",
+        "start": "2022-03-11",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Labour cost index 2021, 4th quarterPrivate sector cost of an hour worked increased by 3,9 per cent in October to December year-on-year",
+        "start": "2022-03-11",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Structure of Earnings 2020Managers wages and salaries vary most in the private sector",
+        "start": "2022-03-11",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Consumer price index 2022, FebruaryInflation 4.5 per cent in February",
+        "start": "2022-03-14",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Wage and salary indices 2022, JanuaryWages and salaries sum grew by 5.9 per cent in November to January year-on-year",
+        "start": "2022-03-14",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Annual national accounts 2021Gross domestic product grew by 3.5 cent in 2020",
+        "start": "2022-03-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Balance of payments and international investment position 2021, 44Current account was in surplus and the net international investment position strengthened in the fourth quarter of 2021",
+        "start": "2022-03-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "General government debt by quarter 2021, 4th quarterGeneral government debt decreased by EUR 1.8 billion in the fourth quarter of 2021",
+        "start": "2022-03-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "General government revenue and expenditure by quarter 2021, 4th quarterFinancial position of general government improved by EUR 4.5 billion from the quarter one year ago",
+        "start": "2022-03-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "International trade in goods and services 2021, 4th quarterFinland's international trade grew compared to the year before in the last quarter of 2021",
+        "start": "2022-03-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Productivity surveys 2020Labour productivity grew in the corona year 2020",
+        "start": "2022-03-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Quarterly sector accounts 2021, 4th quarterHouseholds saving rate fell in the fourth quarter",
+        "start": "2022-03-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Family",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Taxes and tax-like payments 2021Tax revenue grew by 8.7 per cent in 2021",
+        "start": "2022-03-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Trend Indicator of Output 2022, JanuaryOutput of the national economy grew year-on-year, decreased month-on-month",
+        "start": "2022-03-15",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Building cost index 2022, FebruaryBuilding costs rose by 7.5 per cent in February year-on-year",
+        "start": "2022-03-16",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Index of purchase prices of the means of agricultural production 2022, 1st quarterIndex of purchase prices of means of agricultural production rose by 22.4 per cent in January",
+        "start": "2022-03-16",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Discontinuation of education 2020Discontinuation of education increased in upper secondary level particularly in vocational education and decreased in tertiary level education in 2020",
+        "start": "2022-03-17",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Employment of students 2020Share of working students decreased in 2020",
+        "start": "2022-03-17",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Greenhouse gases 2020Finland has met its greenhouse gas emission reduction commitments",
+        "start": "2022-03-17",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Progress of studies 2020Completion within the target period of upper secondary education weakened and that of tertiary education improved in 2020",
+        "start": "2022-03-17",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Index of real estate maintenance costs 2021, 4th quarterReal estate maintenance costs rose by 5.6 per cent year-on-year",
+        "start": "2022-03-18",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Statistics on road traffic accidents 2022, FebruaryRoad traffic accidents claimed 10 lives in February",
+        "start": "2022-03-18",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Building and dwelling production 2022, JanuaryCubic volume covered of granted building permits decreased in November to January from one year back",
+        "start": "2022-03-22",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Labour force survey 2022, FebruaryEmployment continued to grow in February",
+        "start": "2022-03-22",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Preliminary population statistics 2022, FebruaryFinland's preliminary population figure 5,550,066 at the end of February",
+        "start": "2022-03-22",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Financial accounts 2021, 4th quarterHouseholds net financial assets increased in the fourth quarter of 2021",
+        "start": "2022-03-25",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Family",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "General government financial accounts 2021, 4th quarterGeneral governments net financial assets increased in the last quarter of 2021",
+        "start": "2022-03-25",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Consumer Confidence 2022, MarchConsumer confidence collapsed in March",
+        "start": "2022-03-28",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Statistics on the finances of agricultural and forestry enterprises 2020Average size of farms continued to grow",
+        "start": "2022-03-30",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Accommodation statistics 2022, FebruaryNumber of nights spent by tourists in February 2022 was still clearly lower than two years ago",
+        "start": "2022-03-31",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Population structure 2021Number of foreign-language speakers grew by over 25,000 persons",
+        "start": "2022-03-31",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Railway Statistics 2021Number of trips by train in passenger traffic increased by 13 per cent in the last quarter of 2021",
+        "start": "2022-03-31",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Students and qualifications 2021Comprehensive schools had 562,400 pupils in 2021",
+        "start": "2022-03-31",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Prices of dwellings in housing companies 2022, FebruaryPrices of old dwellings in housing companies rose in February",
+        "start": "2022-04-01",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "General Stats",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Statistics on living conditions 2021Share of households having had difficulties in making ends meet returned to the level prior to the corona pandemic in 2021",
+        "start": "2022-04-01",
+        "country": "Finland",
+        "source": "FinData",
+        "url": "https://stat.fi/til/pvml_en.html",
+        "topic": "Family",
+        "scraped_at": "2026-03-06 18:35:12"
+    },
+    {
+        "title": "Page Last Revised",
+        "start": "2026-03-05",
         "country": "USA",
-        "source": "CDC",
-        "url": "https://www.cdc.gov/nchs/nvss/new_nvss.htm",
-        "topic": "General Stats",
-        "summary": "CDC Vital Statistics",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Food services and drinking places, annual, 2024 (Larry Arbenser, 613-218-0504)",
-        "start": "2026-03-09",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Automotive equipment rentals and leasing, 2024 (Andrew Wade, 416-805-1744)",
-        "start": "2026-03-09",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Canadian Coroner and Medical Examiner Database, January 2006 to December 2025 (Maria Quadri, 647-938-4942)",
-        "start": "2026-03-09",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "View current release",
-        "start": "2026-03-10",
-        "country": "Australia",
-        "source": "ABS",
-        "url": "https://www.abs.gov.au/statistics/industry/building-and-construction/building-approvals-australia/jan-2026",
-        "topic": "General Stats",
-        "summary": "Australian Bureau of Statistics",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Annual Survey of Environmental Goods and Services, 2024 (final) (Sharon Lepage, 343-548-5689)",
-        "start": "2026-03-10",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Real estate agents and brokers, 2024 (Terilyn Ebert, 613-323-4694)",
-        "start": "2026-03-10",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Leading indicator of international arrivals to Canada, February 2026 (Laura Presley, 343-596-8260)",
-        "start": "2026-03-10",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "View current release",
-        "start": "2026-03-11",
-        "country": "Australia",
-        "source": "ABS",
-        "url": "https://www.abs.gov.au/statistics/labour/earnings-and-working-conditions/industrial-disputes-australia/sep-2025",
-        "topic": "General Stats",
-        "summary": "Australian Bureau of Statistics",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Business Counts in Rural and Small Town Canada: Interactive Dashboard, December 2025 (Stanley Yu Su, 613-296-6028)",
-        "start": "2026-03-11",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Business Conditions in Rural and Small Town Canada: Interactive Dashboard, first quarter 2026 (Jacqueline Ha, 438-466-0671)",
-        "start": "2026-03-11",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "View current release",
-        "start": "2026-03-12",
-        "country": "Australia",
-        "source": "ABS",
-        "url": "https://www.abs.gov.au/statistics/people/crime-and-justice/personal-fraud/2023-24",
-        "topic": "General Stats",
-        "summary": "Australian Bureau of Statistics",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Building permits, January 2026 (Malik Johnson-Clarke, 613-859-1439)",
-        "start": "2026-03-12",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Child care arrangements of children aged 6 to 12 years, 2025 (Sampson Reid, 343-553-7739)",
-        "start": "2026-03-12",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "New motor vehicle registrations, fourth quarter 2025 (Saman Rudgar, 343-552-6750)",
-        "start": "2026-03-12",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Canadian potato production, 2024 and 2025 (revised data) (Brad Mckay, 613-799-7634)",
-        "start": "2026-03-12",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "View current release",
-        "start": "2026-03-13",
-        "country": "Australia",
-        "source": "ABS",
-        "url": "https://www.abs.gov.au/statistics/labour/jobs/multiple-job-holders/sep-2025",
-        "topic": "General Stats",
-        "summary": "Australian Bureau of Statistics",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "(lockup) Labour Force Survey, February 2026 (Andrew Fields, 613-290-1655)",
-        "start": "2026-03-13",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Canada's international investment position, fourth quarter 2025 (Fran\u00e7ois Couture, 343-572-0825)",
-        "start": "2026-03-13",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Monthly Survey of Manufacturing, January 2026 (Javad Sadeghzadeh, 613-698-7324)",
-        "start": "2026-03-13",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Industrial capacity utilization rates, fourth quarter 2025 (S\u00e9bastien Faubert, 613-299-8650)",
-        "start": "2026-03-13",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Non-profit organizations in rural and small town Canada, 2023 (Jacqueline Ha, 438-466-0671)",
-        "start": "2026-03-13",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Crushing statistics of major oilseeds, Canada and United States, 2025 (Eric Davidson, 343-572-8254)",
-        "start": "2026-03-13",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Traffic Flow Dashboard (J\u00e9r\u00f4me Blanchet, 819-576-5502)",
-        "start": "2026-03-16",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "New motor vehicle sales, January 2026 (Andrew Dormer, 613-218-9925)",
-        "start": "2026-03-16",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "View current release",
-        "start": "2026-03-17",
-        "country": "Australia",
-        "source": "ABS",
-        "url": "https://www.abs.gov.au/statistics/industry/tourism-and-transport/overseas-arrivals-and-departures-australia/dec-2025",
-        "topic": "General Stats",
-        "summary": "Australian Bureau of Statistics",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Disability Measurement Technical Report (Carrly McDiarmid, 343-549-4469)",
-        "start": "2026-03-17",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "View current release",
-        "start": "2026-03-18",
-        "country": "Australia",
-        "source": "ABS",
-        "url": "https://www.abs.gov.au/statistics/people/crime-and-justice/recorded-crime-offenders/2023-24",
-        "topic": "General Stats",
-        "summary": "Australian Bureau of Statistics",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Canada's international transactions in securities, January 2026 (Natacha McGuire, 343-542-9305)",
-        "start": "2026-03-18",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "View current release",
-        "start": "2026-03-19",
-        "country": "Australia",
-        "source": "ABS",
-        "url": "https://www.abs.gov.au/statistics/labour/employment-and-unemployment/labour-force-australia/jan-2026",
-        "topic": "General Stats",
-        "summary": "Australian Bureau of Statistics",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Investment in building construction, January 2026 (Joshua Sun, 647-745-2631)",
-        "start": "2026-03-19",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Screen time and children's well-being: a longitudinal study, 2019 and 2023 (Cait Brunton, 613-413-6858)",
-        "start": "2026-03-19",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Monthly credit aggregates, January 2026 (Matthew Hoffarth, 613-852-4656)",
-        "start": "2026-03-19",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Municipal Operating Costs: Water, Waste, Recreation and Culture, 2020/2021 to 2023/2024 (Nicolas Courcy, 343-598-0622)",
-        "start": "2026-03-19",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Study: Satisfaction with time use, 2022 (Rachel Leistra, 343-576-6036)",
-        "start": "2026-03-19",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Monthly Energy Transportation and Storage Survey, January 2026 (Adam Najmala, 613-709-5897)",
-        "start": "2026-03-20",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "Urban public transit, January 2026 (Marlene Simeus-Kabo, 613-951-3789)",
-        "start": "2026-03-20",
-        "country": "Canada",
-        "source": "StatCan",
-        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
-        "topic": "General Stats",
-        "summary": "The Daily Release",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "View current release",
-        "start": "2026-03-25",
-        "country": "Australia",
-        "source": "ABS",
-        "url": "https://www.abs.gov.au/statistics/people/crime-and-justice/crime-victimisation/2023-24",
-        "topic": "General Stats",
-        "summary": "Australian Bureau of Statistics",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "View current release",
-        "start": "2026-03-26",
-        "country": "Australia",
-        "source": "ABS",
-        "url": "https://www.abs.gov.au/statistics/labour/employment-and-unemployment/labour-force-australia-detailed/jan-2026",
-        "topic": "General Stats",
-        "summary": "Australian Bureau of Statistics",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "View current release",
-        "start": "2026-03-27",
-        "country": "Australia",
-        "source": "ABS",
-        "url": "https://www.abs.gov.au/statistics/people/education/preschool-attendance/2024",
-        "topic": "General Stats",
-        "summary": "Australian Bureau of Statistics",
-        "scraped_at": "2026-03-06 18:20:24"
-    },
-    {
-        "title": "View current release",
-        "start": "2026-03-31",
-        "country": "Australia",
-        "source": "ABS",
-        "url": "https://www.abs.gov.au/statistics/people/population/regional-population/2023-24",
-        "topic": "General Stats",
-        "summary": "Australian Bureau of Statistics",
-        "scraped_at": "2026-03-06 18:20:24"
+        "source": "US Census",
+        "url": "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html",
+        "topic": "Population",
+        "scraped_at": "2026-03-06 18:35:12"
     }
 ]
