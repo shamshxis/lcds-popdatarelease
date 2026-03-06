@@ -15,6 +15,7 @@ from dateutil import parser as date_parser
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By  # <--- FIXED MISSING IMPORT
 from webdriver_manager.chrome import ChromeDriverManager
 
 # --- CONFIGURATION ---
@@ -22,10 +23,9 @@ DATA_DIR = "data"
 JSON_FILE = os.path.join(DATA_DIR, "releases.json")
 os.makedirs(DATA_DIR, exist_ok=True)
 
-# Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# --- 1. LCDS FILTER (Removes Economic Noise) ---
+# --- 1. LCDS FILTER ---
 class LCDSFilter:
     def __init__(self):
         self.NOISE = [
@@ -49,59 +49,114 @@ class LCDSFilter:
             if key in t: return topic
         return "General Demography"
 
-# --- 2. FEED AGENT (Reliable & Fast) ---
-class FeedAgent:
-    def __init__(self):
-        self.filter = LCDSFilter()
-        # Header to mimic a browser (avoids ONS 403 on RSS)
-        self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        }
-
     def normalize_date(self, date_str):
         try:
             return date_parser.parse(date_str, fuzzy=True).strftime("%Y-%m-%d")
         except: return None
 
-    def fetch(self, target):
+# --- 2. SPECIAL AGENTS (API/XML) ---
+class APIScraper:
+    def __init__(self):
+        self.filter = LCDSFilter()
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'
+        }
+
+    def scrape_ons_json(self):
+        """
+        ONS requires 'X-Requested-With: XMLHttpRequest' to return JSON.
+        Without it, they return the full HTML page (causing JSON errors).
+        """
+        url = "https://www.ons.gov.uk/releasecalendar/data?view=upcoming&size=50"
+        headers = self.headers.copy()
+        headers['X-Requested-With'] = 'XMLHttpRequest' # <--- THE SECRET KEY
+        
         events = []
-        name = target['name']
         try:
-            logging.info(f"📡 {name}: Fetching Feed...")
+            logging.info("🇬🇧 ONS: Hitting Hidden JSON API...")
+            resp = requests.get(url, headers=headers, timeout=15)
             
-            # Fetch content with headers (critical for ONS)
-            resp = requests.get(target['url'], headers=self.headers, timeout=15)
+            if resp.status_code != 200:
+                logging.error(f"❌ ONS Failed: Status {resp.status_code}")
+                return []
+                
+            data = resp.json()
+            # ONS JSON structure: {'result': {'results': [...]}}
+            results = data.get('result', {}).get('results', [])
             
-            # Parse
-            feed = feedparser.parse(resp.content)
-            
-            # If standard RSS parsing fails (empty entries), try manual XML
-            if not feed.entries and resp.status_code == 200:
-                logging.warning(f"⚠️ {name}: Feedparser found 0. Trying XML fallback...")
-                soup = BeautifulSoup(resp.content, 'xml')
-                for item in soup.find_all('item'):
-                    t = item.title.text
-                    topic = self.filter.classify(t)
+            for item in results:
+                title = item.get('description', {}).get('title')
+                date_raw = item.get('description', {}).get('releaseDate')
+                uri = item.get('uri')
+                
+                if title and date_raw:
+                    topic = self.filter.classify(title)
                     if topic:
-                        d = item.pubDate.text if item.pubDate else ""
-                        link = item.link.text if item.link else target['url']
-                        events.append({"title": t, "start": self.normalize_date(d), "country": target['country'], "source": name, "topic": topic, "url": link})
-            
-            # Standard RSS processing
-            for entry in feed.entries:
-                t = entry.title
-                topic = self.filter.classify(t)
-                if topic:
-                    d = self.normalize_date(entry.published)
-                    events.append({"title": t, "start": d, "country": target['country'], "source": name, "topic": topic, "url": entry.link})
-
-            logging.info(f"✅ {name}: Found {len(events)} items.")
-
+                        link = "https://www.ons.gov.uk" + uri
+                        events.append({
+                            "title": title, "start": self.filter.normalize_date(date_raw), 
+                            "country": "UK", "source": "ONS", "topic": topic, "url": link
+                        })
+            logging.info(f"✅ ONS: Found {len(events)} items.")
+            return events
         except Exception as e:
-            logging.error(f"❌ {name} Failed: {e}")
-        return events
+            logging.error(f"❌ ONS JSON Error: {e}")
+            return []
 
-# --- 3. SELENIUM AGENT (Fallback for US Census) ---
+    def scrape_eurostat_xml(self):
+        """Uses the Official XML Calendar (Not RSS)"""
+        url = "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml"
+        events = []
+        try:
+            logging.info("🇪🇺 Eurostat: Fetching XML Calendar...")
+            resp = requests.get(url, headers=self.headers, timeout=20)
+            soup = BeautifulSoup(resp.content, 'xml') # XML Parser
+            
+            # Eurostat XML structure: <release_calendar> ... <release> ... </release>
+            items = soup.find_all('release')
+            
+            for item in items:
+                # Iterate children to find title/date (structure varies slightly)
+                title = item.find('title').text if item.find('title') else ""
+                date_str = item.find('release_date').text if item.find('release_date') else ""
+                
+                topic = self.filter.classify(title)
+                if topic and date_str:
+                    events.append({
+                        "title": title, "start": self.filter.normalize_date(date_str), 
+                        "country": "EU", "source": "Eurostat", "topic": topic, 
+                        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
+                    })
+            logging.info(f"✅ Eurostat: Found {len(events)} items.")
+            return events
+        except Exception as e:
+            logging.error(f"❌ Eurostat XML Error: {e}")
+            return []
+
+# --- 3. RSS AGENT ---
+class RSSAgent:
+    def __init__(self):
+        self.filter = LCDSFilter()
+
+    def scrape_cdc(self):
+        url = "https://tools.cdc.gov/api/v2/resources/media/132608.rss"
+        events = []
+        try:
+            logging.info("🇺🇸 CDC: Checking Feed...")
+            feed = feedparser.parse(url)
+            for entry in feed.entries:
+                topic = self.filter.classify(entry.title)
+                if topic:
+                    d = self.filter.normalize_date(entry.published)
+                    events.append({
+                        "title": entry.title, "start": d, 
+                        "country": "USA", "source": "CDC", "topic": topic, "url": entry.link
+                    })
+            logging.info(f"✅ CDC: Found {len(events)} items.")
+            return events
+        except: return []
+
+# --- 4. SELENIUM AGENT (US Census Only) ---
 class SeleniumAgent:
     def __init__(self):
         self.filter = LCDSFilter()
@@ -113,77 +168,59 @@ class SeleniumAgent:
         options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         self.options = options
 
-    def scrape_text_scan(self, url):
-        """Dumps text and searches for dates. Robust against layout changes."""
+    def scrape_census_text(self):
+        """Scans US Census Page Text"""
+        url = "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
         driver = None
         events = []
         try:
-            # Driver Loader
+            # Robust Driver Loading
             try: driver = webdriver.Chrome(options=self.options)
             except: driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=self.options)
             
             logging.info(f"🌐 US Census: Scanning {url}")
             driver.get(url)
-            time.sleep(3)
+            time.sleep(4)
             
-            # Get raw text
+            # Get clean text
             text = driver.find_element(By.TAG_NAME, "body").text
             
             for line in text.split('\n'):
-                # Look for "March 12, 2026" pattern
                 match = re.search(r'([A-Z][a-z]+ \d{1,2}, \d{4})', line)
                 if match:
                     title = line.replace(match.group(0), "").strip(" -:")
                     topic = self.filter.classify(title)
-                    # Filter short garbage lines
                     if topic and len(title) > 10 and len(title) < 150:
-                        d_str = date_parser.parse(match.group(0)).strftime("%Y-%m-%d")
+                        d_str = self.filter.normalize_date(match.group(0))
                         events.append({
                             "title": title, "start": d_str, 
                             "country": "USA", "source": "US Census", 
                             "topic": topic, "url": url
                         })
-            
             logging.info(f"✅ US Census: Found {len(events)} items.")
-            
         except Exception as e:
             logging.error(f"❌ US Census Failed: {e}")
         finally:
             if driver: driver.quit()
         return events
 
-# --- ORCHESTRATOR ---
+# --- MAIN ---
 def run():
-    print("🚀 Starting Feed-First Engine...")
-    
-    # 1. RSS TARGETS (The Reliable Ones)
-    feed_targets = [
-        # ONS: The RSS feed is the most stable entry point (if headers are used)
-        {"name": "ONS (UK)", "url": "https://www.ons.gov.uk/releasecalendar/rss", "country": "UK"},
-        
-        # CDC: Your logs proved this works perfectly
-        {"name": "CDC (Vital Stats)", "url": "https://tools.cdc.gov/api/v2/resources/media/132608.rss", "country": "USA"},
-        
-        # CBS: Use their English News RSS. It contains release notifications.
-        {"name": "CBS (Netherlands)", "url": "https://www.cbs.nl/en-gb/service/news-releases-rss", "country": "Netherlands"},
-        
-        # Eurostat: Use their General News RSS. It lists major releases.
-        {"name": "Eurostat", "url": "https://ec.europa.eu/eurostat/cache/RSS/rss.xml", "country": "EU"}
-    ]
-
+    print("🚀 Starting Logic-Based Engine...")
     all_data = []
-
-    # Run Feeds
-    agent = FeedAgent()
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        futures = [executor.submit(agent.fetch, t) for t in feed_targets]
-        for f in concurrent.futures.as_completed(futures):
-            all_data.extend(f.result())
-
-    # Run Selenium (Only for US Census which has no feed)
-    sel_agent = SeleniumAgent()
-    census_data = sel_agent.scrape_text_scan("https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html")
-    all_data.extend(census_data)
+    
+    # 1. API & XML Sources (Fast & Reliable)
+    api = APIScraper()
+    all_data.extend(api.scrape_ons_json())       # Fixed ONS
+    all_data.extend(api.scrape_eurostat_xml())   # Fixed Eurostat
+    
+    # 2. RSS Sources
+    rss = RSSAgent()
+    all_data.extend(rss.scrape_cdc())
+    
+    # 3. Selenium Sources (Hard to scrape)
+    sel = SeleniumAgent()
+    all_data.extend(sel.scrape_census_text())    # Fixed Import Error
 
     # Save
     if all_data:
