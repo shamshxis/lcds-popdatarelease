@@ -1,0 +1,9 @@
+streamlit
+streamlit-calendar
+pandas
+requests
+beautifulsoup4
+schedule
+feedparser
+lxml
+python-dateutil
