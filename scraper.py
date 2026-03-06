@@ -13,8 +13,11 @@ from dateutil import parser as date_parser
 
 # --- 3rd Party Libs ---
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from duckduckgo_search import DDGS
 
@@ -58,10 +61,8 @@ class SearchScout:
     """Finds fresh URLs if hardcoded ones fail."""
     def find_calendar_url(self, domain, query):
         try:
-            # Random sleep to avoid throttling
             time.sleep(random.uniform(2, 4))
             with DDGS() as ddgs:
-                # "site:ons.gov.uk release calendar 2026"
                 dork = f"site:{domain} {query}"
                 results = list(ddgs.text(dork, max_results=2))
                 if results:
@@ -78,8 +79,8 @@ class SeleniumAgent:
         options.add_argument("--headless=new")
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
-        # Critical for GitHub Actions/Docker stability:
-        options.add_argument("--disable-dev-shm-usage") 
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--window-size=1920,1080")
         options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         self.options = options
 
@@ -89,17 +90,9 @@ class SeleniumAgent:
         except: return None
 
     def get_driver(self):
-        """
-        Robust driver loader: 
-        1. Tries system path first (Works on GitHub Actions)
-        2. Falls back to WebDriverManager (Works on Local Machine)
-        """
         try:
-            # Try generic Service (uses system PATH)
             return webdriver.Chrome(options=self.options)
         except:
-            # Fallback to Manager
-            logging.info("System driver not found, downloading via Manager...")
             service = Service(ChromeDriverManager().install())
             return webdriver.Chrome(service=service, options=self.options)
 
@@ -112,7 +105,6 @@ class SeleniumAgent:
             driver = self.get_driver()
             
             url = target.get('url')
-            # If no URL, ask the Scout
             if not url:
                 logging.info(f"🔎 {name}: Scouting for URL...")
                 scout = SearchScout()
@@ -125,24 +117,41 @@ class SeleniumAgent:
             logging.info(f"🌐 {name}: Visiting {url}")
             driver.get(url)
             
-            # Anti-Bot: Random wait + Scroll
-            time.sleep(random.uniform(3, 5)) 
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight/2);")
-            time.sleep(2)
-
-            soup = BeautifulSoup(driver.page_source, 'html.parser')
+            # --- ROBUST WAIT STRATEGY ---
+            wait = WebDriverWait(driver, 20) # Wait up to 20 seconds
             
-            # --- PARSING LOGIC (Custom per site) ---
+            # 1. ONS (UK) Logic
             if "ONS" in name:
-                for item in soup.select('.release__item'):
-                    t = item.select_one('h3').get_text(strip=True)
-                    topic = self.filter.classify(t)
-                    if topic:
-                        d_txt = item.select_one('.release__date').get_text(strip=True).replace("Release date:", "")
-                        link = "https://www.ons.gov.uk" + item.select_one('a')['href']
-                        events.append({"title": t, "start": self.normalize_date(d_txt), "country": "UK", "source": "ONS", "topic": topic, "url": link})
+                # Wait for ANY item to load
+                wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".release__item, .list__item, h3")))
+                
+                soup = BeautifulSoup(driver.page_source, 'html.parser')
+                # Try generic selectors if specific ones fail
+                items = soup.select('.release__item') or soup.select('.list__item')
+                
+                for item in items:
+                    t_elem = item.select_one('h3') or item.select_one('a')
+                    if t_elem:
+                        t = t_elem.get_text(strip=True)
+                        topic = self.filter.classify(t)
+                        if topic:
+                            d_elem = item.select_one('.release__date')
+                            if d_elem:
+                                d_txt = d_elem.get_text(strip=True).replace("Release date:", "")
+                                d_str = self.normalize_date(d_txt)
+                                link_tag = item.select_one('a')
+                                link = "https://www.ons.gov.uk" + link_tag['href'] if link_tag else url
+                                if d_str:
+                                    events.append({"title": t, "start": d_str, "country": "UK", "source": "ONS", "topic": topic, "url": link})
 
+            # 2. Eurostat Logic
             elif "Eurostat" in name:
+                # Wait for TABLE to load (crucial for JS sites)
+                wait.until(EC.presence_of_element_located((By.TAG_NAME, "table")))
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight/3);")
+                time.sleep(2)
+                
+                soup = BeautifulSoup(driver.page_source, 'html.parser')
                 for row in soup.find_all('tr'):
                     cols = row.find_all('td')
                     if len(cols) > 1:
@@ -150,9 +159,34 @@ class SeleniumAgent:
                         topic = self.filter.classify(t)
                         if topic:
                             d_str = self.normalize_date(row.get_text())
-                            if d_str: events.append({"title": t, "start": d_str, "country": "EU", "source": "Eurostat", "topic": topic, "url": url})
+                            if d_str: 
+                                events.append({"title": t, "start": d_str, "country": "EU", "source": "Eurostat", "topic": topic, "url": url})
 
+            # 3. CBS (Netherlands) Logic - MOVED TO SELENIUM
+            elif "CBS" in name:
+                # Wait for thumbnails or calendar items
+                wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".thumbnail, .overview-item")))
+                soup = BeautifulSoup(driver.page_source, 'html.parser')
+                
+                for item in soup.select('.thumbnail') + soup.select('.overview-item'):
+                    t_elem = item.select_one('h3') or item.select_one('h2')
+                    if t_elem:
+                        t = t_elem.get_text(strip=True)
+                        topic = self.filter.classify(t)
+                        if topic:
+                            time_tag = item.select_one('time')
+                            if time_tag:
+                                d_str = self.normalize_date(time_tag.get('datetime')) or self.normalize_date(time_tag.get_text())
+                                link_tag = item.select_one('a')
+                                link = "https://www.cbs.nl" + link_tag['href'] if link_tag else url
+                                if d_str:
+                                    events.append({"title": t, "start": d_str, "country": "Netherlands", "source": "CBS", "topic": topic, "url": link})
+
+            # 4. US Census Logic
             elif "Census" in name:
+                # Simple text extraction, no complex JS usually
+                time.sleep(3)
+                soup = BeautifulSoup(driver.page_source, 'html.parser')
                 text = soup.get_text("\n")
                 for line in text.split("\n"):
                     match = re.search(r'([A-Z][a-z]+ \d{1,2}, \d{4})', line)
@@ -167,8 +201,7 @@ class SeleniumAgent:
         except Exception as e:
             logging.error(f"❌ {name} Failed: {e}")
         finally:
-            if driver:
-                driver.quit()
+            if driver: driver.quit()
         return events
 
 # --- 4. RSS AGENT (Lightweight) ---
@@ -200,38 +233,34 @@ class RSSAgent:
 def run_parallel_scraper():
     print("🚀 Starting Multi-Agent System...")
     
-    # DEFINING TARGETS
+    # 1. SELENIUM TARGETS (JS Sites)
     selenium_targets = [
         {"name": "ONS (UK)", "domain": "ons.gov.uk", "search_query": "\"release calendar\" demography", "url": "https://www.ons.gov.uk/releasecalendar"},
         {"name": "Eurostat", "domain": "ec.europa.eu", "search_query": "release calendar", "url": "https://ec.europa.eu/eurostat/news/release-calendar"},
+        {"name": "CBS (Netherlands)", "domain": "cbs.nl", "search_query": "publication calendar", "url": "https://www.cbs.nl/en-gb/publication-calendar"},
         {"name": "US Census", "domain": "census.gov", "search_query": "upcoming releases", "url": "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"}
     ]
     
+    # 2. RSS TARGETS (Feed Sites)
     rss_targets = [
-        {"name": "CDC (Vital Stats)", "url": "https://tools.cdc.gov/api/v2/resources/media/132608.rss", "country": "USA"},
-        {"name": "CBS (Netherlands)", "url": "https://www.cbs.nl/en-gb/service/news-releases-rss", "country": "Netherlands"}
+        {"name": "CDC (Vital Stats)", "url": "https://tools.cdc.gov/api/v2/resources/media/132608.rss", "country": "USA"}
     ]
 
     all_data = []
 
-    # Parallel Execution Manager
-    # We use 3 workers for Selenium (Heavy) and 2 for RSS (Light)
+    # 3. EXECUTION
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        # Submit Selenium Tasks
         sel_agent = SeleniumAgent()
         sel_futures = [executor.submit(sel_agent.scrape, t) for t in selenium_targets]
         
-        # Submit RSS Tasks
         rss_agent = RSSAgent()
         rss_futures = [executor.submit(rss_agent.scrape, t) for t in rss_targets]
         
-        # Collect Results
         for future in concurrent.futures.as_completed(sel_futures + rss_futures):
             all_data.extend(future.result())
 
-    # Deduplication & Sorting
+    # 4. SAVE
     if all_data:
-        # Key = Date + First 10 chars of title (to avoid near-duplicates)
         unique = {f"{x['start']}_{x['title'][:15]}": x for x in all_data}.values()
         final_list = list(unique)
         final_list.sort(key=lambda x: x['start'])
