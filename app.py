@@ -4,173 +4,130 @@ import json
 import os
 import time
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 
-# --- Configuration ---
-st.set_page_config(layout="wide", page_title="Global Population Data Calendar", page_icon="🌍")
+# --- Page Config ---
+st.set_page_config(layout="wide", page_title="Global PopData Tracker", page_icon="🌍")
 
-DATA_DIR = "data"
-JSON_FILE = os.path.join(DATA_DIR, "releases.json")
-CSV_FILE = os.path.join(DATA_DIR, "releases.csv")
+DATA_FILE = os.path.join("data", "releases.json")
 
-# --- CSS Styling ---
+# --- CSS for Compact UI ---
 st.markdown("""
 <style>
-    .main-header {font-size: 2.5rem; font-weight: 700; color: #2c3e50; margin-bottom: 0px;}
-    .sub-header {font-size: 1.2rem; color: #7f8c8d; margin-bottom: 20px;}
-    .metric-card {background-color: #f8f9fa; border: 1px solid #e9ecef; padding: 15px; border-radius: 10px; text-align: center;}
-    /* Compact calendar styling for multi-month view */
-    .fc-col-header-cell-cushion { font-size: 0.8rem; }
-    .fc-daygrid-day-number { font-size: 0.8rem; }
+    .block-container {padding-top: 1rem; padding-bottom: 2rem;}
+    h1 {font-size: 1.8rem;}
+    .stMetric {background-color: #f0f2f6; padding: 10px; border-radius: 5px;}
+    div[data-testid="stExpander"] details summary p {font-weight: bold; font-size: 1.1rem;}
 </style>
 """, unsafe_allow_html=True)
 
-# --- Helpers ---
-@st.cache_data(ttl=3600)
+# --- Load Data ---
+@st.cache_data(ttl=600)
 def load_data():
-    """Safely load data with retries for atomic write collisions"""
-    retries = 3
-    for i in range(retries):
-        try:
-            if not os.path.exists(JSON_FILE):
-                return []
-            with open(JSON_FILE, 'r') as f:
-                return json.load(f)
-        except (json.JSONDecodeError, OSError):
-            time.sleep(0.1)
-    return []
+    if not os.path.exists(DATA_FILE): return []
+    with open(DATA_FILE, 'r') as f: return json.load(f)
 
-def get_color(source):
-    colors = {
-        "ONS": "#00664F",        # UK Green
-        "Eurostat": "#004494",   # EU Blue
-        "US Census": "#B31B1B",  # US Red
-        "UN Data": "#009EDB",    # UN Blue
-        "StatCan": "#FF0000",    # Canada Red
-    }
-    return colors.get(source, "#7f8c8d")
+raw_data = load_data()
 
-# --- Main App ---
+# --- Sidebar Controls ---
+st.sidebar.title("🌍 PopData Tracker")
 
-# 1. Header & Data Loading
-col1, col2 = st.columns([3, 1])
-with col1:
-    st.markdown('<div class="main-header">🌍 Global PopData Calendar</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Tracking Official Statistical Releases (ONS, Eurostat, UN, Census, etc.)</div>', unsafe_allow_html=True)
+# 1. Global Search (Powerful Filter)
+search_query = st.sidebar.text_input("🔍 Search Datasets", placeholder="e.g. Migration, CPI, Births...")
 
-data = load_data()
-
-# 2. Sidebar Filters & Download
-st.sidebar.header("🔍 Controls")
-
-# CSV Download Button
-if os.path.exists(CSV_FILE):
-    with open(CSV_FILE, "rb") as f:
-        st.sidebar.download_button(
-            label="📥 Download Offline Data (CSV)",
-            data=f,
-            file_name=f"pop_data_releases_{datetime.now().strftime('%Y%m%d')}.csv",
-            mime="text/csv"
-        )
-
-# Filters
-all_countries = sorted(list(set(d['country'] for d in data))) if data else []
-sel_country = st.sidebar.multiselect("Region/Country", all_countries, default=all_countries)
-
-all_topics = sorted(list(set(d['topic'] for d in data))) if data else []
-sel_topic = st.sidebar.multiselect("Dataset Topic", all_topics, default=all_topics)
+# 2. Filters
+all_countries = sorted(list(set(d['country'] for d in raw_data))) if raw_data else []
+sel_countries = st.sidebar.multiselect("Region", all_countries, default=all_countries)
 
 # Filter Logic
-filtered = [
-    d for d in data 
-    if (not sel_country or d['country'] in sel_country) 
-    and (not sel_topic or d['topic'] in sel_topic)
-]
+filtered_data = []
+if raw_data:
+    for d in raw_data:
+        # Check Country
+        if sel_countries and d['country'] not in sel_countries: continue
+        
+        # Check Search Query (Case Insensitive)
+        if search_query:
+            query = search_query.lower()
+            if query not in d['title'].lower() and query not in d['summary'].lower() and query not in d['topic'].lower():
+                continue
+        
+        filtered_data.append(d)
 
-if not data:
-    st.warning("⚠️ No data found. Please run scraper.py first.")
-    st.stop()
+# --- Layout ---
 
-# 3. Stats Row
-last_scraped = data[0].get('scraped_at', 'Unknown') if data else 'Unknown'
-
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Total Releases", len(filtered))
-c2.metric("Countries", len(set(d['country'] for d in filtered)))
-c3.metric("Next Release", min([d['start'] for d in filtered if d['start'] >= datetime.now().strftime("%Y-%m-%d")] + ["N/A"]))
-c4.metric("Last Updated", last_scraped)
+# Top Metrics
+if filtered_data:
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Upcoming Releases", len(filtered_data))
+    
+    # Next Release Logic
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    future = sorted([x for x in filtered_data if x['start'] >= today_str], key=lambda x: x['start'])
+    next_up = future[0] if future else None
+    
+    c2.metric("Next Key Date", next_up['start'] if next_up else "-")
+    c3.metric("Next Dataset", next_up['topic'] if next_up else "-")
+    c4.metric("Source", next_up['source'] if next_up else "-")
 
 st.divider()
 
-# 4. Calendar (6-Month View) & Details
-cal_col, list_col = st.columns([3, 1])  # Widen calendar column
+# Main View: Calendar + Details
+col_cal, col_list = st.columns([3, 1])
 
-with cal_col:
-    cal_events = []
-    for event in filtered:
-        cal_events.append({
-            "title": event['title'],
-            "start": event['start'],
-            "backgroundColor": get_color(event['source']),
-            "borderColor": get_color(event['source']),
-            "extendedProps": event
+with col_cal:
+    # Calendar Events
+    events = []
+    color_map = {"ONS": "#00664F", "Eurostat": "#004494", "US Census": "#B31B1B", "StatCan": "#FF0000"}
+    
+    for d in filtered_data:
+        events.append({
+            "title": f"{d['country']}: {d['title']}",
+            "start": d['start'],
+            "color": color_map.get(d['source'], "#555"),
+            "extendedProps": d
         })
-
-    # Calendar Options with Custom 6-Month View
-    cal_options = {
-        "headerToolbar": {
-            "left": "today prev,next",
-            "center": "title",
-            "right": "multiMonth6Month,dayGridMonth,listMonth" # Added custom view button
-        },
-        "initialView": "multiMonth6Month", # Default to 6-month view
-        "views": {
-            "multiMonth6Month": {
-                "type": "multiMonthYear",
-                "duration": {"months": 6},
-                "multiMonthMaxColumns": 3 # 3 cols x 2 rows = 6 months
-            }
-        },
-        "height": 800,
+    
+    # Compact Calendar Options
+    cal_ops = {
+        "headerToolbar": {"left": "prev,next today", "center": "title", "right": "dayGridMonth,listMonth"},
+        "initialView": "listMonth",  # Default to List View for readability
+        "height": 500,
+        "contentHeight": "auto"
     }
-    state = calendar(events=cal_events, options=cal_options, key="main_cal")
-
-with list_col:
-    st.subheader("📋 Dataset Details")
     
-    selected_event = None
+    state = calendar(events=events, options=cal_ops, key="cal")
+
+with col_list:
+    st.subheader("📌 Selected Details")
     if state.get("eventClick"):
-        selected_event = state["eventClick"]["event"]["extendedProps"]
-        st.info("👇 Selected from Calendar")
-    
-    if selected_event:
-        with st.container(border=True):
-            bg = get_color(selected_event['source'])
-            st.markdown(f"""
-            <div style="background-color:{bg}; color:white; padding:5px 10px; border-radius:5px; display:inline-block; margin-bottom:10px;">
-                {selected_event['source']}
-            </div>
-            """, unsafe_allow_html=True)
-            st.markdown(f"### {selected_event['title']}")
-            st.write(f"**Date:** {selected_event['start']}")
-            st.write(f"**Region:** {selected_event['country']}")
-            st.caption(selected_event['summary'])
-            st.markdown(f"[🔗 **Access Data**]({selected_event['url']})")
+        e = state["eventClick"]["event"]["extendedProps"]
+        st.info(f"**{e['title']}**")
+        st.write(f"📅 **Date:** {e['start']}")
+        st.write(f"🏛 **Source:** {e['source']}")
+        st.write(f"🏷 **Topic:** {e['topic']}")
+        st.caption(e['summary'])
+        st.link_button("🔗 Open Source", e['url'])
+    elif next_up:
+        st.success(f"🚀 **Next Up: {next_up['title']}**")
+        st.write(f"📅 {next_up['start']}")
+        st.caption(next_up['summary'])
+        st.link_button("🔗 Open Source", next_up['url'])
     else:
-        st.markdown("*Click on an event to view full details.*")
-        
-        # Show "Next Up" quick list if nothing selected
-        st.markdown("---")
-        st.markdown("**🔜 Upcoming Highlights**")
-        
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        upcoming = sorted([e for e in filtered if e['start'] >= today_str], key=lambda x: x['start'])[:5]
-        
-        for up in upcoming:
-            st.markdown(f"**{up['start']}** | {up['country']}")
-            st.caption(up['title'])
+        st.write("Select an event to see details.")
 
-# Manual Refresh
-if st.sidebar.button("🔄 Force Refresh"):
+# --- Data Grid (Power User View) ---
+st.subheader("📊 Data Grid")
+if filtered_data:
+    df = pd.DataFrame(filtered_data)[['start', 'country', 'source', 'title', 'topic', 'url']]
+    st.dataframe(
+        df, 
+        use_container_width=True, 
+        hide_index=True,
+        column_config={"url": st.column_config.LinkColumn("Link")}
+    )
+
+# Refresh
+if st.sidebar.button("🔄 Refresh Data"):
     os.system("python scraper.py")
     st.rerun()
