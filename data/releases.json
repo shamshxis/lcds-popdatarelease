@@ -13792,6 +13792,14 @@
         "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=763536"
     },
     {
+        "title": "Page Last Revised",
+        "start": "2026-02-20",
+        "country": "USA",
+        "source": "US Census",
+        "topic": "General Demography",
+        "url": "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
+    },
+    {
         "title": "Statement on the Resignation of the CDC Principal Deputy Director",
         "start": "2026-02-23",
         "country": "USA",
@@ -13806,13 +13814,5 @@
         "source": "CDC (Vital Stats)",
         "topic": "General Demography",
         "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=763817"
-    },
-    {
-        "title": "Page Last Revised",
-        "start": "2026-03-05",
-        "country": "USA",
-        "source": "US Census",
-        "topic": "General Demography",
-        "url": "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
     }
 ]
