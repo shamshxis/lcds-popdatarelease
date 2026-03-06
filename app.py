@@ -5,147 +5,136 @@ import os
 import pandas as pd
 from datetime import datetime
 
-# --- Page Config ---
-st.set_page_config(layout="wide", page_title="PopData Tracker", page_icon="🧬")
-
+# --- CONFIG ---
+st.set_page_config(layout="wide", page_title="Global PopData Tracker", page_icon="🧬")
 DATA_FILE = os.path.join("data", "releases.json")
+HEALTH_FILE = os.path.join("data", "sources_health.json")
 
-# --- CSS: Clean & Compact ---
+# --- STYLES ---
 st.markdown("""
 <style>
-    .block-container {padding-top: 1rem;} 
-    div[data-testid="stMetricValue"] {font-size: 1.2rem;}
+    .block-container {padding-top: 1rem;}
+    .topic-badge {padding: 4px 8px; border-radius: 4px; color: white; font-weight: bold; font-size: 0.8rem;}
 </style>
 """, unsafe_allow_html=True)
 
-# --- Load Data & Force Refresh Logic ---
-@st.cache_data(ttl=3600)
-def get_data_from_file(timestamp):
-    # Timestamp arg forces cache invalidation when changed
+# --- LOADERS ---
+@st.cache_data(ttl=300) # Fast cache
+def load_data():
     if not os.path.exists(DATA_FILE): return []
     with open(DATA_FILE, 'r') as f: return json.load(f)
 
-# Sidebar: Admin & Filters
-with st.sidebar:
-    st.title("⚙️ Controls")
-    
-    # 1. FORCE REFRESH BUTTON
-    if st.button("🔄 Force Refresh Data", type="primary", use_container_width=True):
-        with st.status("Running Scrapers...", expanded=True) as status:
-            os.system("python scraper.py")
-            st.cache_data.clear() # Clear Streamlit cache
-            status.update(label="✅ Data Updated!", state="complete", expanded=False)
-        st.rerun()
+def load_health():
+    if not os.path.exists(HEALTH_FILE): return {}
+    with open(HEALTH_FILE, 'r') as f: return json.load(f)
 
+raw_data = load_data()
+health_data = load_health()
+
+# --- SIDEBAR: SYSTEM STATUS & FILTERS ---
+with st.sidebar:
+    st.title("⚙️ PopData System")
+    
+    # 1. System Health
+    with st.expander("🔌 Scraper Health", expanded=False):
+        for source, info in health_data.items():
+            status_icon = "🟢" if info['status'] == 'ok' else "🔴"
+            st.write(f"{status_icon} **{source}**")
+            if info['status'] != 'ok':
+                st.caption(f"Error: {info.get('error', 'Unknown')}")
+    
+    # 2. Force Refresh
+    if st.button("🔄 Trigger Scrapers"):
+        os.system("python scraper.py")
+        st.cache_data.clear()
+        st.rerun()
+    
     st.divider()
     
-    # 2. DATA FILTERS
-    st.subheader("🔍 Filters")
-    
-    # Load raw data first
-    raw_data = get_data_from_file(os.path.getmtime(DATA_FILE) if os.path.exists(DATA_FILE) else 0)
-    
-    # Source Filter
-    all_sources = sorted(list(set(d['source'] for d in raw_data)))
-    sel_sources = st.multiselect("Agency", all_sources, default=all_sources)
-    
-    # Topic Filter (Crucial for hiding Economy)
+    # 3. Smart Filters
+    # Defaults: Select 'Demography' related topics, exclude 'Economy'
     all_topics = sorted(list(set(d['topic'] for d in raw_data)))
-    # Default: Select everything EXCEPT 'Economy' if possible, or all if mixed
-    default_topics = [t for t in all_topics if t != "Economy"]
-    if not default_topics: default_topics = all_topics
+    core_topics = ['Mortality', 'Births', 'Migration', 'Population', 'Health']
+    default_topics = [t for t in all_topics if t in core_topics]
+    # If no core topics found (fresh run), select all except Economy
+    if not default_topics: default_topics = [t for t in all_topics if t != "Economy"]
     
-    sel_topics = st.multiselect("Topic", all_topics, default=default_topics)
+    sel_topics = st.multiselect("Filter by Topic", all_topics, default=default_topics)
+    sel_sources = st.multiselect("Filter by Agency", sorted(list(set(d['source'] for d in raw_data))), default=sorted(list(set(d['source'] for d in raw_data))))
+
+# --- MAIN LOGIC ---
+filtered = [d for d in raw_data if d['topic'] in sel_topics and d['source'] in sel_sources]
+
+# --- DASHBOARD UI ---
+col1, col2 = st.columns([3, 1])
+
+with col1:
+    st.title("🧬 Global Demography Calendar")
     
-    # Country Filter
-    all_countries = sorted(list(set(d['country'] for d in raw_data)))
-    sel_countries = st.multiselect("Country", all_countries, default=all_countries)
+    # Key Metrics
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Total Datasets", len(filtered))
+    m2.metric("Mortality/Births", len([x for x in filtered if x['topic'] in ['Mortality', 'Births']]))
+    m3.metric("Migration", len([x for x in filtered if x['topic'] == 'Migration']))
+    
+    # Next Priority Release
+    today = datetime.now().strftime("%Y-%m-%d")
+    future = sorted([x for x in filtered if x['start'] >= today], key=lambda x: x['start'])
+    next_rel = future[0] if future else None
+    m4.metric("Next Key Date", next_rel['start'] if next_rel else "-")
 
-# --- FILTERING LOGIC ---
-filtered = []
-for d in raw_data:
-    if d['source'] in sel_sources and d['topic'] in sel_topics and d['country'] in sel_countries:
-        filtered.append(d)
+    st.divider()
 
-# --- MAIN DASHBOARD ---
-st.title("🧬 Global Population Data Calendar")
-
-if not filtered:
-    st.warning("No data matches your filters. Try selecting more Topics or Agencies.")
-    st.stop()
-
-# Metrics Row
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Datasets", len(filtered))
-c2.metric("Mortality/Health", len([x for x in filtered if x['topic'] in ['Mortality', 'Health']]))
-c3.metric("Migration", len([x for x in filtered if x['topic'] == 'Migration']))
-
-# Find Next Release
-today = datetime.now().strftime("%Y-%m-%d")
-future = sorted([x for x in filtered if x['start'] >= today], key=lambda x: x['start'])
-if future:
-    c4.metric("Next Release", f"{future[0]['start']} ({future[0]['source']})")
-
-st.divider()
-
-# Calendar & List Layout
-col_cal, col_list = st.columns([2, 1])
-
-with col_cal:
+    # Calendar View
     events = []
-    # Color Coding by Topic (Visual Clues)
-    topic_colors = {
-        "Mortality": "#d62728", # Red
-        "Births": "#e377c2",    # Pink
-        "Migration": "#ff7f0e", # Orange
-        "Population": "#2ca02c",# Green
-        "Economy": "#7f7f7f",   # Grey (Boring)
-        "Health": "#1f77b4"     # Blue
+    colors = {
+        "Mortality": "#d62728", "Births": "#e377c2", 
+        "Migration": "#ff7f0e", "Population": "#2ca02c",
+        "Health": "#1f77b4", "Economy": "#7f7f7f"
     }
     
     for item in filtered:
         events.append({
             "title": f"[{item['topic']}] {item['title']}",
             "start": item['start'],
-            "color": topic_colors.get(item['topic'], "#555"),
+            "color": colors.get(item['topic'], "#555"),
             "extendedProps": item
         })
-        
-    calendar_ops = {
-        "headerToolbar": {"left": "prev,next today", "center": "title", "right": "dayGridMonth,listMonth"},
+    
+    cal_ops = {
+        "headerToolbar": {"left": "today prev,next", "center": "title", "right": "dayGridMonth,listMonth"},
         "initialView": "dayGridMonth",
-        "height": 650
+        "height": 700
     }
-    state = calendar(events=events, options=calendar_ops, key="cal")
+    state = calendar(events=events, options=cal_ops, key="cal")
 
-with col_list:
+with col2:
     st.subheader("📌 Release Details")
     
+    # Selection Logic
     selected = None
     if state.get("eventClick"):
         selected = state["eventClick"]["event"]["extendedProps"]
-    elif future:
-        selected = future[0]
-        st.caption("🚀 Next Upcoming Release")
-        
+    elif next_rel:
+        selected = next_rel
+        st.success("🚀 **Next Up**")
+
     if selected:
         with st.container(border=True):
-            # Header Badge
-            color = topic_colors.get(selected['topic'], "#555")
-            st.markdown(f"<span style='background:{color}; padding:4px 8px; border-radius:4px; color:white; font-weight:bold'>{selected['topic']}</span>", unsafe_allow_html=True)
+            # Badge
+            bg = colors.get(selected['topic'], "#555")
+            st.markdown(f"""
+            <div style="background:{bg}; padding:4px 8px; border-radius:4px; color:white; font-weight:bold; display:inline-block">
+                {selected['topic']}
+            </div>
+            """, unsafe_allow_html=True)
             
             st.markdown(f"### {selected['title']}")
             st.write(f"**🗓 Date:** {selected['start']}")
             st.write(f"**🏛 Agency:** {selected['source']} ({selected['country']})")
-            st.info(selected.get('summary', 'No summary available.'))
+            st.caption(selected.get('summary', ''))
             
-            if selected['url']:
-                st.link_button("🔗 Open Official Page", selected['url'])
-    else:
-        st.write("Select an event to see details.")
-
-# --- Data Grid for Power Users ---
-st.divider()
-with st.expander("📊 View as Spreadsheet", expanded=False):
-    df = pd.DataFrame(filtered)[['start', 'country', 'topic', 'title', 'source', 'url']]
-    st.dataframe(df, use_container_width=True, hide_index=True, column_config={"url": st.column_config.LinkColumn()})
+            st.link_button("🔗 Open Source", selected['url'])
+            
+            st.divider()
+            st.caption(f"Scraped: {selected.get('scraped_at', 'Unknown')}")
