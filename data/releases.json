@@ -1,5 +1,21 @@
 [
     {
+        "title": "CDC's National Firefighter Registry for Cancer is Now the Largest in the Nation",
+        "start": "2026-02-10",
+        "country": "USA",
+        "source": "CDC (Vital Stats)",
+        "topic": "Health",
+        "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=763455"
+    },
+    {
+        "title": "Extensively drug-resistant\u00a0<em>Salmonella</em> outbreak linked to moringa powder capsules",
+        "start": "2026-02-13",
+        "country": "USA",
+        "source": "CDC (Vital Stats)",
+        "topic": "General Demography",
+        "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=763536"
+    },
+    {
         "title": "Deaths registered weekly in England and Wales, provisional: week ending",
         "start": "2026-02-20",
         "country": "UK",
@@ -8,12 +24,28 @@
         "url": "https://www.ons.gov.uk/releasecalendar"
     },
     {
+        "title": "Statement on the Resignation of the CDC Principal Deputy Director",
+        "start": "2026-02-23",
+        "country": "USA",
+        "source": "CDC (Vital Stats)",
+        "topic": "General Demography",
+        "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=763678"
+    },
+    {
         "title": "Release date:  9:30am | Published",
         "start": "2026-02-27",
         "country": "UK",
         "source": "ONS (UK)",
         "topic": "General Demography",
         "url": "https://www.ons.gov.uk/releasecalendar"
+    },
+    {
+        "title": "Secretary Kennedy Appoints Two Physicians to CDC's Advisory Committee on Immunization Practices",
+        "start": "2026-02-28",
+        "country": "USA",
+        "source": "CDC (Vital Stats)",
+        "topic": "General Demography",
+        "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=763817"
     },
     {
         "title": "Foreign direct investment - stocks, 2023",
@@ -128,6 +160,14 @@
         "url": "https://www.ons.gov.uk/releasecalendar"
     },
     {
+        "title": "Activity of hatcheries, January 2026",
+        "start": "2026-03-05",
+        "country": "EU",
+        "source": "Eurostat",
+        "topic": "General Demography",
+        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
+    },
+    {
         "title": "Slaughtering other than in slaughterhouses, October 2025",
         "start": "2026-03-05",
         "country": "EU",
@@ -137,14 +177,6 @@
     },
     {
         "title": "Slaughtering in slaughterhouses, December 2025",
-        "start": "2026-03-05",
-        "country": "EU",
-        "source": "Eurostat",
-        "topic": "General Demography",
-        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-    },
-    {
-        "title": "Activity of hatcheries, January 2026",
         "start": "2026-03-05",
         "country": "EU",
         "source": "Eurostat",
@@ -192,12 +224,36 @@
         "url": "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
     },
     {
+        "title": "Last Reviewed",
+        "start": "2026-03-05",
+        "country": "USA",
+        "source": "CDC (Vital Stats)",
+        "topic": "General Demography",
+        "url": "https://www.cdc.gov/nchs/nvss/deaths.htm"
+    },
+    {
         "title": "Release date:  9:30am | Published",
         "start": "2026-03-06",
         "country": "UK",
         "source": "ONS (UK)",
         "topic": "General Demography",
         "url": "https://www.ons.gov.uk/releasecalendar"
+    },
+    {
+        "title": "Produced by Statistics Canada, .",
+        "start": "2026-03-06",
+        "country": "Canada",
+        "source": "StatCan",
+        "topic": "General Demography",
+        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm"
+    },
+    {
+        "title": "Date modified",
+        "start": "2026-03-06",
+        "country": "Canada",
+        "source": "StatCan",
+        "topic": "General Demography",
+        "url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm"
     },
     {
         "title": "December 2026",
