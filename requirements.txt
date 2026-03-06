@@ -1,9 +1,11 @@
 streamlit
 streamlit-calendar
 pandas
-requests
-beautifulsoup4
-schedule
+selenium
+webdriver-manager
+duckduckgo-search>=5.0
 feedparser
+beautifulsoup4
 lxml
 python-dateutil
+requests
