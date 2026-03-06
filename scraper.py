@@ -15,7 +15,6 @@ from dateutil import parser as date_parser
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By  # <--- FIXED MISSING IMPORT
 from webdriver_manager.chrome import ChromeDriverManager
 
 # --- CONFIGURATION ---
@@ -54,110 +53,8 @@ class LCDSFilter:
             return date_parser.parse(date_str, fuzzy=True).strftime("%Y-%m-%d")
         except: return None
 
-# --- 2. SPECIAL AGENTS (API/XML) ---
-class APIScraper:
-    def __init__(self):
-        self.filter = LCDSFilter()
-        self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'
-        }
-
-    def scrape_ons_json(self):
-        """
-        ONS requires 'X-Requested-With: XMLHttpRequest' to return JSON.
-        Without it, they return the full HTML page (causing JSON errors).
-        """
-        url = "https://www.ons.gov.uk/releasecalendar/data?view=upcoming&size=50"
-        headers = self.headers.copy()
-        headers['X-Requested-With'] = 'XMLHttpRequest' # <--- THE SECRET KEY
-        
-        events = []
-        try:
-            logging.info("🇬🇧 ONS: Hitting Hidden JSON API...")
-            resp = requests.get(url, headers=headers, timeout=15)
-            
-            if resp.status_code != 200:
-                logging.error(f"❌ ONS Failed: Status {resp.status_code}")
-                return []
-                
-            data = resp.json()
-            # ONS JSON structure: {'result': {'results': [...]}}
-            results = data.get('result', {}).get('results', [])
-            
-            for item in results:
-                title = item.get('description', {}).get('title')
-                date_raw = item.get('description', {}).get('releaseDate')
-                uri = item.get('uri')
-                
-                if title and date_raw:
-                    topic = self.filter.classify(title)
-                    if topic:
-                        link = "https://www.ons.gov.uk" + uri
-                        events.append({
-                            "title": title, "start": self.filter.normalize_date(date_raw), 
-                            "country": "UK", "source": "ONS", "topic": topic, "url": link
-                        })
-            logging.info(f"✅ ONS: Found {len(events)} items.")
-            return events
-        except Exception as e:
-            logging.error(f"❌ ONS JSON Error: {e}")
-            return []
-
-    def scrape_eurostat_xml(self):
-        """Uses the Official XML Calendar (Not RSS)"""
-        url = "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml"
-        events = []
-        try:
-            logging.info("🇪🇺 Eurostat: Fetching XML Calendar...")
-            resp = requests.get(url, headers=self.headers, timeout=20)
-            soup = BeautifulSoup(resp.content, 'xml') # XML Parser
-            
-            # Eurostat XML structure: <release_calendar> ... <release> ... </release>
-            items = soup.find_all('release')
-            
-            for item in items:
-                # Iterate children to find title/date (structure varies slightly)
-                title = item.find('title').text if item.find('title') else ""
-                date_str = item.find('release_date').text if item.find('release_date') else ""
-                
-                topic = self.filter.classify(title)
-                if topic and date_str:
-                    events.append({
-                        "title": title, "start": self.filter.normalize_date(date_str), 
-                        "country": "EU", "source": "Eurostat", "topic": topic, 
-                        "url": "https://ec.europa.eu/eurostat/news/release-calendar"
-                    })
-            logging.info(f"✅ Eurostat: Found {len(events)} items.")
-            return events
-        except Exception as e:
-            logging.error(f"❌ Eurostat XML Error: {e}")
-            return []
-
-# --- 3. RSS AGENT ---
-class RSSAgent:
-    def __init__(self):
-        self.filter = LCDSFilter()
-
-    def scrape_cdc(self):
-        url = "https://tools.cdc.gov/api/v2/resources/media/132608.rss"
-        events = []
-        try:
-            logging.info("🇺🇸 CDC: Checking Feed...")
-            feed = feedparser.parse(url)
-            for entry in feed.entries:
-                topic = self.filter.classify(entry.title)
-                if topic:
-                    d = self.filter.normalize_date(entry.published)
-                    events.append({
-                        "title": entry.title, "start": d, 
-                        "country": "USA", "source": "CDC", "topic": topic, "url": entry.link
-                    })
-            logging.info(f"✅ CDC: Found {len(events)} items.")
-            return events
-        except: return []
-
-# --- 4. SELENIUM AGENT (US Census Only) ---
-class SeleniumAgent:
+# --- 2. BRUTE FORCE SCANNER (Selenium) ---
+class TextScanner:
     def __init__(self):
         self.filter = LCDSFilter()
         options = Options()
@@ -168,59 +65,117 @@ class SeleniumAgent:
         options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         self.options = options
 
-    def scrape_census_text(self):
-        """Scans US Census Page Text"""
-        url = "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
+    def scan_page(self, target):
         driver = None
         events = []
+        name = target['name']
+        url = target['url']
+        
         try:
-            # Robust Driver Loading
+            # Init Driver
             try: driver = webdriver.Chrome(options=self.options)
             except: driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=self.options)
             
-            logging.info(f"🌐 US Census: Scanning {url}")
+            logging.info(f"🌐 {name}: scanning {url}")
             driver.get(url)
-            time.sleep(4)
+            time.sleep(5) # Wait for JS load
             
-            # Get clean text
-            text = driver.find_element(By.TAG_NAME, "body").text
+            # --- STRATEGY: DUMP ALL TEXT ---
+            # We get the full body text and search for date patterns.
+            # This bypasses complex HTML structure entirely.
+            body_text = driver.find_element("tag name", "body").text
+            lines = body_text.split('\n')
             
-            for line in text.split('\n'):
-                match = re.search(r'([A-Z][a-z]+ \d{1,2}, \d{4})', line)
+            for i, line in enumerate(lines):
+                # Pattern: "12 March 2026" or "March 12, 2026"
+                match = re.search(r'(\d{1,2} [A-Z][a-z]+ \d{4})|([A-Z][a-z]+ \d{1,2}, \d{4})', line)
+                
                 if match:
-                    title = line.replace(match.group(0), "").strip(" -:")
-                    topic = self.filter.classify(title)
-                    if topic and len(title) > 10 and len(title) < 150:
-                        d_str = self.filter.normalize_date(match.group(0))
-                        events.append({
-                            "title": title, "start": d_str, 
-                            "country": "USA", "source": "US Census", 
-                            "topic": topic, "url": url
-                        })
-            logging.info(f"✅ US Census: Found {len(events)} items.")
+                    date_str = match.group(0)
+                    # The title is usually on the SAME line or the line BEFORE
+                    # We check both
+                    candidates = [line.replace(date_str, ""), lines[i-1] if i>0 else ""]
+                    
+                    for text_chunk in candidates:
+                        clean_title = text_chunk.strip(" -:")
+                        topic = self.filter.classify(clean_title)
+                        
+                        # Valid Title Criteria
+                        if topic and len(clean_title) > 10 and len(clean_title) < 150:
+                            norm_date = self.filter.normalize_date(date_str)
+                            if norm_date:
+                                events.append({
+                                    "title": clean_title,
+                                    "start": norm_date,
+                                    "country": target['country'],
+                                    "source": name,
+                                    "topic": topic,
+                                    "url": url
+                                })
+                                break # Found a valid title for this date
+            
+            logging.info(f"✅ {name}: Found {len(events)} items.")
+
         except Exception as e:
-            logging.error(f"❌ US Census Failed: {e}")
+            logging.error(f"❌ {name} Failed: {e}")
         finally:
             if driver: driver.quit()
         return events
 
-# --- MAIN ---
+# --- 3. RSS AGENT (Filtered) ---
+class RSSAgent:
+    def __init__(self):
+        self.filter = LCDSFilter()
+
+    def fetch(self, target):
+        events = []
+        name = target['name']
+        today = datetime.now().strftime("%Y-%m-%d")
+        
+        try:
+            logging.info(f"📡 {name}: Checking Feed...")
+            feed = feedparser.parse(target['url'])
+            
+            for entry in feed.entries:
+                topic = self.filter.classify(entry.title)
+                if topic:
+                    d = self.filter.normalize_date(entry.published)
+                    # FILTER: Only Future or Recent (last 7 days)
+                    if d and d >= today: 
+                        events.append({
+                            "title": entry.title, "start": d, 
+                            "country": target['country'], "source": name, 
+                            "topic": topic, "url": entry.link
+                        })
+            logging.info(f"✅ {name}: Found {len(events)} items (Future Only).")
+        except: pass
+        return events
+
+# --- ORCHESTRATOR ---
 def run():
-    print("🚀 Starting Logic-Based Engine...")
+    print("🚀 Starting Brute Force Engine...")
     all_data = []
     
-    # 1. API & XML Sources (Fast & Reliable)
-    api = APIScraper()
-    all_data.extend(api.scrape_ons_json())       # Fixed ONS
-    all_data.extend(api.scrape_eurostat_xml())   # Fixed Eurostat
-    
-    # 2. RSS Sources
-    rss = RSSAgent()
-    all_data.extend(rss.scrape_cdc())
-    
-    # 3. Selenium Sources (Hard to scrape)
-    sel = SeleniumAgent()
-    all_data.extend(sel.scrape_census_text())    # Fixed Import Error
+    # 1. RSS TARGETS (Fast)
+    rss_agent = RSSAgent()
+    rss_targets = [
+        {"name": "CDC (Vital Stats)", "url": "https://tools.cdc.gov/api/v2/resources/media/132608.rss", "country": "USA"},
+    ]
+    all_data.extend(rss_agent.fetch(rss_targets[0]))
+
+    # 2. TEXT SCAN TARGETS (Robust)
+    # We scan the visual calendar pages directly for text patterns
+    scan_targets = [
+        {"name": "ONS (UK)", "url": "https://www.ons.gov.uk/releasecalendar", "country": "UK"},
+        {"name": "Eurostat", "url": "https://ec.europa.eu/eurostat/news/release-calendar", "country": "EU"},
+        {"name": "US Census", "url": "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html", "country": "USA"},
+        {"name": "CBS (Netherlands)", "url": "https://www.cbs.nl/en-gb/publication-calendar", "country": "Netherlands"}
+    ]
+
+    scanner = TextScanner()
+    # Run Selenium scans sequentially to avoid memory crash
+    for t in scan_targets:
+        all_data.extend(scanner.scan_page(t))
 
     # Save
     if all_data:
@@ -229,7 +184,7 @@ def run():
         final_list.sort(key=lambda x: x['start'])
         
         with open(JSON_FILE, 'w') as f: json.dump(final_list, f, indent=4)
-        print(f"💾 Saved {len(final_list)} datasets.")
+        print(f"💾 Saved {len(final_list)} unique datasets.")
     else:
         print("⚠️ No data collected.")
 
