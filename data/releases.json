@@ -5616,14 +5616,6 @@
         "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=308385"
     },
     {
-        "title": "Healthy life expectancies at age 65 highest in Hawaii, lowest in Mississippi - Press Release",
-        "start": "2013-07-18",
-        "country": "USA",
-        "source": "CDC (Vital Stats)",
-        "topic": "Mortality",
-        "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=308384"
-    },
-    {
         "title": "CDC Telebriefing on human papillomavirus (HPV) vaccination coverage and vaccine safety monitoring - Transcript",
         "start": "2013-07-25",
         "country": "USA",
@@ -9576,14 +9568,6 @@
         "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=308106"
     },
     {
-        "title": "CDC Museum to Host Places & Spaces: Mapping Science Exhibition - Media Statement",
-        "start": "2016-01-26",
-        "country": "USA",
-        "source": "CDC (Vital Stats)",
-        "topic": "General Demography",
-        "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=308107"
-    },
-    {
         "title": "CDC-NIAID Telebriefing: Zika 101 - Media Advisory",
         "start": "2016-01-27",
         "country": "USA",
@@ -10150,14 +10134,6 @@
         "source": "CDC (Vital Stats)",
         "topic": "General Demography",
         "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=308029"
-    },
-    {
-        "title": "Teen birth rates fall nearly 50 percent among Hispanic and black teens, dropping national teen birth rate to an all-time low - Press Release",
-        "start": "2016-04-28",
-        "country": "USA",
-        "source": "CDC (Vital Stats)",
-        "topic": "Fertility",
-        "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=308028"
     },
     {
         "title": "CDC adds Papua New Guinea to interim travel guidance related to Zika virus - Media Statement",
@@ -11198,14 +11174,6 @@
         "source": "CDC (Vital Stats)",
         "topic": "General Demography",
         "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=297075"
-    },
-    {
-        "title": "CDC, Miami-Dade and Miami Beach collaborate and make progress on better understanding and stopping the Zika outbreak - Media Statement",
-        "start": "2016-10-28",
-        "country": "USA",
-        "source": "CDC (Vital Stats)",
-        "topic": "General Demography",
-        "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=297074"
     },
     {
         "title": "First annual One Health Day highlights link between people's health and animals, environment - Media Advisory",
@@ -13792,14 +13760,6 @@
         "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=763536"
     },
     {
-        "title": "Page Last Revised",
-        "start": "2026-02-20",
-        "country": "USA",
-        "source": "US Census",
-        "topic": "General Demography",
-        "url": "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
-    },
-    {
         "title": "Statement on the Resignation of the CDC Principal Deputy Director",
         "start": "2026-02-23",
         "country": "USA",
@@ -13814,5 +13774,13 @@
         "source": "CDC (Vital Stats)",
         "topic": "General Demography",
         "url": "https://tools.cdc.gov/api/embed/downloader/download.asp?m=132608&c=763817"
+    },
+    {
+        "title": "Page Last Revised",
+        "start": "2026-03-05",
+        "country": "USA",
+        "source": "US Census",
+        "topic": "General Demography",
+        "url": "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
     }
 ]
