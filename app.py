@@ -4,7 +4,7 @@ import json
 import os
 import time
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # --- Configuration ---
 st.set_page_config(layout="wide", page_title="Global Population Data Calendar", page_icon="🌍")
@@ -19,6 +19,9 @@ st.markdown("""
     .main-header {font-size: 2.5rem; font-weight: 700; color: #2c3e50; margin-bottom: 0px;}
     .sub-header {font-size: 1.2rem; color: #7f8c8d; margin-bottom: 20px;}
     .metric-card {background-color: #f8f9fa; border: 1px solid #e9ecef; padding: 15px; border-radius: 10px; text-align: center;}
+    /* Compact calendar styling for multi-month view */
+    .fc-col-header-cell-cushion { font-size: 0.8rem; }
+    .fc-daygrid-day-number { font-size: 0.8rem; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -99,8 +102,8 @@ c4.metric("Last Updated", last_scraped)
 
 st.divider()
 
-# 4. Calendar & Details
-cal_col, list_col = st.columns([2, 1])
+# 4. Calendar (6-Month View) & Details
+cal_col, list_col = st.columns([3, 1])  # Widen calendar column
 
 with cal_col:
     cal_events = []
@@ -113,10 +116,22 @@ with cal_col:
             "extendedProps": event
         })
 
+    # Calendar Options with Custom 6-Month View
     cal_options = {
-        "headerToolbar": {"left": "today prev,next", "center": "title", "right": "dayGridMonth,listMonth"},
-        "initialView": "dayGridMonth",
-        "height": 650
+        "headerToolbar": {
+            "left": "today prev,next",
+            "center": "title",
+            "right": "multiMonth6Month,dayGridMonth,listMonth" # Added custom view button
+        },
+        "initialView": "multiMonth6Month", # Default to 6-month view
+        "views": {
+            "multiMonth6Month": {
+                "type": "multiMonthYear",
+                "duration": {"months": 6},
+                "multiMonthMaxColumns": 3 # 3 cols x 2 rows = 6 months
+            }
+        },
+        "height": 800,
     }
     state = calendar(events=cal_events, options=cal_options, key="main_cal")
 
@@ -142,7 +157,18 @@ with list_col:
             st.caption(selected_event['summary'])
             st.markdown(f"[🔗 **Access Data**]({selected_event['url']})")
     else:
-        st.write("Select an event to view details.")
+        st.markdown("*Click on an event to view full details.*")
+        
+        # Show "Next Up" quick list if nothing selected
+        st.markdown("---")
+        st.markdown("**🔜 Upcoming Highlights**")
+        
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        upcoming = sorted([e for e in filtered if e['start'] >= today_str], key=lambda x: x['start'])[:5]
+        
+        for up in upcoming:
+            st.markdown(f"**{up['start']}** | {up['country']}")
+            st.caption(up['title'])
 
 # Manual Refresh
 if st.sidebar.button("🔄 Force Refresh"):
