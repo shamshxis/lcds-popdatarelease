@@ -34,11 +34,22 @@ class BaseScraper:
 
     def infer_topic(self, title):
         t = title.lower()
-        if any(x in t for x in ['pop', 'census', 'demog', 'birth', 'death', 'migra', 'house', 'household']): return "Demography"
-        if any(x in t for x in ['gdp', 'econ', 'trade', 'financ', 'cpi', 'price', 'inflat', 'retail', 'money']): return "Economy"
-        if any(x in t for x in ['employ', 'labor', 'work', 'job', 'wage', 'pay', 'vacanc', 'unemploy']): return "Labor"
-        if any(x in t for x in ['health', 'disease', 'medic', 'life', 'mortal']): return "Health"
-        return "General Stats"
+        # PRIORITY 1: POPULATION / DEMOGRAPHY
+        if any(x in t for x in ['mortal', 'death', 'life expect', 'suicide', 'homicide', 'cause of death']): return "Mortality"
+        if any(x in t for x in ['birth', 'fertil', 'natal', 'baby', 'conception']): return "Births"
+        if any(x in t for x in ['migra', 'immigration', 'emigration', 'asylum', 'visa', 'passenger', 'border']): return "Migration"
+        if any(x in t for x in ['pop', 'census', 'demog', 'household', 'family', 'ageing', 'resident']): return "Population"
+        if any(x in t for x in ['health', 'disease', 'hospital', 'cancer', 'medic', 'vaccin']): return "Health"
+        
+        # PRIORITY 2: LABOR / SOCIAL
+        if any(x in t for x in ['employ', 'labor', 'work', 'job', 'wage', 'pay', 'vacanc', 'unemploy', 'earn']): return "Labor Market"
+        if any(x in t for x in ['crime', 'justice', 'prison', 'police']): return "Crime"
+        if any(x in t for x in ['educ', 'school', 'student', 'univers']): return "Education"
+        
+        # PRIORITY 3: ECONOMY (To be filtered out if needed)
+        if any(x in t for x in ['gdp', 'econ', 'trade', 'financ', 'cpi', 'ppi', 'price', 'inflat', 'retail', 'money', 'business', 'output', 'construct', 'sales']): return "Economy"
+        
+        return "Other Stats"
 
     def normalize_date(self, date_str):
         try:
@@ -50,17 +61,84 @@ class BaseScraper:
     def scrape(self):
         raise NotImplementedError("Subclasses must implement scrape()")
 
-# --- EUROPE (Aggregated via Eurostat) ---
+# --- 1. UK ONS (Specific Focus) ---
+class ONS_Scraper(BaseScraper):
+    def scrape(self):
+        # We scrape the main calendar but rely on our `infer_topic` to categorize strictly
+        base_url = "https://www.ons.gov.uk/releasecalendar"
+        events = []
+        # Scrape 5 pages to capture enough future data
+        for page in range(1, 6):
+            try:
+                resp = self.session.get(f"{base_url}?page={page}", timeout=10)
+                soup = BeautifulSoup(resp.content, 'html.parser')
+                items = soup.select('.release__item')
+                if not items: items = soup.select('li.list__item')
+                
+                for item in items:
+                    title_elem = item.select_one('h3 a')
+                    date_elem = item.select_one('.release__date')
+                    if title_elem and date_elem:
+                        title = self.clean_text(title_elem.text)
+                        date_str = self.normalize_date(self.clean_text(date_elem.text).replace("Release date:", ""))
+                        
+                        if date_str:
+                            events.append({
+                                "title": title,
+                                "start": date_str,
+                                "country": "UK",
+                                "source": "ONS",
+                                "url": "https://www.ons.gov.uk" + title_elem['href'],
+                                "topic": self.infer_topic(title),
+                                "summary": f"Official ONS Release: {title}"
+                            })
+            except Exception as e:
+                logging.error(f"ONS Page {page} Error: {e}")
+        return events
+
+# --- 2. US CDC (Mortality Focus) ---
+class CDC_Mortality_Scraper(BaseScraper):
+    def scrape(self):
+        # Target: NVSS Vital Statistics Rapid Release
+        url = "https://www.cdc.gov/nchs/nvss/deaths.htm"
+        events = []
+        try:
+            logging.info("🏥 Scraping CDC Vital Stats...")
+            resp = self.session.get(url, timeout=15)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            
+            # Look for "Upcoming Releases" or "Quarterly Provisional Estimates"
+            # CDC pages are messy, so we look for dates in text
+            text_blocks = soup.get_text("\n").split("\n")
+            
+            for line in text_blocks:
+                if "release" in line.lower() or "scheduled" in line.lower():
+                    # Find dates like "May 2026" or "Q1 2026"
+                    date_match = re.search(r'(January|February|March|April|May|June|July|August|September|October|November|December) \d{4}', line)
+                    if date_match:
+                        date_str = self.normalize_date(date_match.group(0))
+                        title = line.strip()
+                        if len(title) > 10 and len(title) < 100 and date_str:
+                             events.append({
+                                "title": title,
+                                "start": date_str,
+                                "country": "USA",
+                                "source": "CDC",
+                                "url": url,
+                                "topic": "Mortality",
+                                "summary": "CDC Vital Statistics Rapid Release"
+                            })
+            return events
+        except Exception as e:
+            logging.error(f"CDC Error: {e}")
+            return []
+
+# --- 3. Eurostat (Filtered for Pop) ---
 class Eurostat_Scraper(BaseScraper):
-    """
-    Covering: EU, Eurozone, Germany, France, Spain, Italy, etc.
-    Source: Eurostat Release Calendar
-    """
     def scrape(self):
         url = "https://ec.europa.eu/eurostat/news/release-calendar"
         events = []
         try:
-            logging.info("🇪🇺 Scraping Eurostat (EU)...")
             resp = self.session.get(url, timeout=15)
             soup = BeautifulSoup(resp.content, 'html.parser')
             rows = soup.find_all('tr')
@@ -74,329 +152,78 @@ class Eurostat_Scraper(BaseScraper):
                 cols = row.find_all('td')
                 if current_date and len(cols) >= 1:
                     title = self.clean_text(cols[-1].text)
-                    # Eurostat often lists the country in the title, e.g., "GDP - Germany"
-                    # If not, it defaults to "EU"
-                    country = "EU (Eurostat)"
-                    if "germany" in title.lower(): country = "Germany"
-                    elif "france" in title.lower(): country = "France"
-                    elif "spain" in title.lower(): country = "Spain"
-                    elif "italy" in title.lower(): country = "Italy"
+                    topic = self.infer_topic(title)
                     
-                    if title:
+                    # Extract country if present
+                    country = "EU (Eurostat)"
+                    for c in ["Germany", "France", "Spain", "Italy", "Poland", "Netherlands"]:
+                        if c in title: country = c
+                    
+                    events.append({
+                        "title": title,
+                        "start": current_date,
+                        "country": country,
+                        "source": "Eurostat",
+                        "url": url,
+                        "topic": topic,
+                        "summary": "Eurostat Official Release"
+                    })
+            return events
+        except: return []
+
+# --- 4. US Census (Demography Core) ---
+class US_Census_Scraper(BaseScraper):
+    def scrape(self):
+        url = "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
+        events = []
+        try:
+            resp = self.session.get(url, timeout=15)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            content = soup.get_text("\n").split("\n")
+            for line in content:
+                line = self.clean_text(line)
+                match = re.search(r'(\d{1,2}/\d{1,2}/\d{2,4})|([A-Z][a-z]+ \d{1,2}, \d{4})', line)
+                if match:
+                    date_str = self.normalize_date(match.group(0))
+                    title = line.replace(match.group(0), "").strip(" -:")
+                    if date_str and len(title) > 10:
                         events.append({
                             "title": title,
-                            "start": current_date,
-                            "country": country,
-                            "region": "Europe",
-                            "source": "Eurostat",
-                            "summary": "Official Eurostat Harmonized Release",
+                            "start": date_str,
+                            "country": "USA",
+                            "source": "US Census",
                             "url": url,
-                            "topic": self.infer_topic(title)
+                            "topic": self.infer_topic(title),
+                            "summary": line
                         })
             return events
-        except Exception as e:
-            logging.error(f"Eurostat Error: {e}")
-            return []
-
-# --- NORTH AMERICA ---
-class US_BLS_Scraper(BaseScraper):
-    """
-    Covering: USA (Inflation, Employment)
-    Source: Bureau of Labor Statistics Schedule
-    """
-    def scrape(self):
-        url = "https://www.bls.gov/schedule/news_release/2026_sched.htm" # Fallback to current year logic needed usually
-        # For demo reliability, we check the main schedule page
-        url = "https://www.bls.gov/schedule/news_release/"
-        events = []
-        try:
-            logging.info("🇺🇸 Scraping US BLS...")
-            resp = self.session.get(url, timeout=15)
-            soup = BeautifulSoup(resp.content, 'html.parser')
-            # BLS is tricky, often best to just grab the "Upcoming" list if available
-            # Or parse the main table
-            tables = soup.find_all('table')
-            
-            for table in tables:
-                rows = table.find_all('tr')
-                for row in rows:
-                    cols = row.find_all('td')
-                    if len(cols) >= 3:
-                        date_text = self.clean_text(cols[0].text) # e.g. "Feb. 12"
-                        time_text = self.clean_text(cols[1].text)
-                        title = self.clean_text(cols[2].text)
-                        
-                        # Handle Date (BLS often omits year in tables, assumes current/next)
-                        if re.search(r'[A-Z][a-z]{2}\.?\s\d{1,2}', date_text):
-                            # Append current year for parsing
-                            full_date = f"{date_text} {datetime.now().year}"
-                            date_str = self.normalize_date(full_date)
-                            
-                            if date_str and title:
-                                events.append({
-                                    "title": title,
-                                    "start": date_str,
-                                    "country": "USA",
-                                    "region": "Americas",
-                                    "source": "US BLS",
-                                    "summary": f"US Bureau of Labor Statistics: {title}",
-                                    "url": "https://www.bls.gov/schedule/news_release/",
-                                    "topic": self.infer_topic(title)
-                                })
-            return events
-        except Exception as e:
-            logging.error(f"BLS Error: {e}")
-            return []
-
-class StatCan_Scraper(BaseScraper):
-    def scrape(self):
-        url = "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm"
-        events = []
-        try:
-            logging.info("🇨🇦 Scraping StatCan...")
-            resp = self.session.get(url, timeout=15)
-            soup = BeautifulSoup(resp.content, 'html.parser')
-            main_content = soup.find('main') or soup
-            
-            current_date = None
-            current_year = datetime.now().year
-            
-            for element in main_content.find_all(['h2', 'h3', 'li']):
-                text = self.clean_text(element.get_text())
-                if re.match(r'^(January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}$', text):
-                    try:
-                        dt = date_parser.parse(f"{text} {current_year}")
-                        current_date = dt.strftime("%Y-%m-%d")
-                    except: pass
-                elif current_date and element.name == 'li':
-                    title = self.clean_text(element.text)
-                    if len(title) > 5:
-                        events.append({
-                            "title": title,
-                            "start": current_date,
-                            "country": "Canada",
-                            "region": "Americas",
-                            "source": "StatCan",
-                            "summary": "The Daily Release",
-                            "url": "https://www150.statcan.gc.ca/n1/dai-quo/index-eng.htm",
-                            "topic": self.infer_topic(title)
-                        })
-            return events
-        except Exception as e:
-            logging.error(f"StatCan Error: {e}")
-            return []
-
-# --- SOUTH AMERICA ---
-class Brazil_IBGE_Scraper(BaseScraper):
-    def scrape(self):
-        # Brazil IBGE Calendar (Simulated Logic as scraping IBGE's dynamic JS calendar is brittle)
-        # In a production app, we would hit their API: https://agenciadenoticias.ibge.gov.br/
-        # For this prototype, we create a placeholder based on known monthly schedules
-        events = []
-        logging.info("🇧🇷 Generating Brazil IBGE Schedule...")
-        
-        # Simulating standard monthly releases
-        today = datetime.now()
-        for i in range(3): # Next 3 months
-            month_offset = today.month + i
-            year_offset = today.year + (month_offset // 13)
-            month_offset = month_offset % 12 or 12
-            
-            # Inflation (IPCA) usually around 10th
-            d_ipca = datetime(year_offset, month_offset, 10)
-            if d_ipca.weekday() > 4: d_ipca += timedelta(days=2) # Push to Monday if weekend
-            
-            events.append({
-                "title": "Extended National Consumer Price Index (IPCA)",
-                "start": d_ipca.strftime("%Y-%m-%d"),
-                "country": "Brazil",
-                "region": "Americas",
-                "source": "IBGE",
-                "summary": "Official inflation data for Brazil.",
-                "url": "https://www.ibge.gov.br/en/statistics-release-calendar.html",
-                "topic": "Economy"
-            })
-            
-            # Unemployment (PNAD) usually end of month
-            d_pnad = datetime(year_offset, month_offset, 28)
-            if d_pnad.weekday() > 4: d_pnad -= timedelta(days=2)
-            
-            events.append({
-                "title": "Continuous PNAD (Unemployment)",
-                "start": d_pnad.strftime("%Y-%m-%d"),
-                "country": "Brazil",
-                "region": "Americas",
-                "source": "IBGE",
-                "summary": "National Household Sample Survey - Unemployment rate.",
-                "url": "https://www.ibge.gov.br/en/statistics-release-calendar.html",
-                "topic": "Labor"
-            })
-            
-        return events
-
-# --- ASIA ---
-class Japan_Stat_Scraper(BaseScraper):
-    def scrape(self):
-        # Japan Statistics Bureau (Standard Monthly Pattern)
-        # CPI is usually released on the Friday of the week containing the 19th
-        events = []
-        logging.info("🇯🇵 Generating Japan Stat Schedule...")
-        
-        today = datetime.now()
-        for i in range(3):
-            month = today.month + i
-            year = today.year
-            if month > 12: 
-                month -= 12
-                year += 1
-            
-            # Estimate CPI Release (approx 20th of month)
-            cpi_date = datetime(year, month, 20)
-            events.append({
-                "title": "Consumer Price Index (CPI)",
-                "start": cpi_date.strftime("%Y-%m-%d"),
-                "country": "Japan",
-                "region": "Asia",
-                "source": "StatJapan",
-                "summary": "Japan Nationwide CPI release.",
-                "url": "https://www.stat.go.jp/english/data/cpi/1581.html",
-                "topic": "Economy"
-            })
-            
-             # Labor Force Survey (approx 30th)
-            lab_date = datetime(year, month, 28)
-            events.append({
-                "title": "Labor Force Survey",
-                "start": lab_date.strftime("%Y-%m-%d"),
-                "country": "Japan",
-                "region": "Asia",
-                "source": "StatJapan",
-                "summary": "Monthly employment and unemployment statistics.",
-                "url": "https://www.stat.go.jp/english/data/roudou/index.html",
-                "topic": "Labor"
-            })
-            
-        return events
-
-class China_NBS_Scraper(BaseScraper):
-    def scrape(self):
-        # NBS China - Release Calendar URL
-        url = "http://www.stats.gov.cn/english/PressRelease/ReleaseCalendar/"
-        # China's site is often static or PDF based. 
-        # We will add a recurring "15th of month" logic which is their standard for major data (Retail, Industrial, GDP)
-        events = []
-        logging.info("🇨🇳 Generating China NBS Schedule...")
-        
-        today = datetime.now()
-        for i in range(3):
-            month = today.month + i
-            year = today.year
-            if month > 12: 
-                month -= 12
-                year += 1
-                
-            # Major Economic Data Bundle (usually 15th-18th)
-            release_date = datetime(year, month, 15)
-            if release_date.weekday() > 4: release_date += timedelta(days=2)
-            
-            events.append({
-                "title": "National Economic Performance (Industrial, Retail, Investment)",
-                "start": release_date.strftime("%Y-%m-%d"),
-                "country": "China",
-                "region": "Asia",
-                "source": "NBS China",
-                "summary": "Monthly release of Industrial Production, Retail Sales, and Fixed Asset Investment.",
-                "url": "http://www.stats.gov.cn/english/",
-                "topic": "Economy"
-            })
-            
-            # CPI/PPI (usually 9th-10th)
-            cpi_date = datetime(year, month, 9)
-            if cpi_date.weekday() > 4: cpi_date += timedelta(days=2)
-            
-            events.append({
-                "title": "Consumer Price Index (CPI) & PPI",
-                "start": cpi_date.strftime("%Y-%m-%d"),
-                "country": "China",
-                "region": "Asia",
-                "source": "NBS China",
-                "summary": "Monthly inflation data.",
-                "url": "http://www.stats.gov.cn/english/",
-                "topic": "Economy"
-            })
-
-        return events
-
-class ONS_Scraper(BaseScraper):
-    def scrape(self):
-        # UK ONS Scraper (Simplified for brevity, same logic as before)
-        base_url = "https://www.ons.gov.uk/releasecalendar"
-        events = []
-        for page in range(1, 3):
-            try:
-                resp = self.session.get(f"{base_url}?page={page}", timeout=10)
-                soup = BeautifulSoup(resp.content, 'html.parser')
-                items = soup.select('.release__item')
-                for item in items:
-                    title_elem = item.select_one('h3 a')
-                    date_elem = item.select_one('.release__date')
-                    if title_elem and date_elem:
-                        title = self.clean_text(title_elem.text)
-                        date_str = self.normalize_date(self.clean_text(date_elem.text).replace("Release date:", ""))
-                        if date_str:
-                            events.append({
-                                "title": title,
-                                "start": date_str,
-                                "country": "UK",
-                                "region": "Europe",
-                                "source": "ONS",
-                                "summary": f"Official UK Release: {title}",
-                                "url": "https://www.ons.gov.uk" + title_elem['href'],
-                                "topic": self.infer_topic(title)
-                            })
-            except: pass
-        return events
+        except: return []
 
 # --- EXECUTION ---
 def run_scrapers():
-    scrapers = [
-        Eurostat_Scraper(),
-        US_BLS_Scraper(),
-        StatCan_Scraper(),
-        Brazil_IBGE_Scraper(),
-        Japan_Stat_Scraper(),
-        China_NBS_Scraper(),
-        ONS_Scraper()
-    ]
-    
+    scrapers = [ONS_Scraper(), CDC_Mortality_Scraper(), Eurostat_Scraper(), US_Census_Scraper()]
     all_data = []
     scrape_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    print("🚀 Starting Global Scrape...")
+    print("🚀 Starting Scrape...")
     for scraper in scrapers:
         try:
             data = scraper.scrape()
-            print(f"✅ {scraper.__class__.__name__}: Found {len(data)} items.")
+            print(f"✅ {scraper.__class__.__name__}: {len(data)} items")
             for item in data: item['scraped_at'] = scrape_time
             all_data.extend(data)
         except Exception as e:
             print(f"❌ {scraper.__class__.__name__} Failed: {e}")
 
-    # Deduplicate & Filter (30 days back, 180 days forward)
+    # Deduplicate & Filter
     unique = {f"{x['start']}_{x['title']}": x for x in all_data}.values()
     
-    today = datetime.now()
-    min_date = (today - timedelta(days=30)).strftime("%Y-%m-%d")
-    max_date = (today + timedelta(days=180)).strftime("%Y-%m-%d")
-    
-    filtered = [x for x in unique if min_date <= x['start'] <= max_date]
-
-    # Atomic Save
-    with open(JSON_TEMP, 'w') as f: json.dump(filtered, f, indent=4)
-    pd.DataFrame(filtered).to_csv(CSV_TEMP, index=False)
+    # Save
+    with open(JSON_TEMP, 'w') as f: json.dump(list(unique), f, indent=4)
+    pd.DataFrame(list(unique)).to_csv(CSV_TEMP, index=False)
     os.replace(JSON_TEMP, JSON_FILE)
     os.replace(CSV_TEMP, CSV_FILE)
-    print(f"💾 Saved {len(filtered)} global releases.")
+    print("💾 Data Saved.")
 
 if __name__ == "__main__":
     run_scrapers()
