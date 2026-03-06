@@ -2,26 +2,26 @@
     "US Census": {
         "status": "ok",
         "count": 1,
-        "last_run": "2026-03-06 18:35:12"
-    },
-    "Eurostat (API)": {
-        "status": "warning",
-        "error": "Zero items",
-        "last_run": "2026-03-06 18:35:12"
+        "last_run": "2026-03-06 19:16:56"
     },
     "ONS (UK)": {
         "status": "warning",
         "error": "Zero items",
-        "last_run": "2026-03-06 18:35:12"
+        "last_run": "2026-03-06 19:16:56"
+    },
+    "Eurostat": {
+        "status": "warning",
+        "error": "Zero items",
+        "last_run": "2026-03-06 19:16:56"
     },
     "CBS (Netherlands)": {
         "status": "warning",
         "error": "Zero items",
-        "last_run": "2026-03-06 18:35:12"
+        "last_run": "2026-03-06 19:16:56"
     },
     "FinData": {
         "status": "ok",
-        "count": 211,
-        "last_run": "2026-03-06 18:35:12"
+        "count": 208,
+        "last_run": "2026-03-06 19:16:56"
     }
 }
