@@ -1,151 +1,125 @@
+import feedparser
 import pandas as pd
-import requests
-import time
 import os
 import logging
-import random
-from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
+from datetime import datetime
 from dateutil import parser as date_parser
+from bs4 import BeautifulSoup
 
 # --- CONFIG ---
 DATA_FILE = "data/releases.json"
 os.makedirs("data", exist_ok=True)
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
-class SlowScraper:
+class GlobalPulseScraper:
     def __init__(self):
-        # 1. PERSISTENT SESSION (Like a real browser window)
-        self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Referer': 'https://google.com'
-        })
-        self.today = datetime.now()
+        self.feeds = [
+            # 1. ONS (UK) - The main release feed
+            {
+                "country": "UK", 
+                "source": "ONS", 
+                "url": "https://www.ons.gov.uk/releasecalendar/rss",
+                "color": "#003399"
+            },
+            # 2. EUROSTAT - Official Data Update Feed
+            {
+                "country": "EU", 
+                "source": "Eurostat", 
+                "url": "https://ec.europa.eu/eurostat/api/dissemination/catalogue/rss/en/statistics-update.rss",
+                "color": "#FFCC00"
+            },
+            # 3. INSEE (France) - News & Indicators
+            {
+                "country": "France", 
+                "source": "INSEE", 
+                "url": "https://www.insee.fr/en/rss/actualites",
+                "color": "#002395"
+            },
+            # 4. STATICE (Iceland) - News Archive
+            {
+                "country": "Iceland", 
+                "source": "Statice", 
+                "url": "https://www.statice.is/publications/news-archive/rss/",
+                "color": "#D72828"
+            },
+            # 5. FINDATA (Finland) - Health Data News
+            {
+                "country": "Finland", 
+                "source": "FinData", 
+                "url": "https://findata.fi/en/feed/",
+                "color": "#002F6C"
+            },
+            # 6. USAID / DHS - Program News (Catches "Cuts" or "Changes")
+            {
+                "country": "Global", 
+                "source": "USAID/DHS", 
+                "url": "https://dhsprogram.com/rss/news.cfm",
+                "color": "#BA0C2F"
+            }
+        ]
         self.results = []
-        self.logs = [] # Store logs for the UI
+        self.today = datetime.now().date()
 
-    def log(self, msg):
-        print(msg)
-        self.logs.append(msg)
-
-    def normalize_date(self, d):
-        try: return date_parser.parse(str(d), fuzzy=True)
-        except: return None
-
-    def sleep(self):
-        # 2. RANDOM DELAY (Human behavior)
-        delay = random.uniform(2.0, 4.0)
-        self.log(f"💤 Waiting {delay:.1f}s...")
-        time.sleep(delay)
-
-    def add_result(self, title, date_obj, country, source, url):
-        if not date_obj: return
-        
-        diff = (date_obj - self.today).days
-        
-        # 3. STRICT FILTER: Future (>=0) or Very Recent (-7)
-        if diff >= -7:
-            status = "🟢 CONFIRMED" if diff >= 0 else "🔴 RELEASED"
-            self.results.append({
-                "title": title.strip(),
-                "start": date_obj.strftime("%Y-%m-%d"),
-                "country": country,
-                "source": source,
-                "url": url,
-                "status": status,
-                "days_diff": diff
-            })
-
-    # --- ONS (UK) ---
-    def scrape_ons(self):
-        self.log("🇬🇧 Connecting to ONS...")
+    def normalize_date(self, date_str):
         try:
-            # We use the JSON API but with a specific header that mimics AJAX
-            url = "https://www.ons.gov.uk/releasecalendar/data?view=upcoming&size=50"
-            self.session.headers.update({'X-Requested-With': 'XMLHttpRequest'}) # Critical for ONS
-            
-            resp = self.session.get(url, timeout=15)
-            self.log(f"   Status: {resp.status_code}")
-            
-            if resp.status_code == 200:
-                data = resp.json()
-                items = data.get('result', {}).get('results', [])
-                for item in items:
-                    title = item.get('description', {}).get('title', '')
-                    date_raw = item.get('description', {}).get('releaseDate', '')
-                    
-                    # FILTER: Demography Only
-                    if any(k in title.lower() for k in ['death', 'birth', 'population', 'migration', 'census', 'life expect']):
-                        link = "https://www.ons.gov.uk" + item.get('uri', '')
-                        self.add_result(title, self.normalize_date(date_raw), "UK", "ONS", link)
-        except Exception as e:
-            self.log(f"❌ ONS Failed: {e}")
-        self.sleep() # Wait before next site
+            return date_parser.parse(date_str, fuzzy=True)
+        except:
+            return datetime.now()
 
-    # --- EUROSTAT (EU) ---
-    def scrape_eurostat(self):
-        self.log("🇪🇺 Connecting to Eurostat...")
+    def clean_html(self, html_text):
         try:
-            url = "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml"
-            resp = self.session.get(url, timeout=15)
-            self.log(f"   Status: {resp.status_code}")
-            
-            soup = BeautifulSoup(resp.content, 'xml')
-            for item in soup.find_all('release'):
-                title = item.find('title').text
-                d_str = item.find('release_date').text
-                
-                if any(k in title.lower() for k in ['mortality', 'population', 'fertility', 'health']):
-                    self.add_result(title, self.normalize_date(d_str), "EU", "Eurostat", "https://ec.europa.eu/eurostat/news/release-calendar")
-        except Exception as e:
-            self.log(f"❌ Eurostat Failed: {e}")
-        self.sleep()
-
-    # --- STATICE (ICELAND) ---
-    def scrape_statice(self):
-        self.log("🇮🇸 Connecting to Statice...")
-        try:
-            url = "https://www.statice.is/publications/news-archive/advance-release-calendar/"
-            resp = self.session.get(url, timeout=15)
-            self.log(f"   Status: {resp.status_code}")
-            
-            soup = BeautifulSoup(resp.content, 'html.parser')
-            # Strict selector: Only the main calendar table
-            rows = soup.select(".table-responsive table tr") 
-            
-            for row in rows:
-                cols = row.find_all("td")
-                if len(cols) >= 2:
-                    d_txt = cols[0].get_text(strip=True)
-                    title = cols[1].get_text(strip=True)
-                    
-                    if any(k in title.lower() for k in ['population', 'death', 'migration']):
-                        self.add_result(title, self.normalize_date(d_txt), "Iceland", "Statice", url)
-        except Exception as e:
-            self.log(f"❌ Statice Failed: {e}")
-        self.sleep()
+            return BeautifulSoup(html_text, "html.parser").get_text()[:200] + "..."
+        except:
+            return html_text[:200]
 
     def run(self):
-        self.log("🚀 Starting Slow & Steady Scraper...")
-        self.scrape_ons()
-        self.scrape_eurostat()
-        self.scrape_statice()
+        print("🚀 Starting Global Pulse RSS Scan...")
         
-        # Save Results
+        for feed_meta in self.feeds:
+            try:
+                print(f"📡 Connecting to {feed_meta['source']} ({feed_meta['url']})...")
+                # Parse Feed
+                feed = feedparser.parse(feed_meta['url'])
+                
+                if not feed.entries:
+                    print(f"   ⚠️ No entries found for {feed_meta['source']}.")
+                    continue
+                
+                print(f"   ✅ Found {len(feed.entries)} items.")
+                
+                # Process Top 15 items per feed
+                for entry in feed.entries[:15]:
+                    pub_date = self.normalize_date(getattr(entry, 'published', str(datetime.now())))
+                    
+                    # Logic: Is this "Fresh" (Last 30 days)?
+                    diff_days = (datetime.now() - pub_date).days
+                    if diff_days > 60: continue # Skip very old news
+                    
+                    self.results.append({
+                        "title": entry.title,
+                        "date": pub_date.strftime("%Y-%m-%d"),
+                        "datetime": pub_date, # For sorting
+                        "country": feed_meta['country'],
+                        "source": feed_meta['source'],
+                        "url": entry.link,
+                        "summary": self.clean_html(getattr(entry, 'summary', '')),
+                        "is_today": (pub_date.date() == self.today),
+                        "color": feed_meta['color']
+                    })
+                    
+            except Exception as e:
+                print(f"   ❌ Error scanning {feed_meta['source']}: {e}")
+
+        # Sort by Date (Newest First)
         if self.results:
             df = pd.DataFrame(self.results)
-            df = df.sort_values(by='start')
+            df = df.sort_values(by='datetime', ascending=False)
+            # Drop datetime obj before saving json
+            df = df.drop(columns=['datetime']) 
             df.to_json(DATA_FILE, orient="records", indent=4)
-            self.log(f"✅ Saved {len(df)} High-Quality Records.")
+            print(f"💾 Saved {len(df)} Real-Time Updates.")
         else:
-            self.log("⚠️ No data found.")
-        
-        # Save Logs for UI
-        with open("data/scraper.log", "w") as f:
-            f.write("\n".join(self.logs))
+            print("⚠️ No data collected.")
 
 if __name__ == "__main__":
-    SlowScraper().run()
+    GlobalPulseScraper().run()
