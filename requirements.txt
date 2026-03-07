@@ -1,13 +1,7 @@
 streamlit
-streamlit-calendar
 pandas
-selenium
-webdriver-manager
-duckduckgo-search>=5.0
+requests
 feedparser
 beautifulsoup4
 lxml
 python-dateutil
-requests
-eurostat
-cbsodata
