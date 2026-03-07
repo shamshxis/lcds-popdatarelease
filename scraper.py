@@ -1,147 +1,170 @@
 import pandas as pd
-import feedparser
 import requests
-import os
-import json
-import logging
-from datetime import datetime
+import feedparser
+import eurostat
+import re
 from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
 from dateutil import parser as date_parser
+import logging
 
-# --- CONFIGURATION ---
-DATA_DIR = "data"
-STATE_FILE = os.path.join(DATA_DIR, "current_state.json")
-HISTORY_FILE = os.path.join(DATA_DIR, "change_log.csv")
-os.makedirs(DATA_DIR, exist_ok=True)
+# --- CONFIG ---
+DATA_FILE = "data/releases.json"
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# --- 1. THE AGENTS (Native APIs & Feeds) ---
-class WatchtowerAgents:
+class PrecisionScraper:
     def __init__(self):
-        self.headers = {'User-Agent': 'Mozilla/5.0 (ResearchBot/1.0)'}
+        self.headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        self.results = []
 
     def normalize_date(self, d):
         try: return date_parser.parse(str(d), fuzzy=True).strftime("%Y-%m-%d")
-        except: return datetime.now().strftime("%Y-%m-%d")
+        except: return None
 
-    # --- AGENT: USAID / DHS (News Feed) ---
-    def fetch_usaid(self):
-        # Catches major announcements like data cuts
-        return self._parse_feed("https://dhsprogram.com/rss/news.cfm", "USAID/DHS", "Global Health")
-
-    # --- AGENT: INSEE FRANCE (Official Feed) ---
-    def fetch_insee(self):
-        return self._parse_feed("https://www.insee.fr/en/rss/actualites", "INSEE (France)", "National Stats")
-
-    # --- AGENT: STATISTICS ICELAND (Official Feed) ---
-    def fetch_statice(self):
-        return self._parse_feed("https://www.statice.is/rss", "Statice (Iceland)", "Demography")
-
-    # --- AGENT: FINDATA (Finland Social/Health) ---
-    def fetch_findata(self):
-        return self._parse_feed("https://findata.fi/en/feed/", "FinData", "Health Registry")
-
-    # --- AGENT: ONS (UK) ---
-    def fetch_ons(self):
-        # Tracking "News" to catch policy changes/cuts, not just data releases
-        return self._parse_feed("https://www.ons.gov.uk/news/rss", "ONS (UK)", "Policy & Data")
-
-    # --- AGENT: EUROSTAT (Alerts) ---
-    def fetch_eurostat(self):
-        return self._parse_feed("https://ec.europa.eu/eurostat/cache/RSS/rss.xml", "Eurostat", "EU Stats")
-
-    # --- AGENT: CBS NETHERLANDS (News) ---
-    def fetch_cbs(self):
-        return self._parse_feed("https://www.cbs.nl/en-gb/service/news-releases-rss", "CBS (Netherlands)", "National Stats")
-
-    # --- HELPER: FEED PARSER ---
-    def _parse_feed(self, url, source, default_type):
-        items = []
+    # --- 1. ONS (UK) - DEATHS WEEKLY ---
+    def scrape_ons(self):
+        # ONS often puts the "Next release" date in the meta metadata of the product page
+        target = {
+            "title": "Deaths registered weekly in England and Wales",
+            "url": "https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/deaths/bulletins/deathsregisteredweeklyinenglandandwales/latest",
+            "source": "ONS",
+            "country": "UK"
+        }
         try:
-            feed = feedparser.parse(url)
-            for entry in feed.entries:
-                title = entry.title
-                link = entry.link
-                # Create a stable ID. For RSS, link is usually best.
-                uid = link 
-                
-                items.append({
-                    "id": uid,
-                    "source": source,
-                    "date": self.normalize_date(entry.published if 'published' in entry else datetime.now()),
-                    "type": default_type,
-                    "description": title,
-                    "link": link
+            resp = requests.get(target['url'], headers=self.headers)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            
+            # ONS Structure: <span class="release__date">Next release: 12 March 2026</span>
+            # Or text searching "Next release"
+            meta_box = soup.find("div", class_="meta__item")
+            if meta_box and "Next release" in meta_box.text:
+                date_text = meta_box.text.replace("Next release:", "").strip()
+                target['start'] = self.normalize_date(date_text)
+                target['status'] = "🟢 CONFIRMED"
+                self.results.append(target)
+            else:
+                # Fallback: Scrape the general calendar for this title
+                self.results.append({**target, "start": "Check Site", "status": "⚠️ UNKNOWN"})
+        except Exception as e:
+            logging.error(f"ONS failed: {e}")
+
+    # --- 2. EUROSTAT - EXCESS MORTALITY ---
+    def scrape_eurostat(self):
+        # Use the official API to find the next update for "demo_mexrt" (Excess Mortality)
+        try:
+            # Note: Eurostat API gives *last* update. For *next* release, we use the calendar XML.
+            cal_url = "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml"
+            resp = requests.get(cal_url, headers=self.headers)
+            soup = BeautifulSoup(resp.content, 'xml')
+            
+            found = False
+            for item in soup.find_all('release'):
+                title = item.find('title').text
+                if "excess mortality" in title.lower():
+                    d = item.find('release_date').text
+                    self.results.append({
+                        "title": title,
+                        "start": self.normalize_date(d),
+                        "source": "Eurostat",
+                        "country": "EU",
+                        "url": "https://ec.europa.eu/eurostat/statistics-explained/index.php?title=Excess_mortality_statistics",
+                        "status": "🟢 CONFIRMED"
+                    })
+                    found = True
+            
+            if not found:
+                 self.results.append({
+                    "title": "Excess Mortality (demo_mexrt)",
+                    "start": "Mid-Month (Est)", # Eurostat releases mid-month usually
+                    "source": "Eurostat",
+                    "country": "EU",
+                    "url": "https://ec.europa.eu/eurostat/web/main/data/database",
+                    "status": "🟡 ESTIMATED"
                 })
         except Exception as e:
-            logging.error(f"Failed {source}: {e}")
-        return items
+            logging.error(f"Eurostat failed: {e}")
 
-# --- 2. THE LOGIC (State Diffing) ---
-def run_watchtower():
-    print("🚀 Starting Watchtower Engine...")
-    agents = WatchtowerAgents()
-    
-    # A. FETCH CURRENT STATE (The "Now")
-    current_data = []
-    current_data.extend(agents.fetch_usaid())
-    current_data.extend(agents.fetch_insee())
-    current_data.extend(agents.fetch_statice())
-    current_data.extend(agents.fetch_findata())
-    current_data.extend(agents.fetch_ons())
-    current_data.extend(agents.fetch_eurostat())
-    current_data.extend(agents.fetch_cbs())
-    
-    print(f"📥 Fetched {len(current_data)} total items from live feeds.")
-
-    # B. LOAD PREVIOUS STATE (The "Then")
-    prev_state = {}
-    if os.path.exists(STATE_FILE):
+    # --- 3. INSEE (FRANCE) - DEMOGRAPHY ---
+    def scrape_insee(self):
+        url = "https://www.insee.fr/en/information/2107811" # Release calendar
         try:
-            with open(STATE_FILE, 'r') as f:
-                loaded = json.load(f)
-                # Map ID -> Item for fast lookup
-                prev_state = {item['id']: item for item in loaded}
+            resp = requests.get(url, headers=self.headers)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            
+            # Iterate list items
+            for item in soup.select(".liste-publications li"):
+                text = item.text.strip()
+                if any(x in text.lower() for x in ["births", "deaths", "mortality", "population"]):
+                    # Extract date (usually at start or end)
+                    # Regex for dd/mm/yyyy
+                    match = re.search(r'\d{2}/\d{2}/\d{4}', text)
+                    if match:
+                        self.results.append({
+                            "title": text.split("\n")[0][:50] + "...",
+                            "start": self.normalize_date(match.group(0)),
+                            "source": "INSEE",
+                            "country": "France",
+                            "url": url,
+                            "status": "🟢 CONFIRMED"
+                        })
+        except Exception as e:
+             logging.error(f"INSEE failed: {e}")
+
+    # --- 4. STATICE (ICELAND) ---
+    def scrape_statice(self):
+        url = "https://www.statice.is/publications/news-archive/advance-release-calendar/"
+        try:
+            resp = requests.get(url, headers=self.headers)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            
+            # Statice uses a Table
+            rows = soup.select("table tr")
+            for row in rows:
+                cols = row.find_all("td")
+                if len(cols) >= 2:
+                    date_txt = cols[0].text.strip()
+                    title_txt = cols[1].text.strip()
+                    
+                    if any(x in title_txt.lower() for x in ["population", "death", "migration"]):
+                         self.results.append({
+                            "title": title_txt,
+                            "start": self.normalize_date(date_txt),
+                            "source": "Statice",
+                            "country": "Iceland",
+                            "url": url,
+                            "status": "🟢 CONFIRMED"
+                        })
+        except Exception as e:
+            logging.error(f"Statice failed: {e}")
+
+    # --- 5. FINDATA (FINLAND) ---
+    def scrape_findata(self):
+        # FinData RSS is reliable
+        try:
+            feed = feedparser.parse("https://findata.fi/en/feed/")
+            for entry in feed.entries:
+                self.results.append({
+                    "title": entry.title,
+                    "start": self.normalize_date(entry.published),
+                    "source": "FinData",
+                    "country": "Finland",
+                    "url": entry.link,
+                    "status": "🔵 NEWS" # Blue for News items (not future releases)
+                })
         except: pass
 
-    # C. CALCULATE DIFF (The "What Changed")
-    updates = []
-    current_ids = set(item['id'] for item in current_data)
-    
-    # 1. Detect RELEASES (New ID)
-    for item in current_data:
-        if item['id'] not in prev_state:
-            item['status'] = "🔴 RELEASE" 
-            updates.append(item)
-        else:
-            # 2. Detect UPDATES (Metadata change)
-            old = prev_state[item['id']]
-            if old['description'] != item['description']:
-                 item['status'] = "🟡 UPDATE"
-                 updates.append(item)
-
-    # 3. Detect DELETIONS (ID missing from source)
-    # *Note: For RSS, items expire naturally. We only flag 'Deletion' if we were tracking an API list.
-    # For now, we implicitly handle deletions by overwriting the state file.
-    
-    # D. SAVE HISTORY
-    if updates:
-        df_new = pd.DataFrame(updates)
-        # Select clean columns
-        df_new = df_new[['status', 'source', 'date', 'type', 'description', 'link']]
+    def run(self):
+        print("🚀 Starting Precision Scraper...")
+        self.scrape_ons()
+        self.scrape_eurostat()
+        self.scrape_insee()
+        self.scrape_statice()
+        self.scrape_findata()
         
-        # Append to CSV
-        header = not os.path.exists(HISTORY_FILE)
-        df_new.to_csv(HISTORY_FILE, mode='a', header=header, index=False)
-            
-        print(f"✅ Logged {len(updates)} new events to {HISTORY_FILE}")
-    else:
-        print("💤 No new changes detected.")
-
-    # E. OVERWRITE STATE (Reset for next run)
-    with open(STATE_FILE, 'w') as f:
-        json.dump(current_data, f, indent=4)
+        # Save
+        df = pd.DataFrame(self.results)
+        df.to_json(DATA_FILE, orient="records", indent=4)
+        print(f"✅ Saved {len(df)} LCDS-Relevant Datasets.")
 
 if __name__ == "__main__":
-    run_watchtower()
+    PrecisionScraper().run()
