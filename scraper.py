@@ -1,174 +1,152 @@
-import time
-import json
-import os
-import logging
-import re
-import concurrent.futures
-import requests
 import pandas as pd
+import feedparser
+import requests
+import os
+import json
+import logging
 from datetime import datetime
 from bs4 import BeautifulSoup
 from dateutil import parser as date_parser
 
-# API/Feeds
-import eurostat
-import cbsodata
-import feedparser
-from duckduckgo_search import DDGS
-
-# Browser
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
-
 # --- CONFIG ---
 DATA_DIR = "data"
-JSON_FILE = os.path.join(DATA_DIR, "releases.json")
+STATE_FILE = os.path.join(DATA_DIR, "current_state.json")
+HISTORY_FILE = os.path.join(DATA_DIR, "change_log.csv")
 os.makedirs(DATA_DIR, exist_ok=True)
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
-class LCDSFilter:
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# --- 1. THE AGENTS (Native APIs & Feeds Only) ---
+
+class WatchtowerAgents:
     def __init__(self):
-        self.NOISE = ["industrial", "retail", "trade", "gdp", "energy", "construction", "ppi", "hicp"]
-        self.CORE = ["mortal", "death", "birth", "fertil", "migra", "pop", "census", "health", "suicide"]
-
-    def is_relevant(self, text):
-        t = str(text).lower()
-        if any(n in t for n in self.NOISE): return False
-        return any(c in t for c in self.CORE)
-
-class WaterfallScraper:
-    def __init__(self):
-        self.filter = LCDSFilter()
-        self.options = Options()
-        self.options.add_argument("--headless=new")
-        self.options.add_argument("--no-sandbox")
-        self.options.add_argument("--disable-dev-shm-usage")
-        self.options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36")
+        self.headers = {'User-Agent': 'Mozilla/5.0 (ResearchBot/1.0)'}
 
     def normalize_date(self, d):
         try: return date_parser.parse(str(d), fuzzy=True).strftime("%Y-%m-%d")
-        except: return None
+        except: return datetime.now().strftime("%Y-%m-%d")
 
-    # --- TIER 1: OFFICIAL APIs ---
-    def agent_eurostat(self):
-        try:
-            logging.info("🇪🇺 Tier 1: Eurostat API")
-            toc = eurostat.get_toc_df()
-            # Fix column name error by searching for 'update' in columns
-            date_col = [c for c in toc.columns if 'update' in c.lower()][0]
-            relevant = toc[toc['title'].apply(self.filter.is_relevant)].copy()
-            
-            events = []
-            for _, row in relevant.head(20).iterrows():
-                events.append({
-                    "title": row['title'], "start": self.normalize_date(row[date_col]),
-                    "country": "EU", "source": "Eurostat API", "topic": "Population",
-                    "url": "https://ec.europa.eu/eurostat/data/database"
-                })
-            return events
-        except Exception as e:
-            logging.error(f"Eurostat API failed: {e}")
-            return []
+    def fetch_usaid_dhs(self):
+        """Catches major global health data news (like the cuts)"""
+        url = "https://dhsprogram.com/rss/news.cfm"
+        return self._parse_feed(url, "USAID/DHS", "Global Health")
 
-    def agent_cbs_nl(self):
-        try:
-            logging.info("🇳🇱 Tier 1: CBS Netherlands API")
-            toc = pd.DataFrame(cbsodata.get_table_list())
-            relevant = toc[toc['Title'].apply(self.filter.is_relevant)]
-            return [{
-                "title": r['Title'], "start": self.normalize_date(r['Modified']),
-                "country": "Netherlands", "source": "CBS API", "topic": "Demography",
-                "url": "https://opendata.cbs.nl/statline"
-            } for _, r in relevant.head(10).iterrows()]
-        except Exception as e:
-            logging.error(f"CBS API failed: {e}")
-            return []
+    def fetch_insee_france(self):
+        """French National Statistics (INSEE)"""
+        url = "https://www.insee.fr/en/rss/actualites"
+        return self._parse_feed(url, "INSEE (France)", "General Stats")
 
-    # --- TIER 2: RSS & XML FEEDS ---
-    def agent_ons_uk(self):
+    def fetch_statice_iceland(self):
+        """Statistics Iceland"""
+        url = "https://www.statice.is/rss"
+        return self._parse_feed(url, "Statice (Iceland)", "Demography")
+
+    def fetch_findata_finland(self):
+        """FinData (Social & Health Data Permit Authority)"""
+        url = "https://findata.fi/en/feed/"
+        return self._parse_feed(url, "FinData", "Health Registry")
+
+    def fetch_ons_news(self):
+        """ONS (UK) - Focusing on News/Announcements to catch policy changes"""
+        url = "https://www.ons.gov.uk/news/rss"
+        return self._parse_feed(url, "ONS (UK)", "Policy & Data")
+
+    def fetch_eurostat_alerts(self):
+        """Eurostat Alerts"""
+        url = "https://ec.europa.eu/eurostat/cache/RSS/rss.xml"
+        return self._parse_feed(url, "Eurostat", "EU Stats")
+
+    def _parse_feed(self, url, source, default_type):
+        items = []
         try:
-            logging.info("🇬🇧 Tier 2: ONS UK (Feed)")
-            url = "https://www.ons.gov.uk/releasecalendar/rss"
-            # ONS requires headers even for RSS
-            resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
-            feed = feedparser.parse(resp.content)
-            events = []
+            feed = feedparser.parse(url)
             for entry in feed.entries:
-                if self.filter.is_relevant(entry.title):
-                    events.append({
-                        "title": entry.title, "start": self.normalize_date(entry.published),
-                        "country": "UK", "source": "ONS Feed", "topic": "Vital Stats",
-                        "url": entry.link
-                    })
-            return events
-        except: return []
-
-    # --- TIER 3: SELENIUM TEXT SCAN (The Brute Force) ---
-    def agent_census_usa(self):
-        driver = None
-        try:
-            logging.info("🇺🇸 Tier 3: US Census (Selenium)")
-            driver = webdriver.Chrome(options=self.options)
-            url = "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
-            driver.get(url)
-            time.sleep(5)
-            body = driver.find_element("tag name", "body").text
-            events = []
-            for line in body.split('\n'):
-                match = re.search(r'([A-Z][a-z]+ \d{1,2}, \d{4})', line)
-                if match:
-                    title = line.replace(match.group(0), "").strip(" -:")
-                    if self.filter.is_relevant(title):
-                        events.append({
-                            "title": title, "start": self.normalize_date(match.group(0)),
-                            "country": "USA", "source": "US Census", "topic": "Population", "url": url
-                        })
-            return events
+                # Basic Keyword Filter (can be expanded)
+                title = entry.title
+                link = entry.link
+                desc = entry.summary if 'summary' in entry else ""
+                date = self.normalize_date(entry.published if 'published' in entry else datetime.now())
+                
+                # Create a unique ID for tracking
+                uid = f"{source}_{title[:30]}"
+                
+                items.append({
+                    "id": uid,
+                    "source": source,
+                    "date": date,
+                    "type": default_type,
+                    "description": title, # Title often contains the core news
+                    "link": link,
+                    "raw_desc": desc
+                })
         except Exception as e:
-            logging.error(f"US Census Failed: {e}")
-            return []
-        finally:
-            if driver: driver.quit()
+            logging.error(f"Failed {source}: {e}")
+        return items
 
-    # --- TIER 4: SEARCH RESCUE (Self-Healing) ---
-    def agent_search_rescue(self, query, country):
-        try:
-            logging.info(f"🚑 Tier 4: Search Rescue for {country}")
-            with DDGS() as ddgs:
-                results = list(ddgs.text(query, max_results=3))
-                events = []
-                for r in results:
-                    if self.filter.is_relevant(r['title']):
-                        events.append({
-                            "title": r['title'], "start": datetime.now().strftime("%Y-%m-%d"),
-                            "country": country, "source": "Search Discovery", "topic": "Discovery", "url": r['href']
-                        })
-                return events
-        except: return []
+# --- 2. THE LOGIC (State Diffing) ---
 
-    def run(self):
-        all_results = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            tasks = [
-                executor.submit(self.agent_eurostat),
-                executor.submit(self.agent_cbs_nl),
-                executor.submit(self.agent_ons_uk),
-                executor.submit(self.agent_census_usa),
-                executor.submit(self.agent_search_rescue, "site:statcan.gc.ca demography release 2026", "Canada")
-            ]
-            for future in concurrent.futures.as_completed(tasks):
-                all_results.extend(future.result())
+def run_watchtower():
+    print("🚀 Starting Watchtower...")
+    agents = WatchtowerAgents()
+    
+    # 1. FETCH CURRENT STATE
+    current_data = []
+    current_data.extend(agents.fetch_usaid_dhs())
+    current_data.extend(agents.fetch_insee_france())
+    current_data.extend(agents.fetch_statice_iceland())
+    current_data.extend(agents.fetch_findata_finland())
+    current_data.extend(agents.fetch_ons_news())
+    current_data.extend(agents.fetch_eurostat_alerts())
+    
+    print(f"📥 Fetched {len(current_data)} total items.")
 
-        if all_results:
-            # Deduplicate by Title
-            df = pd.DataFrame(all_results).drop_duplicates(subset=['title'])
-            df = df.sort_values(by='start', ascending=False)
-            df.to_json(JSON_FILE, orient='records', indent=4)
-            logging.info(f"💾 Successfully saved {len(df)} LCDS relevant records.")
+    # 2. LOAD PREVIOUS STATE
+    if os.path.exists(STATE_FILE):
+        with open(STATE_FILE, 'r') as f:
+            prev_state = {item['id']: item for item in json.load(f)}
+    else:
+        prev_state = {}
+
+    # 3. CALCULATE DIFF (The "What's Happening" Logic)
+    updates = []
+    current_ids = set(item['id'] for item in current_data)
+    
+    # Check for NEW items
+    for item in current_data:
+        if item['id'] not in prev_state:
+            item['status'] = "🔴 RELEASE" # New Release
+            updates.append(item)
         else:
-            logging.warning("No data found across any tiers.")
+            # Check for UPDATES (e.g. Link changed, Description changed)
+            old = prev_state[item['id']]
+            if old['link'] != item['link']:
+                 item['status'] = "🟡 UPDATE"
+                 updates.append(item)
+
+    # Check for DELETIONS (Missing from feed)
+    # Note: Feeds naturally expire items, so we must be careful calling it "Deletion"
+    # But for an API, this would be a deletion. For RSS, we track "Archived".
+    # We won't log deletions for RSS to avoid noise, but we UPDATE the state file.
+
+    # 4. SAVE HISTORY
+    if updates:
+        df_new = pd.DataFrame(updates)
+        # Columns: Status | Source | Date | Type | Description | Link
+        df_new = df_new[['status', 'source', 'date', 'type', 'description', 'link']]
+        
+        # Append to CSV History
+        if os.path.exists(HISTORY_FILE):
+            df_new.to_csv(HISTORY_FILE, mode='a', header=False, index=False)
+        else:
+            df_new.to_csv(HISTORY_FILE, mode='w', header=True, index=False)
+            
+        print(f"✅ Added {len(updates)} new events to history.")
+    else:
+        print("💤 No changes detected.")
+
+    # 5. UPDATE STATE FILE (Overwrite)
+    with open(STATE_FILE, 'w') as f:
+        json.dump(current_data, f, indent=4)
 
 if __name__ == "__main__":
-    WaterfallScraper().run()
+    run_watchtower()
