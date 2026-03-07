@@ -2,8 +2,8 @@ name: Watchtower Auto-Sync
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # Every 6 hours
-  workflow_dispatch:
+    - cron: '0 */6 * * *' # Runs every 6 hours
+  workflow_dispatch:      # Allows manual click-to-run
 
 jobs:
   update-data:
@@ -12,7 +12,7 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup Python
@@ -20,16 +20,20 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Libs
+      - name: Install Dependencies
         run: pip install -r requirements.txt
 
-      - name: Run Watchtower Engine
+      - name: Run Precision Scraper
         run: python scraper.py
 
-      - name: Commit Changes
+      - name: Commit and Push Results
         run: |
           git config --global user.name "Watchtower Bot"
           git config --global user.email "bot@lcds.org"
-          git add data/change_log.csv data/current_state.json
-          git commit -m "📡 Auto-Sync: Detected new data events" || echo "No changes to commit"
+          
+          # Force add the specific file we care about
+          git add data/releases.json
+          
+          # Commit if there are changes, otherwise skip without error
+          git commit -m "📡 Auto-Sync: Updated release schedule" || echo "No changes to commit"
           git push
