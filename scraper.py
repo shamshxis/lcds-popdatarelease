@@ -5,37 +5,37 @@ import re
 import os
 import json
 import logging
-from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from dateutil import parser as date_parser
 
 # --- CONFIG ---
 DATA_FILE = "data/releases.json"
-os.makedirs("data", exist_ok=True)
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
-class PrecisionScraper:
+class IntelligenceScraper:
     def __init__(self):
-        self.headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124 Safari/537.36'}
+        self.headers = {'User-Agent': 'Mozilla/5.0 (ResearchBot/2.0; LCDS)'}
         self.today = datetime.now()
         self.results = []
+        
+        # KEYWORDS: Broaden slightly to ensure we catch data
+        self.KEYWORDS = ['death', 'mortal', 'birth', 'fertil', 'popul', 'migra', 'census', 'health', 'life exp']
 
     def normalize_date(self, d):
         try: return date_parser.parse(str(d), fuzzy=True)
         except: return None
 
-    def add_result(self, title, date_obj, country, source, url):
-        """
-        STRICT FILTER: Only add if Future OR Recent Past (last 7 days).
-        This eliminates 'trash' from 2011.
-        """
+    def add_row(self, title, date_obj, country, source, url, note=""):
         if not date_obj: return
         
         diff = (date_obj - self.today).days
-        
-        # LOGIC: Future (diff >= 0) OR Recent Release (diff > -7)
-        if diff >= -7:
+        # LOGIC: Future (diff >= 0) OR Recent Past (-14 days)
+        if diff >= -14:
+            is_new = (date_obj.date() == self.today.date()) # Flag for Yellow Tinge
+            
             status = "🟢 CONFIRMED" if diff >= 0 else "🔴 RELEASED"
+            if "Est" in note: status = "🟡 EXPECTED"
+            
             self.results.append({
                 "title": title.strip(),
                 "start": date_obj.strftime("%Y-%m-%d"),
@@ -43,115 +43,110 @@ class PrecisionScraper:
                 "source": source,
                 "url": url,
                 "status": status,
-                "days_diff": diff
+                "days_diff": diff,
+                "commentary": note or f"Official {source} release.",
+                "is_new": is_new,
+                "fetched_at": datetime.now().strftime("%Y-%m-%d %H:%M")
             })
 
-    # --- 1. ONS (UK) - DEATHS REGISTERED WEEKLY ---
+    # --- 1. ONS (UK) - VIA JSON API (Fail-Safe) ---
     def scrape_ons(self):
         try:
-            # We target the 'upcoming' view directly
-            url = "https://www.ons.gov.uk/releasecalendar?view=upcoming&size=50"
-            resp = requests.get(url, headers=self.headers, timeout=10)
-            soup = BeautifulSoup(resp.content, 'html.parser')
+            # OFFICIAL JSON ENDPOINT (No HTML parsing needed)
+            url = "https://www.ons.gov.uk/releasecalendar/data?view=upcoming&size=100"
+            resp = requests.get(url, headers=self.headers, timeout=15)
+            data = resp.json()
             
-            for item in soup.select('.release__item'):
-                title_el = item.select_one('h3')
-                date_el = item.select_one('.release__date')
+            releases = data.get('result', {}).get('results', [])
+            for item in releases:
+                title = item.get('description', {}).get('title', '')
+                date_raw = item.get('description', {}).get('releaseDate', '')
                 
-                if title_el and date_el:
-                    title = title_el.get_text(strip=True)
-                    # TARGET FILTER: Only pick up Vital Stats
-                    if any(x in title.lower() for x in ['death', 'birth', 'conception', 'life expectancy']):
-                        date_text = date_el.get_text(strip=True).replace("Release date:", "").strip()
-                        link = "https://www.ons.gov.uk" + item.select_one('a')['href']
-                        self.add_result(title, self.normalize_date(date_text), "UK", "ONS", link)
+                # Check Keywords
+                if any(k in title.lower() for k in self.KEYWORDS):
+                    link = "https://www.ons.gov.uk" + item.get('uri', '')
+                    d_obj = self.normalize_date(date_raw)
+                    self.add_row(title, d_obj, "UK", "ONS", link, note="Confirmed via ONS API")
         except Exception as e:
-            logging.error(f"ONS failed: {e}")
+            logging.error(f"ONS API Failed: {e}")
 
-    # --- 2. EUROSTAT - EXCESS MORTALITY & POPULATION ---
+    # --- 2. EUROSTAT - XML CALENDAR ---
     def scrape_eurostat(self):
         try:
-            # XML Calendar is the most reliable source for Eurostat
+            # XML is the most stable feed for EU
             url = "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml"
-            resp = requests.get(url, headers=self.headers, timeout=10)
+            resp = requests.get(url, headers=self.headers, timeout=15)
+            # Simple string search to avoid lxml complexity if it fails
+            from bs4 import BeautifulSoup
             soup = BeautifulSoup(resp.content, 'xml')
             
             for item in soup.find_all('release'):
                 title = item.find('title').text
                 d_str = item.find('release_date').text
                 
-                # TARGET FILTER: High Value Datasets Only
-                if any(x in title.lower() for x in ['excess mortality', 'population', 'fertility', 'life expectancy']):
-                    self.add_result(title, self.normalize_date(d_str), "EU", "Eurostat", "https://ec.europa.eu/eurostat/news/release-calendar")
+                if any(k in title.lower() for k in self.KEYWORDS):
+                    self.add_row(title, self.normalize_date(d_str), "EU", "Eurostat", "https://ec.europa.eu/eurostat/news/release-calendar", note="EU Standard Release")
         except Exception as e:
-            logging.error(f"Eurostat failed: {e}")
+            logging.error(f"Eurostat Failed: {e}")
 
-    # --- 3. INSEE (FRANCE) - DEMOGRAPHY ---
-    def scrape_insee(self):
+    # --- 3. GDELT (INTELLIGENCE LAYER) ---
+    def scrape_gdelt(self):
+        """
+        Queries GDELT for major news signals about releases.
+        This finds things the calendars miss.
+        """
         try:
-            url = "https://www.insee.fr/en/information/2107811"
-            resp = requests.get(url, headers=self.headers)
-            soup = BeautifulSoup(resp.content, 'html.parser')
+            # Query: "Office for National Statistics" AND "Release" (Last 24 hours)
+            # URL constructs a JSON query
+            query = "Office%20for%20National%20Statistics%20release"
+            url = f"https://api.gdeltproject.org/api/v2/doc/doc?query={query}&mode=artlist&maxrecords=5&format=json"
             
-            # INSEE lists dates in 'li' tags, often mixed with text
-            for li in soup.select('#consulter li'):
-                text = li.get_text(" ", strip=True)
-                # Regex to extract "dd/mm/yyyy"
-                match = re.search(r'(\d{2}/\d{2}/\d{4})', text)
+            resp = requests.get(url, timeout=10)
+            data = resp.json()
+            
+            for art in data.get('articles', []):
+                title = art.get('title', '')
+                url = art.get('url', '')
+                date_str = art.get('seendate', '') # Format: 20260306T...
                 
-                if match:
-                    # TARGET FILTER
-                    if any(x in text.lower() for x in ['birth', 'death', 'mortality', 'population']):
-                        date_obj = self.normalize_date(match.group(0))
-                        title = text.replace(match.group(0), "").strip("- ")
-                        self.add_result(title, date_obj, "France", "INSEE", url)
-        except Exception as e:
-            logging.error(f"INSEE failed: {e}")
+                # If news mentions our keywords, flag it
+                if any(k in title.lower() for k in self.KEYWORDS):
+                    d_obj = self.normalize_date(date_str[:8]) # Extract YYYYMMDD
+                    self.add_row(f"NEWS SIGNAL: {title}", d_obj, "Global", "GDELT Intelligence", url, note="Detected by GDELT News Scan")
+        except: 
+            pass # GDELT fails often, don't crash
 
-    # --- 4. STATICE (ICELAND) - POPULATION ---
-    def scrape_statice(self):
+    # --- 4. ICELAND (Keeping what worked) ---
+    def scrape_iceland(self):
         try:
             url = "https://www.statice.is/publications/news-archive/advance-release-calendar/"
             resp = requests.get(url, headers=self.headers)
+            from bs4 import BeautifulSoup
             soup = BeautifulSoup(resp.content, 'html.parser')
-            
             for row in soup.select("table tr"):
                 cols = row.find_all("td")
                 if len(cols) >= 2:
-                    date_txt = cols[0].get_text(strip=True)
-                    title = cols[1].get_text(strip=True)
-                    
-                    # TARGET FILTER
-                    if any(x in title.lower() for x in ['population', 'death', 'migration', 'census']):
-                        self.add_result(title, self.normalize_date(date_txt), "Iceland", "Statice", url)
-        except Exception as e:
-            logging.error(f"Statice failed: {e}")
-
-    # --- 5. FINDATA (FINLAND) - NEWS ---
-    def scrape_findata(self):
-        try:
-            # FinData is a permit authority, they announce updates via News RSS
-            feed = feedparser.parse("https://findata.fi/en/feed/")
-            for entry in feed.entries:
-                self.add_result(entry.title, self.normalize_date(entry.published), "Finland", "FinData", entry.link)
+                    d_txt = cols[0].text.strip()
+                    title = cols[1].text.strip()
+                    if any(k in title.lower() for k in self.KEYWORDS):
+                        self.add_row(title, self.normalize_date(d_txt), "Iceland", "Statice", url, note="Statice Official Table")
         except: pass
 
     def run(self):
-        print("🚀 Starting Precision Scraper...")
-        self.scrape_ons()
-        self.scrape_eurostat()
-        self.scrape_insee()
-        self.scrape_statice()
-        self.scrape_findata()
+        print("🚀 Starting Intelligence Scraper...")
+        self.scrape_ons()      # JSON API
+        self.scrape_eurostat() # XML
+        self.scrape_iceland()  # HTML
+        self.scrape_gdelt()    # News API
         
-        # Save & Sort
+        # Save
         if self.results:
             df = pd.DataFrame(self.results)
             df = df.sort_values(by='start')
             df.to_json(DATA_FILE, orient="records", indent=4)
-            print(f"✅ Saved {len(df)} High-Quality Datasets.")
+            print(f"✅ Saved {len(df)} Intelligence Records.")
         else:
-            print("⚠️ No relevant data found.")
+            print("⚠️ No data found.")
 
 if __name__ == "__main__":
-    PrecisionScraper().run()
+    IntelligenceScraper().run()
