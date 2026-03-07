@@ -10,27 +10,26 @@ st.set_page_config(layout="wide", page_title="LCDS Release Tracker", page_icon="
 st.markdown("""
 <style>
     .status-confirmed {background-color: #2ca02c; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em;}
-    .status-news {background-color: #1f77b4; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em;}
-    .status-unknown {background-color: #777; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em;}
+    .status-released {background-color: #d62728; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8em;}
     .days-tag {font-weight: bold; font-size: 0.9em; color: #333;}
     .block-container {padding-top: 1rem;}
 </style>
 """, unsafe_allow_html=True)
 
 st.title("🧬 LCDS Precision Tracker")
-st.caption("Tracking Future Demographic Releases (ONS, Eurostat, INSEE, Statice)")
+st.caption("Consolidated Schedule: ONS, Eurostat, INSEE, Statice, FinData")
 
-# --- DATA LOADING & SANITIZATION ---
+# --- DATA LOADING ---
 DATA_FILE = "data/releases.json"
 
-# 1. Auto-Run Scraper if missing
+# Auto-run scraper if missing
 if not os.path.exists(DATA_FILE):
     st.warning("⚠️ Initializing Data... Please wait.")
     os.system("python scraper.py")
-    time.sleep(1) # Wait for file write
+    time.sleep(1)
     st.rerun()
 
-# 2. Load Data safely
+# Load Data Safely
 try:
     df = pd.read_json(DATA_FILE)
 except ValueError:
@@ -45,19 +44,14 @@ if df.empty:
         st.rerun()
     st.stop()
 
-# 3. CRITICAL FIX: Ensure 'status' column exists
-if 'status' not in df.columns:
-    df['status'] = '⚠️ UNKNOWN'  # Default value if missing
-
-# 4. CRITICAL FIX: Ensure 'country' column exists
-if 'country' not in df.columns:
-    df['country'] = 'Global'
+# --- CRITICAL FIX: ENSURE COLUMNS EXIST ---
+required_cols = ['title', 'start', 'country', 'source', 'url', 'status', 'days_diff']
+for col in required_cols:
+    if col not in df.columns:
+        df[col] = '' 
 
 # --- PROCESSING ---
-# Calculate Timing
-today = pd.Timestamp.now().normalize()
 df['start'] = pd.to_datetime(df['start'])
-df['days_diff'] = (df['start'] - today).dt.days
 
 def format_timing(row):
     days = row['days_diff']
@@ -66,13 +60,11 @@ def format_timing(row):
     return f"In {int(days)} days"
 
 df['timing'] = df.apply(format_timing, axis=1)
-
-# Sort (Soonest First)
 df = df.sort_values(by='days_diff', ascending=True)
 
 # --- SIDEBAR ---
 with st.sidebar:
-    if st.button("🔄 Check for New Releases"):
+    if st.button("🔄 Force Refresh Data"):
         with st.spinner("Scanning Agencies..."):
             os.system("python scraper.py")
             st.cache_data.clear()
@@ -80,25 +72,21 @@ with st.sidebar:
     
     st.divider()
     
-    # Filters
+    # Filter Country
     countries = df['country'].unique().tolist()
     sel_country = st.multiselect("Filter Country", countries, default=countries)
     
-    # Filter Dataframe
-    if sel_country:
-        filtered = df[df['country'].isin(sel_country)]
-    else:
-        filtered = df
+    filtered = df[df['country'].isin(sel_country)]
 
 # --- MAIN TABLE ---
 # Metrics
 c1, c2, c3 = st.columns(3)
-upcoming_count = len(filtered[filtered['days_diff'] >= 0])
-c1.metric("Upcoming Releases", upcoming_count)
+upcoming = filtered[filtered['days_diff'] >= 0]
+c1.metric("Upcoming Releases", len(upcoming))
 
 next_date = "-"
-if upcoming_count > 0:
-    next_date = filtered[filtered['days_diff'] >= 0].iloc[0]['start'].strftime("%Y-%m-%d")
+if not upcoming.empty:
+    next_date = upcoming.iloc[0]['start'].strftime("%Y-%m-%d")
 c2.metric("Next Key Date", next_date)
 
 st.divider()
@@ -108,19 +96,17 @@ for idx, row in filtered.iterrows():
     with st.container(border=True):
         c1, c2, c3, c4 = st.columns([1, 1, 4, 1])
         
-        # Date & Timing
+        # 1. Date
         c1.write(f"**{row['start'].strftime('%Y-%m-%d')}**")
         c1.markdown(f"<span class='days-tag'>{row['timing']}</span>", unsafe_allow_html=True)
         
-        # Source
+        # 2. Source
         c2.write(f"**{row['country']}**")
-        c2.caption(row.get('source', 'Unknown'))
+        c2.caption(row['source'])
         
-        # Title & Status Logic
-        status_val = row.get('status', 'UNKNOWN')
-        status_slug = "status-confirmed" if "CONFIRMED" in str(status_val) else "status-news"
+        # 3. Title & Status
+        status_slug = "status-confirmed" if "CONFIRMED" in row['status'] else "status-released"
+        c3.markdown(f"<span class='{status_slug}'>{row['status']}</span> **{row['title']}**", unsafe_allow_html=True)
         
-        c3.markdown(f"<span class='{status_slug}'>{status_val}</span> **{row['title']}**", unsafe_allow_html=True)
-        
-        # Link
+        # 4. Link
         c4.link_button("🔗 Open", row['url'], use_container_width=True)
