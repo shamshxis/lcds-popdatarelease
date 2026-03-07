@@ -1,26 +1,152 @@
 [
     {
-        "title":"Migration 2025",
-        "start":"2026-03-19",
-        "country":"Iceland",
-        "source":"Statice",
-        "url":"https:\/\/www.statice.is\/publications\/news-archive\/advance-release-calendar\/",
-        "status":"\ud83d\udfe2 CONFIRMED",
-        "days_diff":11,
-        "commentary":"Source: Official Table",
-        "is_new":false,
-        "freshness":"EXISTING"
+        "title":"APRO_MT_LSPIG - \"Dataset: updated data\"",
+        "date":"2026-03-06",
+        "country":"EU",
+        "source":"Eurostat",
+        "url":"https:\/\/ec.europa.eu\/eurostat\/databrowser\/product\/page\/APRO_MT_LSPIG",
+        "summary":"Pig population - annual data...",
+        "is_today":false,
+        "color":"#FFCC00"
     },
     {
-        "title":"Population 1 January 2026",
-        "start":"2026-12-03",
-        "country":"Iceland",
-        "source":"Statice",
-        "url":"https:\/\/www.statice.is\/publications\/news-archive\/advance-release-calendar\/",
-        "status":"\ud83d\udfe2 CONFIRMED",
-        "days_diff":270,
-        "commentary":"Source: Official Table",
-        "is_new":false,
-        "freshness":"EXISTING"
+        "title":"APRO_MT_LSPIG - \"Dataset: updated data\"",
+        "date":"2026-03-06",
+        "country":"EU",
+        "source":"Eurostat",
+        "url":"https:\/\/ec.europa.eu\/eurostat\/databrowser\/product\/page\/APRO_MT_LSPIG",
+        "summary":"Pig population...",
+        "is_today":false,
+        "color":"#FFCC00"
+    },
+    {
+        "title":"APRO_MT_PCATLHS - \"Dataset: updated data\"",
+        "date":"2026-03-06",
+        "country":"EU",
+        "source":"Eurostat",
+        "url":"https:\/\/ec.europa.eu\/eurostat\/databrowser\/product\/page\/APRO_MT_PCATLHS",
+        "summary":"Production forecasts for bovines, sheep and goats - thousand heads - bi-annual data...",
+        "is_today":false,
+        "color":"#FFCC00"
+    },
+    {
+        "title":"APRO_MT_PCATLHS - \"Dataset: updated data\"",
+        "date":"2026-03-06",
+        "country":"EU",
+        "source":"Eurostat",
+        "url":"https:\/\/ec.europa.eu\/eurostat\/databrowser\/product\/page\/APRO_MT_PCATLHS",
+        "summary":"Production forecasts for bovines, sheep and goats - bi-annual data...",
+        "is_today":false,
+        "color":"#FFCC00"
+    },
+    {
+        "title":"APRO_MT_PPIGHQ - \"Dataset: updated data\"",
+        "date":"2026-03-06",
+        "country":"EU",
+        "source":"Eurostat",
+        "url":"https:\/\/ec.europa.eu\/eurostat\/databrowser\/product\/page\/APRO_MT_PPIGHQ",
+        "summary":"Production forecasts for pigs - quarterly data...",
+        "is_today":false,
+        "color":"#FFCC00"
+    },
+    {
+        "title":"APRO_MT_PPIGHQ - \"Dataset: updated data\"",
+        "date":"2026-03-06",
+        "country":"EU",
+        "source":"Eurostat",
+        "url":"https:\/\/ec.europa.eu\/eurostat\/databrowser\/product\/page\/APRO_MT_PPIGHQ",
+        "summary":"Production forecasts for pigs - thousand heads - quarterly data...",
+        "is_today":false,
+        "color":"#FFCC00"
+    },
+    {
+        "title":"AVIA_TF_ALA - \"Dataset: updated data\"",
+        "date":"2026-03-06",
+        "country":"EU",
+        "source":"Eurostat",
+        "url":"https:\/\/ec.europa.eu\/eurostat\/databrowser\/product\/page\/AVIA_TF_ALA",
+        "summary":"Air transport by airline licence (EU or non-EU), main airports and transport coverage...",
+        "is_today":false,
+        "color":"#FFCC00"
+    },
+    {
+        "title":"CEI_PC032 - \"Dataset: updated data\"",
+        "date":"2026-03-06",
+        "country":"EU",
+        "source":"Eurostat",
+        "url":"https:\/\/ec.europa.eu\/eurostat\/databrowser\/product\/page\/CEI_PC032",
+        "summary":"Generation of waste excluding major mineral wastes per GDP unit...",
+        "is_today":false,
+        "color":"#FFCC00"
+    },
+    {
+        "title":"CEI_WM060 - \"Dataset: updated data\"",
+        "date":"2026-03-06",
+        "country":"EU",
+        "source":"Eurostat",
+        "url":"https:\/\/ec.europa.eu\/eurostat\/databrowser\/product\/page\/CEI_WM060",
+        "summary":"Recycling rate of waste of electrical and electronic equipment (WEEE) separately collected...",
+        "is_today":false,
+        "color":"#FFCC00"
+    },
+    {
+        "title":"DEMO_FACZC - \"Dataset: updated data\"",
+        "date":"2026-03-06",
+        "country":"EU",
+        "source":"Eurostat",
+        "url":"https:\/\/ec.europa.eu\/eurostat\/databrowser\/product\/page\/DEMO_FACZC",
+        "summary":"Live births by mother's age and citizenship...",
+        "is_today":false,
+        "color":"#FFCC00"
+    },
+    {
+        "title":"DEMO_R_DEATHS - \"Dataset: updated data\"",
+        "date":"2026-03-06",
+        "country":"EU",
+        "source":"Eurostat",
+        "url":"https:\/\/ec.europa.eu\/eurostat\/databrowser\/product\/page\/DEMO_R_DEATHS",
+        "summary":"Deaths (total) by NUTS 3 region...",
+        "is_today":false,
+        "color":"#FFCC00"
+    },
+    {
+        "title":"DEMO_R_MAGEC - \"Dataset: updated data\"",
+        "date":"2026-03-06",
+        "country":"EU",
+        "source":"Eurostat",
+        "url":"https:\/\/ec.europa.eu\/eurostat\/databrowser\/product\/page\/DEMO_R_MAGEC",
+        "summary":"Deaths by age, sex and NUTS 2 region...",
+        "is_today":false,
+        "color":"#FFCC00"
+    },
+    {
+        "title":"DEMO_R_MAGEC3 - \"Dataset: updated data\"",
+        "date":"2026-03-06",
+        "country":"EU",
+        "source":"Eurostat",
+        "url":"https:\/\/ec.europa.eu\/eurostat\/databrowser\/product\/page\/DEMO_R_MAGEC3",
+        "summary":"Deaths by age group, sex and NUTS 3 region...",
+        "is_today":false,
+        "color":"#FFCC00"
+    },
+    {
+        "title":"DEMO_R_MINF - \"Dataset: updated data\"",
+        "date":"2026-03-06",
+        "country":"EU",
+        "source":"Eurostat",
+        "url":"https:\/\/ec.europa.eu\/eurostat\/databrowser\/product\/page\/DEMO_R_MINF",
+        "summary":"Infant mortality by NUTS 2 region...",
+        "is_today":false,
+        "color":"#FFCC00"
+    },
+    {
+        "title":"DEMO_R_MLIFE - \"Dataset: updated data\"",
+        "date":"2026-03-06",
+        "country":"EU",
+        "source":"Eurostat",
+        "url":"https:\/\/ec.europa.eu\/eurostat\/databrowser\/product\/page\/DEMO_R_MLIFE",
+        "summary":"Life table by age, sex and NUTS 2 region...",
+        "is_today":false,
+        "color":"#FFCC00"
     }
 ]
