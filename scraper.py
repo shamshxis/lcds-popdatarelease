@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 class PrecisionScraper:
     def __init__(self):
-        self.headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+        self.headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124 Safari/537.36'}
         self.today = datetime.now()
         self.results = []
 
@@ -24,44 +24,32 @@ class PrecisionScraper:
         try: return date_parser.parse(str(d), fuzzy=True)
         except: return None
 
-    def add_result(self, title, date_obj, country, source, url, status="🟢 CONFIRMED"):
+    def add_result(self, title, date_obj, country, source, url):
+        """
+        STRICT FILTER: Only add if Future OR Recent Past (last 7 days).
+        This eliminates 'trash' from 2011.
+        """
         if not date_obj: return
         
-        # LOGIC: Only add if Future OR Recent Past (7 days)
         diff = (date_obj - self.today).days
-        if diff >= 0 or (diff < 0 and diff > -7):
+        
+        # LOGIC: Future (diff >= 0) OR Recent Release (diff > -7)
+        if diff >= -7:
+            status = "🟢 CONFIRMED" if diff >= 0 else "🔴 RELEASED"
             self.results.append({
                 "title": title.strip(),
                 "start": date_obj.strftime("%Y-%m-%d"),
                 "country": country,
                 "source": source,
                 "url": url,
-                "status": status if diff >= 0 else "🔵 NEWS"
+                "status": status,
+                "days_diff": diff
             })
 
-    # --- 1. EUROSTAT (XML Calendar) ---
-    def scrape_eurostat(self):
-        try:
-            logging.info("🇪🇺 Eurostat: Fetching XML Calendar...")
-            url = "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml"
-            resp = requests.get(url, headers=self.headers, timeout=10)
-            soup = BeautifulSoup(resp.content, 'xml')
-            
-            for item in soup.find_all('release'):
-                title = item.find('title').text
-                d_str = item.find('release_date').text
-                
-                # Filter: Demography/Health only
-                if any(x in title.lower() for x in ['mortality', 'death', 'population', 'health', 'life', 'fertility']):
-                    self.add_result(title, self.normalize_date(d_str), "EU", "Eurostat", "https://ec.europa.eu/eurostat/news/release-calendar")
-        except Exception as e:
-            logging.error(f"Eurostat failed: {e}")
-
-    # --- 2. ONS (UK) - UPCOMING VIEW ---
+    # --- 1. ONS (UK) - DEATHS REGISTERED WEEKLY ---
     def scrape_ons(self):
         try:
-            logging.info("🇬🇧 ONS: Fetching Upcoming Releases...")
-            # This URL forces the 'upcoming' list
+            # We target the 'upcoming' view directly
             url = "https://www.ons.gov.uk/releasecalendar?view=upcoming&size=50"
             resp = requests.get(url, headers=self.headers, timeout=10)
             soup = BeautifulSoup(resp.content, 'html.parser')
@@ -72,78 +60,98 @@ class PrecisionScraper:
                 
                 if title_el and date_el:
                     title = title_el.get_text(strip=True)
-                    date_text = date_el.get_text(strip=True).replace("Release date:", "").strip()
-                    
-                    if any(x in title.lower() for x in ['death', 'birth', 'census', 'population', 'migration']):
+                    # TARGET FILTER: Only pick up Vital Stats
+                    if any(x in title.lower() for x in ['death', 'birth', 'conception', 'life expectancy']):
+                        date_text = date_el.get_text(strip=True).replace("Release date:", "").strip()
                         link = "https://www.ons.gov.uk" + item.select_one('a')['href']
                         self.add_result(title, self.normalize_date(date_text), "UK", "ONS", link)
         except Exception as e:
             logging.error(f"ONS failed: {e}")
 
-    # --- 3. INSEE (FRANCE) ---
+    # --- 2. EUROSTAT - EXCESS MORTALITY & POPULATION ---
+    def scrape_eurostat(self):
+        try:
+            # XML Calendar is the most reliable source for Eurostat
+            url = "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml"
+            resp = requests.get(url, headers=self.headers, timeout=10)
+            soup = BeautifulSoup(resp.content, 'xml')
+            
+            for item in soup.find_all('release'):
+                title = item.find('title').text
+                d_str = item.find('release_date').text
+                
+                # TARGET FILTER: High Value Datasets Only
+                if any(x in title.lower() for x in ['excess mortality', 'population', 'fertility', 'life expectancy']):
+                    self.add_result(title, self.normalize_date(d_str), "EU", "Eurostat", "https://ec.europa.eu/eurostat/news/release-calendar")
+        except Exception as e:
+            logging.error(f"Eurostat failed: {e}")
+
+    # --- 3. INSEE (FRANCE) - DEMOGRAPHY ---
     def scrape_insee(self):
         try:
-            logging.info("🇫🇷 INSEE: Fetching Calendar...")
             url = "https://www.insee.fr/en/information/2107811"
             resp = requests.get(url, headers=self.headers)
             soup = BeautifulSoup(resp.content, 'html.parser')
             
-            # INSEE lists are complex, we look for 'li' containing dates
-            for li in soup.select('li'):
+            # INSEE lists dates in 'li' tags, often mixed with text
+            for li in soup.select('#consulter li'):
                 text = li.get_text(" ", strip=True)
-                # Regex to find DD/MM/YYYY
+                # Regex to extract "dd/mm/yyyy"
                 match = re.search(r'(\d{2}/\d{2}/\d{4})', text)
-                if match and any(x in text.lower() for x in ['birth', 'death', 'population']):
-                    title = text.replace(match.group(0), "").strip()
-                    self.add_result(title, self.normalize_date(match.group(0)), "France", "INSEE", url)
+                
+                if match:
+                    # TARGET FILTER
+                    if any(x in text.lower() for x in ['birth', 'death', 'mortality', 'population']):
+                        date_obj = self.normalize_date(match.group(0))
+                        title = text.replace(match.group(0), "").strip("- ")
+                        self.add_result(title, date_obj, "France", "INSEE", url)
         except Exception as e:
             logging.error(f"INSEE failed: {e}")
 
-    # --- 4. STATICE (ICELAND) ---
+    # --- 4. STATICE (ICELAND) - POPULATION ---
     def scrape_statice(self):
         try:
-            logging.info("🇮🇸 Statice: Fetching Table...")
             url = "https://www.statice.is/publications/news-archive/advance-release-calendar/"
             resp = requests.get(url, headers=self.headers)
             soup = BeautifulSoup(resp.content, 'html.parser')
             
-            for row in soup.select("tr"):
+            for row in soup.select("table tr"):
                 cols = row.find_all("td")
                 if len(cols) >= 2:
                     date_txt = cols[0].get_text(strip=True)
                     title = cols[1].get_text(strip=True)
                     
-                    if any(x in title.lower() for x in ['population', 'death', 'migration']):
+                    # TARGET FILTER
+                    if any(x in title.lower() for x in ['population', 'death', 'migration', 'census']):
                         self.add_result(title, self.normalize_date(date_txt), "Iceland", "Statice", url)
         except Exception as e:
             logging.error(f"Statice failed: {e}")
 
-    # --- 5. FINDATA (RSS) ---
+    # --- 5. FINDATA (FINLAND) - NEWS ---
     def scrape_findata(self):
         try:
-            logging.info("🇫🇮 FinData: Fetching News...")
+            # FinData is a permit authority, they announce updates via News RSS
             feed = feedparser.parse("https://findata.fi/en/feed/")
             for entry in feed.entries:
-                self.add_result(entry.title, self.normalize_date(entry.published), "Finland", "FinData", entry.link, status="🔵 NEWS")
+                self.add_result(entry.title, self.normalize_date(entry.published), "Finland", "FinData", entry.link)
         except: pass
 
     def run(self):
         print("🚀 Starting Precision Scraper...")
-        self.scrape_eurostat()
         self.scrape_ons()
+        self.scrape_eurostat()
         self.scrape_insee()
         self.scrape_statice()
         self.scrape_findata()
         
-        # Save
+        # Save & Sort
         if self.results:
             df = pd.DataFrame(self.results)
-            # Sort: Soonest first
             df = df.sort_values(by='start')
             df.to_json(DATA_FILE, orient="records", indent=4)
-            print(f"✅ Saved {len(df)} High-Quality Future Datasets.")
+            print(f"✅ Saved {len(df)} High-Quality Datasets.")
         else:
-            print("⚠️ No future data found.")
+            print("⚠️ No relevant data found.")
 
 if __name__ == "__main__":
     PrecisionScraper().run()
