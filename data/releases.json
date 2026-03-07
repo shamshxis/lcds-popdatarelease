@@ -6,7 +6,10 @@
         "source":"Statice",
         "url":"https:\/\/www.statice.is\/publications\/news-archive\/advance-release-calendar\/",
         "status":"\ud83d\udfe2 CONFIRMED",
-        "days_diff":11
+        "days_diff":11,
+        "commentary":"Statice Official Table",
+        "is_new":false,
+        "fetched_at":"2026-03-07 00:53"
     },
     {
         "title":"Population 1 January 2026",
@@ -15,6 +18,9 @@
         "source":"Statice",
         "url":"https:\/\/www.statice.is\/publications\/news-archive\/advance-release-calendar\/",
         "status":"\ud83d\udfe2 CONFIRMED",
-        "days_diff":270
+        "days_diff":270,
+        "commentary":"Statice Official Table",
+        "is_new":false,
+        "fetched_at":"2026-03-07 00:53"
     }
 ]
