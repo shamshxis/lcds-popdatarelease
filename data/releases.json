@@ -1,0 +1,20 @@
+[
+    {
+        "title":"Migration 2025",
+        "start":"2026-03-19",
+        "country":"Iceland",
+        "source":"Statice",
+        "url":"https:\/\/www.statice.is\/publications\/news-archive\/advance-release-calendar\/",
+        "status":"\ud83d\udfe2 CONFIRMED",
+        "days_diff":11
+    },
+    {
+        "title":"Population 1 January 2026",
+        "start":"2026-12-03",
+        "country":"Iceland",
+        "source":"Statice",
+        "url":"https:\/\/www.statice.is\/publications\/news-archive\/advance-release-calendar\/",
+        "status":"\ud83d\udfe2 CONFIRMED",
+        "days_diff":270
+    }
+]
