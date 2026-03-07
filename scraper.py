@@ -1,55 +1,54 @@
 import pandas as pd
 import requests
-import feedparser
-import re
+import time
 import os
-import json
 import logging
+import random
+from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from dateutil import parser as date_parser
-from bs4 import BeautifulSoup
 
 # --- CONFIG ---
 DATA_FILE = "data/releases.json"
+os.makedirs("data", exist_ok=True)
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
-class WaterfallScraper:
+class SlowScraper:
     def __init__(self):
-        # Header rotation to avoid 403 blocks
-        self.headers = {
+        # 1. PERSISTENT SESSION (Like a real browser window)
+        self.session = requests.Session()
+        self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/javascript, */*; q=0.01',
-            'X-Requested-With': 'XMLHttpRequest'
-        }
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Referer': 'https://google.com'
+        })
         self.today = datetime.now()
         self.results = []
-        
-        # KEYWORDS: The "LCDS Filter"
-        self.KEYWORDS = ['death', 'mortal', 'birth', 'fertil', 'popul', 'migra', 'census', 'health', 'life exp']
+        self.logs = [] # Store logs for the UI
+
+    def log(self, msg):
+        print(msg)
+        self.logs.append(msg)
 
     def normalize_date(self, d):
         try: return date_parser.parse(str(d), fuzzy=True)
         except: return None
 
-    def add_row(self, title, date_obj, country, source, url, note="", status_override=None):
+    def sleep(self):
+        # 2. RANDOM DELAY (Human behavior)
+        delay = random.uniform(2.0, 4.0)
+        self.log(f"💤 Waiting {delay:.1f}s...")
+        time.sleep(delay)
+
+    def add_result(self, title, date_obj, country, source, url):
         if not date_obj: return
         
         diff = (date_obj - self.today).days
-        # LOGIC: Future (diff >= 0) OR Recent Past (-14 days)
-        if diff >= -14:
-            is_new = (date_obj.date() == self.today.date())
-            
-            # Status Logic
-            if status_override:
-                status = status_override
-            elif diff >= 0:
-                status = "🟢 CONFIRMED"
-            else:
-                status = "🔴 RELEASED"
-            
-            # Yellow Tinge Logic (Freshness)
-            freshness = "NEW" if is_new else "EXISTING"
-
+        
+        # 3. STRICT FILTER: Future (>=0) or Very Recent (-7)
+        if diff >= -7:
+            status = "🟢 CONFIRMED" if diff >= 0 else "🔴 RELEASED"
             self.results.append({
                 "title": title.strip(),
                 "start": date_obj.strftime("%Y-%m-%d"),
@@ -57,126 +56,96 @@ class WaterfallScraper:
                 "source": source,
                 "url": url,
                 "status": status,
-                "days_diff": diff,
-                "commentary": note,
-                "is_new": is_new,
-                "freshness": freshness
+                "days_diff": diff
             })
 
-    # --- ONS (The Problem Child) ---
+    # --- ONS (UK) ---
     def scrape_ons(self):
-        # LAYER 1: JSON API (Best)
+        self.log("🇬🇧 Connecting to ONS...")
         try:
-            logging.info("🇬🇧 ONS: Trying Layer 1 (JSON API)...")
+            # We use the JSON API but with a specific header that mimics AJAX
             url = "https://www.ons.gov.uk/releasecalendar/data?view=upcoming&size=50"
-            resp = requests.get(url, headers=self.headers, timeout=10)
+            self.session.headers.update({'X-Requested-With': 'XMLHttpRequest'}) # Critical for ONS
+            
+            resp = self.session.get(url, timeout=15)
+            self.log(f"   Status: {resp.status_code}")
             
             if resp.status_code == 200:
                 data = resp.json()
                 items = data.get('result', {}).get('results', [])
-                if items:
-                    for item in items:
-                        t = item.get('description', {}).get('title', '')
-                        d = item.get('description', {}).get('releaseDate', '')
-                        if any(k in t.lower() for k in self.KEYWORDS):
-                             self.add_row(t, self.normalize_date(d), "UK", "ONS", "https://www.ons.gov.uk"+item['uri'], note="Source: Official API")
-                    return # Success! Exit function.
+                for item in items:
+                    title = item.get('description', {}).get('title', '')
+                    date_raw = item.get('description', {}).get('releaseDate', '')
+                    
+                    # FILTER: Demography Only
+                    if any(k in title.lower() for k in ['death', 'birth', 'population', 'migration', 'census', 'life expect']):
+                        link = "https://www.ons.gov.uk" + item.get('uri', '')
+                        self.add_result(title, self.normalize_date(date_raw), "UK", "ONS", link)
         except Exception as e:
-            logging.warning(f"ONS Layer 1 Failed: {e}")
+            self.log(f"❌ ONS Failed: {e}")
+        self.sleep() # Wait before next site
 
-        # LAYER 2: RSS FEED (Fallback)
-        try:
-            logging.info("🇬🇧 ONS: Trying Layer 2 (RSS Feed)...")
-            feed = feedparser.parse("https://www.ons.gov.uk/releasecalendar/rss")
-            if feed.entries:
-                for entry in feed.entries:
-                    if any(k in entry.title.lower() for k in self.KEYWORDS):
-                        self.add_row(entry.title, self.normalize_date(entry.published), "UK", "ONS", entry.link, note="Source: RSS Feed")
-                return # Success!
-        except: pass
-
-        # LAYER 3: HTML SCRAPE (Last Resort)
-        try:
-            logging.info("🇬🇧 ONS: Trying Layer 3 (HTML Scrape)...")
-            url = "https://www.ons.gov.uk/releasecalendar?view=upcoming"
-            resp = requests.get(url, headers=self.headers, timeout=15)
-            soup = BeautifulSoup(resp.content, 'html.parser')
-            for item in soup.select('.release__item'):
-                t = item.select_one('h3').get_text(strip=True)
-                d = item.select_one('.release__date').get_text(strip=True).replace("Release date:", "").strip()
-                if any(k in t.lower() for k in self.KEYWORDS):
-                     self.add_row(t, self.normalize_date(d), "UK", "ONS", url, note="Source: HTML Scrape")
-        except: pass
-
-    # --- EUROSTAT (XML + Fallback) ---
+    # --- EUROSTAT (EU) ---
     def scrape_eurostat(self):
-        # LAYER 1: XML Calendar
+        self.log("🇪🇺 Connecting to Eurostat...")
         try:
-            logging.info("🇪🇺 Eurostat: Trying Layer 1 (XML)...")
             url = "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml"
-            resp = requests.get(url, headers=self.headers, timeout=10)
+            resp = self.session.get(url, timeout=15)
+            self.log(f"   Status: {resp.status_code}")
+            
             soup = BeautifulSoup(resp.content, 'xml')
             for item in soup.find_all('release'):
-                t = item.find('title').text
-                d = item.find('release_date').text
-                if any(k in t.lower() for k in self.KEYWORDS):
-                    self.add_row(t, self.normalize_date(d), "EU", "Eurostat", "https://ec.europa.eu/eurostat/news/release-calendar", note="Source: XML Calendar")
-        except:
-             # LAYER 2: RSS Fallback
-             try:
-                logging.info("🇪🇺 Eurostat: Trying Layer 2 (RSS)...")
-                feed = feedparser.parse("https://ec.europa.eu/eurostat/cache/RSS/rss.xml")
-                for entry in feed.entries:
-                    if any(k in entry.title.lower() for k in self.KEYWORDS):
-                        self.add_row(entry.title, self.normalize_date(entry.published), "EU", "Eurostat", entry.link, note="Source: RSS Feed")
-             except: pass
+                title = item.find('title').text
+                d_str = item.find('release_date').text
+                
+                if any(k in title.lower() for k in ['mortality', 'population', 'fertility', 'health']):
+                    self.add_result(title, self.normalize_date(d_str), "EU", "Eurostat", "https://ec.europa.eu/eurostat/news/release-calendar")
+        except Exception as e:
+            self.log(f"❌ Eurostat Failed: {e}")
+        self.sleep()
 
-    # --- ICELAND (Simple Table) ---
-    def scrape_iceland(self):
+    # --- STATICE (ICELAND) ---
+    def scrape_statice(self):
+        self.log("🇮🇸 Connecting to Statice...")
         try:
             url = "https://www.statice.is/publications/news-archive/advance-release-calendar/"
-            resp = requests.get(url, headers=self.headers)
+            resp = self.session.get(url, timeout=15)
+            self.log(f"   Status: {resp.status_code}")
+            
             soup = BeautifulSoup(resp.content, 'html.parser')
-            for row in soup.select("table tr"):
+            # Strict selector: Only the main calendar table
+            rows = soup.select(".table-responsive table tr") 
+            
+            for row in rows:
                 cols = row.find_all("td")
                 if len(cols) >= 2:
-                    d = cols[0].text.strip()
-                    t = cols[1].text.strip()
-                    if any(k in t.lower() for k in self.KEYWORDS):
-                        self.add_row(t, self.normalize_date(d), "Iceland", "Statice", url, note="Source: Official Table")
-        except: pass
-
-    # --- GDELT (Intelligence Signal) ---
-    def scrape_gdelt(self):
-        try:
-            logging.info("📡 GDELT: Scanning News Signals...")
-            query = "Office%20for%20National%20Statistics%20release"
-            url = f"https://api.gdeltproject.org/api/v2/doc/doc?query={query}&mode=artlist&maxrecords=10&format=json"
-            resp = requests.get(url, timeout=5)
-            data = resp.json()
-            for art in data.get('articles', []):
-                t = art.get('title', '')
-                u = art.get('url', '')
-                d = art.get('seendate', '')[:8]
-                if any(k in t.lower() for k in self.KEYWORDS):
-                    self.add_row(t, self.normalize_date(d), "Global", "Media Signal", u, note="Detected by GDELT", status_override="🔵 NEWS SIGNAL")
-        except: pass
+                    d_txt = cols[0].get_text(strip=True)
+                    title = cols[1].get_text(strip=True)
+                    
+                    if any(k in title.lower() for k in ['population', 'death', 'migration']):
+                        self.add_result(title, self.normalize_date(d_txt), "Iceland", "Statice", url)
+        except Exception as e:
+            self.log(f"❌ Statice Failed: {e}")
+        self.sleep()
 
     def run(self):
-        print("🚀 Starting Waterfall Scraper...")
-        self.scrape_ons()      # 3 Layers
-        self.scrape_eurostat() # 2 Layers
-        self.scrape_iceland()  # 1 Layer
-        self.scrape_gdelt()    # Intelligence Layer
+        self.log("🚀 Starting Slow & Steady Scraper...")
+        self.scrape_ons()
+        self.scrape_eurostat()
+        self.scrape_statice()
         
-        # Save
+        # Save Results
         if self.results:
             df = pd.DataFrame(self.results)
             df = df.sort_values(by='start')
             df.to_json(DATA_FILE, orient="records", indent=4)
-            print(f"✅ Saved {len(df)} Records (with fallbacks).")
+            self.log(f"✅ Saved {len(df)} High-Quality Records.")
         else:
-            print("⚠️ No data found (All layers failed).")
+            self.log("⚠️ No data found.")
+        
+        # Save Logs for UI
+        with open("data/scraper.log", "w") as f:
+            f.write("\n".join(self.logs))
 
 if __name__ == "__main__":
-    WaterfallScraper().run()
+    SlowScraper().run()
