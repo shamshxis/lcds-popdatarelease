@@ -4,7 +4,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
+from urllib.parse import urlparse
 
 import pandas as pd
 import requests
@@ -15,26 +15,24 @@ from dateutil import parser as date_parser
 # --- CONSTANTS ---
 DATA_DIR = Path("data")
 CURRENT_CSV = DATA_DIR / "dataset_tracker.csv"
-CHANGES_CSV = DATA_DIR / "dataset_changes.csv"
 META_JSON = DATA_DIR / "last_run_meta.json"
 
 DEFAULT_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/3.5; +https://github.com/)"
+    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/5.0; +https://github.com/)"
 }
 
 NOW = datetime.now(timezone.utc)
 TODAY = NOW.date()
 
-# --- JUNK FILTER ---
-# If a title matches these patterns, it is NOT a dataset.
-JUNK_PATTERNS = [
-    r"^clear all", r"^filter", r"^search", r"^release date", 
-    r"^published", r"^time series", r"^correction", r"^notice",
-    r"^\d{1,2}:\d{2}",  # "9:30am"
-    r"^page \d", r"^next page", r"^previous page",
-    r"^cookies", r"^accessibility", r"^privacy",
-    r"^view all", r"^hide all", r"^download",
-    r"^[0-9\/\-\. ]+$", # Titles that are just numbers/dates
+# --- THE BLOCKLIST ---
+# If a row contains ANY of these, it is deleted instantly.
+JUNK_PHRASES = [
+    "clear all", "filter", "search", "release date", "published", 
+    "time series", "correction", "notice", "9:30am", "page", 
+    "cookies", "accessibility", "privacy", "view all", "hide all", 
+    "download", "microdata access", "top of section", "skip to content",
+    "previous", "next", "beta", "help", "contact", "about us",
+    "census.gov", "ons.gov.uk", "terms", "conditions"
 ]
 
 # --- CORE FUNCTIONS ---
@@ -47,42 +45,24 @@ def load_watchlist() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         raw = yaml.safe_load(f) or {}
     return raw.get("settings", {}), raw.get("sources", [])
 
-def get_headers(settings: dict[str, Any]) -> dict[str, str]:
-    return {"User-Agent": settings.get("user_agent", DEFAULT_HEADERS["User-Agent"])}
-
-def fetch_html(url: str, settings: dict[str, Any]) -> str:
+def fetch_html(url: str) -> str:
     time.sleep(1.0)
     try:
-        response = requests.get(
-            url,
-            headers=get_headers(settings),
-            timeout=int(settings.get("request_timeout_seconds", 25)),
-        )
+        response = requests.get(url, headers=DEFAULT_HEADERS, timeout=20)
         response.raise_for_status()
         return response.text
-    except Exception as e:
-        print(f"  !! Failed to fetch {url}: {e}")
+    except Exception:
         return ""
 
-def clean_text(value: str) -> str:
-    if not value: return ""
-    return re.sub(r"\s+", " ", str(value).replace("\xa0", " ")).strip()
-
-def is_content_junk(text: str) -> bool:
-    """Returns True if the text is navigation noise."""
-    lower = text.lower().strip()
-    if len(lower) < 5: return True
-    
-    for pattern in JUNK_PATTERNS:
-        if re.search(pattern, lower):
-            return True
-    return False
+def clean_whitespace(text: str) -> str:
+    if not text: return ""
+    return re.sub(r"\s+", " ", str(text).replace("\xa0", " ")).strip()
 
 def extract_date(text: str):
-    """Strict date extractor."""
+    """Strict date extractor. Returns ISO string or None."""
     if not text: return None
     
-    # Priority: "12 Jan 2026", "Jan 2026", "2026-01-01"
+    # Matches: "12 Jan 2026", "Jan 2026", "2026-01-01"
     patterns = [
         r"\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b", 
         r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b",           
@@ -94,88 +74,130 @@ def extract_date(text: str):
         if match:
             try:
                 dt = date_parser.parse(match.group(0), fuzzy=True, dayfirst=True).date()
-                # Freshness Check: Keep recent (30 days ago) to future (2 years)
+                # Freshness Filter: Only keep data from last 30 days to 2 years in future
                 if (TODAY - timedelta(days=30)) <= dt <= (TODAY + timedelta(days=730)):
                     return dt.isoformat()
             except: continue
     return None
 
-def detect_status(text: str) -> str:
-    t = text.lower()
-    if any(x in t for x in ["removed", "withdrawn", "cancelled"]): return "Removed"
-    if any(x in t for x in ["published", "released", "available"]): return "Released"
-    return "Scheduled"
+def surgical_title_clean(raw_text: str, date_str: str) -> str:
+    """
+    Intelligently extracts the Real Title from the raw mess.
+    """
+    clean = raw_text
+    
+    # 1. Remove the Date string itself
+    if date_str:
+        clean = clean.replace(date_str, "")
 
-def parse_source(source: dict, settings: dict) -> list[dict]:
-    html = fetch_html(source["url"], settings)
+    # 2. Cut off at common "Junk Starts"
+    # (e.g. "School Finances API Download" -> "School Finances")
+    cut_points = ["API", "Download", "http", "https", "Microdata", "View", "Release"]
+    for cut in cut_points:
+        if cut in clean:
+            clean = clean.split(cut)[0]
+    
+    # 3. Remove stray junk words
+    for junk in ["Public Sector:", "Current Population Survey", "Release:", "Updated:"]:
+        clean = clean.replace(junk, "")
+
+    # 4. Remove embedded dates (e.g. "May 2026")
+    clean = re.sub(r'\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b', '', clean, flags=re.IGNORECASE)
+    
+    # 5. Final polish
+    clean = re.sub(r'\s+[:\-]\s+', ' ', clean) # Remove " : "
+    clean = re.sub(r'\s+', ' ', clean).strip(" -:.")
+    
+    return clean
+
+def is_junk_row(text: str, title: str) -> bool:
+    """Returns True if this row should be trashed."""
+    lower_text = text.lower()
+    lower_title = title.lower()
+    
+    # Rule 1: Title too short?
+    if len(title) < 5: return True
+    
+    # Rule 2: Title is just a number?
+    if re.match(r"^[0-9\/\-\. ]+$", title): return True
+
+    # Rule 3: Contains blocked phrases?
+    if any(j in lower_text for j in JUNK_PHRASES): return True
+    if any(j in lower_title for j in JUNK_PHRASES): return True
+    
+    return False
+
+def parse_source(source: dict) -> list[dict]:
+    html = fetch_html(source["url"])
     if not html: return []
     
     soup = BeautifulSoup(html, "lxml")
     rows = []
     seen = set()
 
-    # Broad search for potential dataset containers
+    # Broad search for rows
     targets = soup.find_all(["tr", "li", "article", "div", "h3", "h4"])
     
     for tag in targets:
-        raw_text = clean_text(tag.get_text(" ", strip=True))
+        raw_text = clean_whitespace(tag.get_text(" ", strip=True))
         
-        # 1. MUST have a valid date
+        # 1. MUST HAVE DATE (The biggest filter)
         date_str = extract_date(raw_text)
         if not date_str: continue
 
-        # 2. Extract Title & Link
+        # 2. Get Title & Link
         link = tag.find("a", href=True)
         if link:
-            title = clean_text(link.get_text())
+            # Prefer link text if available, usually cleaner
+            title_candidate = clean_whitespace(link.get_text())
             url = link["href"]
             if url.startswith("/"):
                 parsed = urlparse(source["url"])
                 url = f"{parsed.scheme}://{parsed.netloc}{url}"
         else:
-            # Fallback: Use text before the date as title
-            parts = raw_text.split(date_str)
-            title = parts[0].strip() if parts else raw_text[:100]
+            title_candidate = raw_text
             url = source["url"]
 
-        # 3. CRITICAL: Junk Check
-        if is_content_junk(title): continue
+        # 3. Clean the Title
+        final_title = surgical_title_clean(title_candidate, date_str)
+        
+        # 4. JUNK CHECK
+        if is_junk_row(raw_text, final_title): continue
 
-        # 4. Create "One Liner" Brief
-        # Remove date and title from raw text to leave the description
-        brief = raw_text.replace(date_str, "").replace(title, "").strip()
-        brief = re.sub(r"\s+", " ", brief).strip(" -:.")
-        if len(brief) < 5: brief = title # Fallback if brief is empty
+        # 5. Create "One Liner" Summary
+        # The summary is whatever is left in the text after removing the title and date
+        summary = raw_text.replace(date_str, "").replace(final_title, "").strip()
+        summary = re.sub(r"\s+", " ", summary).strip(" -:.")
+        if len(summary) < 5: summary = final_title # Fallback
 
         # Dedupe
-        key = (title, date_str)
+        key = (final_title, date_str)
         if key in seen: continue
         seen.add(key)
 
         rows.append({
             "source": source["name"],
             "country": source.get("country", ""),
-            "dataset_title": title,
-            "summary": brief[:200], # Keep it short
-            "status": detect_status(raw_text),
+            "dataset_title": final_title,
+            "summary": summary[:200],
+            "status": "Removed" if "remove" in raw_text.lower() else "Scheduled",
             "action_date": date_str,
-            "url": url,
-            "source_id": source.get("id", "")
+            "url": url
         })
 
     return rows
 
 def main():
     ensure_dirs()
-    settings, sources = load_watchlist()
+    _, sources = load_watchlist()
     
     all_rows = []
-    print("🚀 Starting Management-Ready Scraper...")
+    print("🚀 Starting Strict Scraper...")
 
     for source in sources:
         print(f"Scanning {source['name']}...")
         try:
-            rows = parse_source(source, settings)
+            rows = parse_source(source)
             print(f"  -> Found {len(rows)} clean items.")
             all_rows.extend(rows)
         except Exception as e:
@@ -183,7 +205,7 @@ def main():
 
     df = pd.DataFrame(all_rows)
     if not df.empty:
-        # Global Dedupe
+        # Final Dedupe
         df = df.drop_duplicates(subset=["source", "dataset_title", "action_date"])
         df = df.sort_values(by="action_date")
     
