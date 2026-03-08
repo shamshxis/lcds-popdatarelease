@@ -1,144 +1,96 @@
 import pandas as pd
 import streamlit as st
 from pathlib import Path
-import re
-from datetime import datetime
 
 # --- CONFIG ---
-st.set_page_config(page_title="Population Data Agenda", page_icon="🗓️", layout="centered")
+st.set_page_config(page_title="Data Management View", page_icon="📋", layout="wide")
 
 DATA_FILE = Path("data/dataset_tracker.csv")
 
-# --- INTELLIGENCE: TEXT CLEANER ---
-def smart_clean_title(text: str) -> str:
-    """
-    Cleans up the specific 'junk' from Census/ONS data to find the real title.
-    """
-    if not isinstance(text, str): return ""
-    
-    clean = text
-    
-    # 1. Remove specific junk phrases identified in your logs
-    junk_phrases = [
-        "Top of Section", "Microdata Access & API", "data.census.gov & API",
-        "Microdata Access", "API", "Download", "Link", "Details"
-    ]
-    for junk in junk_phrases:
-        clean = re.sub(re.escape(junk), "", clean, flags=re.IGNORECASE)
+# --- MAPPINGS ---
+CONTROLLER_MAP = {
+    "ONS Population Releases": "ONS",
+    "ONS Migration Releases": "ONS",
+    "US Census Upcoming Releases": "US Census",
+    "Eurostat Release Calendar": "Eurostat",
+    "DHS Available Datasets": "DHS",
+    "Statistics Sweden Population Statistics": "SCB (Sweden)",
+    "Statistics Norway Population": "SSB (Norway)",
+    "Statistics Finland Population": "StatFi",
+    "Statistics Denmark Scheduled Releases": "DST (Denmark)"
+}
 
-    # 2. Remove embedded dates (e.g. "June 2026", "6/11/2026")
-    date_patterns = [
-        r'\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}\b',
-        r'\b\d{1,2}/\d{1,2}/\d{2,4}\b',
-        r'\b\d{4}-\d{2}-\d{2}\b'
-    ]
-    for pat in date_patterns:
-        clean = re.sub(pat, "", clean, flags=re.IGNORECASE)
-        
-    # 3. Clean up whitespace and stray punctuation
-    clean = re.sub(r'\s+', ' ', clean).strip()
-    clean = clean.strip(" -:.")
-    
-    return clean
-
-# --- DATA LOADER ---
+# --- DATA PROCESSING ---
 def load_data():
-    if not DATA_FILE.exists():
-        return pd.DataFrame()
+    if not DATA_FILE.exists(): return pd.DataFrame()
     
-    try:
-        df = pd.read_csv(DATA_FILE, dtype=str).fillna("")
-        
-        # Convert Date
-        df["dt"] = pd.to_datetime(df["action_date"], errors="coerce")
-        df = df.dropna(subset=["dt"]) # Drop invalid dates
-        
-        # Create Month Grouping Key (e.g. "2026-06") for sorting
-        df["month_sort"] = df["dt"].dt.to_period("M")
-        df["month_label"] = df["dt"].dt.strftime("%B %Y") # "June 2026"
-        
-        # Clean Titles
-        df["clean_title"] = df["dataset_title"].apply(smart_clean_title)
-        
-        # FILTER: Drop rows where title became empty or is just "Release"
-        df = df[df["clean_title"].str.len() > 3]
-        
-        # DEDUPLICATE: Keep only 1 entry per Title per Month
-        # This solves the "5 rows for the same survey" problem
-        df = df.sort_values(by=["dt", "dataset_title"], ascending=True) # Prefer earlier dates?
-        df = df.drop_duplicates(subset=["month_sort", "clean_title"])
-        
-        return df
-    except Exception as e:
-        st.error(f"Error processing data: {e}")
-        return pd.DataFrame()
+    df = pd.read_csv(DATA_FILE, dtype=str).fillna("")
+    
+    # 1. Create "Controller" column
+    df["Controller"] = df["source"].map(CONTROLLER_MAP).fillna(df["source"])
+    
+    # 2. Format Date "08 Mar 26"
+    df["dt"] = pd.to_datetime(df["action_date"], errors="coerce")
+    df = df.dropna(subset=["dt"])
+    df["Date"] = df["dt"].dt.strftime("%d %b %y")
+    df["Month"] = df["dt"].dt.strftime("%B %Y")
+    
+    # 3. Define "Action"
+    df["Action"] = df["status"].apply(lambda x: "⚠️ Delete" if "Remov" in x else "🚀 Release")
+    
+    # 4. Clean "Brief"
+    # If summary is same as title, just use title.
+    df["Brief"] = df.apply(lambda row: row["dataset_title"] if len(row["summary"]) < 5 else row["dataset_title"], axis=1)
+    
+    # Sort
+    df = df.sort_values(by=["dt", "Controller"])
+    
+    return df
 
-# --- MAIN UI ---
-st.title("🗓️ Population Data Agenda")
-st.markdown("##### Compact Monthly Release Schedule")
+# --- UI ---
+st.title("📋 Management Data Brief")
+st.markdown("Top-level schedule of data releases and deletions.")
 
 df = load_data()
 
 if df.empty:
-    st.info("No valid release data found. (Try running the scraper first)")
+    st.warning("No data. Run scraper.")
     st.stop()
 
 # --- FILTERS ---
-with st.sidebar:
-    st.header("Filters")
-    sources = ["All"] + sorted(df["source"].unique().tolist())
-    sel_source = st.selectbox("Source", sources)
-    
-    countries = ["All"] + sorted(df["country"].unique().tolist())
-    sel_country = st.selectbox("Country", countries)
+col1, col2 = st.columns(2)
+with col1:
+    controllers = ["All"] + sorted(df["Controller"].unique().tolist())
+    sel_cont = st.selectbox("Filter by Controller", controllers)
+with col2:
+    search = st.text_input("Search Briefs", "")
 
-# Apply Filters
 view = df.copy()
-if sel_source != "All": view = view[view["source"] == sel_source]
-if sel_country != "All": view = view[view["country"] == sel_country]
+if sel_cont != "All": view = view[view["Controller"] == sel_cont]
+if search: view = view[view["Brief"].str.contains(search, case=False)]
 
-# --- RENDER MONTHLY LIST ---
+# --- RENDER MONTHLY TABLES ---
+months = view["Month"].unique()
 
-# 1. Sort by Month (Upcoming first)
-today_period = pd.Timestamp.now().to_period("M")
-view = view.sort_values("month_sort")
-unique_months = view["month_sort"].unique()
-
-for m_sort in unique_months:
-    # Skip past months if you want (optional)
-    if m_sort < today_period:
-        continue
-        
-    month_data = view[view["month_sort"] == m_sort]
-    month_name = month_data["month_label"].iloc[0]
+for month in months:
+    st.subheader(month)
     
-    # Visual Header for Month
-    st.markdown(f"### {month_name}")
+    month_data = view[view["Month"] == month]
     
-    # List items
-    for _, row in month_data.iterrows():
-        # Determine Status Color
-        status_icon = "🔹"
-        if "Remove" in row['status']: status_icon = "❌"
-        if "Release" in row['status']: status_icon = "✅"
-        
-        # Render Compact Row
-        # Format: [Icon] Title (Source) -> Link
-        with st.container():
-            c1, c2 = st.columns([0.05, 0.95])
-            with c1:
-                st.write(status_icon)
-            with c2:
-                st.markdown(
-                    f"**[{row['clean_title']}]({row['url']})** \n"
-                    f"<span style='color:grey; font-size:0.9em'>{row['dt'].strftime('%d %b')} • {row['source']}</span>",
-                    unsafe_allow_html=True
-                )
+    # Display as a clean Streamlit Table
+    # We construct a simplified dataframe for display
+    display_table = month_data[["Controller", "Action", "Date", "Brief", "url"]].copy()
     
-    st.divider()
-
-# --- HISTORY EXPANDER ---
-past_data = view[view["month_sort"] < today_period]
-if not past_data.empty:
-    with st.expander("📂 Past Releases"):
-        st.dataframe(past_data[["action_date", "clean_title", "source"]], hide_index=True)
+    # Make URL clickable in standard dataframe using LinkColumn (Streamlit 1.23+)
+    st.dataframe(
+        display_table,
+        column_config={
+            "url": st.column_config.LinkColumn("Link", display_text="Open"),
+            "Brief": st.column_config.TextColumn("Summary of Brief", width="large"),
+            "Action": st.column_config.TextColumn("Action", width="small"),
+            "Controller": st.column_config.TextColumn("Controller", width="small"),
+            "Date": st.column_config.TextColumn("Date", width="small"),
+        },
+        hide_index=True,
+        use_container_width=True
+    )
