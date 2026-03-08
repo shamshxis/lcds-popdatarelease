@@ -4,7 +4,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlencode, urlparse, parse_qs, urlunsplit
+from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
 
 import pandas as pd
 import requests
@@ -20,7 +20,7 @@ CANDIDATES_CSV = DATA_DIR / "candidate_sources.csv"
 META_JSON = DATA_DIR / "last_run_meta.json"
 
 DEFAULT_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/2.4; +https://github.com/)"
+    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/2.5; +https://github.com/)"
 }
 
 NOW = datetime.now(timezone.utc)
@@ -189,11 +189,12 @@ def parse_ons_release_calendar(source: dict[str, Any], settings: dict[str, Any])
     params = {"highlight": "true", "release-type": "type-upcoming", "sort": "date-newest"}
     if source.get("keywords"): params["keywords"] = source["keywords"]
     
+    # FIX: Use urlunparse because urlparse returns 6 components
     url_parts = list(urlparse(source["url"]))
     query = parse_qs(url_parts[4])
     query.update(params)
     url_parts[4] = urlencode(query, doseq=True)
-    full_url = urlunsplit(url_parts)
+    full_url = urlunparse(url_parts)
 
     html = fetch_html(full_url, settings)
     soup = BeautifulSoup(html, "lxml")
