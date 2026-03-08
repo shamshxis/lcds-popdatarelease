@@ -20,12 +20,13 @@ CANDIDATES_CSV = DATA_DIR / "candidate_sources.csv"
 META_JSON = DATA_DIR / "last_run_meta.json"
 
 DEFAULT_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/2.8; +https://github.com/)"
+    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/2.9; +https://github.com/)"
 }
 
 NOW = datetime.now(timezone.utc)
 TODAY = NOW.date()
 
+# --- SETTINGS & KEYWORDS ---
 DEFAULT_SETTINGS = {
     "history_days": 365,
     "lookback_days": 180,
@@ -173,9 +174,17 @@ def relevant_terms(source: dict[str, Any], settings: dict[str, Any]) -> list[str
 
 def filter_relevant_text(text: str, source: dict[str, Any], settings: dict[str, Any]) -> bool:
     lower = text.lower()
-    # FILTER: Explicitly ignore cookie warnings
-    if "cookie" in lower or "settings" in lower or "privacy policy" in lower:
+    
+    # --- BLACKLIST: Ignore UI Elements & Cookies ---
+    blacklist = [
+        "cookie", "privacy policy", "settings", "javascript", 
+        "filter results", "clear all", "search release", "show only", 
+        "day month year", "census date", "cancelled", "page 1 of",
+        "skip to main content", "accessibility"
+    ]
+    if any(b in lower for b in blacklist):
         return False
+        
     return any(term in lower for term in relevant_terms(source, settings))
 
 def add_row(rows: list[dict[str, Any]], source: dict[str, Any], settings: dict[str, Any], title: str, context: str):
@@ -206,6 +215,8 @@ def parse_ons_release_calendar(source: dict[str, Any], settings: dict[str, Any])
     soup = BeautifulSoup(html, "lxml")
     rows = []
     
+    # Filter ONS cards more specifically if possible, but broad is safer given dynamic classes.
+    # The blacklist in filter_relevant_text will handle the cleanup.
     cards = soup.find_all(["li", "div", "h3", "article"])
     seen = set()
     for card in cards:
@@ -368,7 +379,6 @@ def compute_changes(old_df: pd.DataFrame, new_df: pd.DataFrame) -> pd.DataFrame:
             })
         return pd.DataFrame(rows)
 
-    # PRE-DEDUPE to avoid Index Error
     if not old_df.empty:
         old_df = old_df.sort_values(by="action_date", ascending=False)
         old_df = old_df.drop_duplicates(subset=key_cols)
