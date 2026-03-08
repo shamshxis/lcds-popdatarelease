@@ -1,81 +1,157 @@
-# Global Pop Data Watch
+settings:
+  history_days: 365
+  lookback_days: 180
+  lookahead_days: 180
+  request_timeout_seconds: 12
+  user_agent: "Mozilla/5.0 (compatible; GlobalPopWatch/2.1; +https://github.com/)"
+  discovery_max_links_per_source: 30
+  discovery_keywords:
+    - population
+    - migration
+    - demographic
+    - fertility
+    - mortality
+    - census
+    - labour
+    - household
+    - births
+    - deaths
+    - asylum
+    - projections
+    - estimates
+    - pyramid
+    - age
+  trusted_domains:
+    - ons.gov.uk
+    - ec.europa.eu
+    - census.gov
+    - dhsprogram.com
+    - population.un.org
+    - populationpyramid.net
+    - scb.se
+    - ssb.no
+    - dst.dk
+    - stat.fi
 
-A GitHub + Streamlit monitor for official population-related dataset releases, update signals, access warnings, and discovery of new relevant sources.
+sources:
+  - id: ons_migration_calendar
+    name: ONS Migration Releases
+    region: UK
+    country: United Kingdom
+    source_type: release_calendar
+    parser: ons_release_calendar
+    url: https://www.ons.gov.uk/releasecalendar
+    keywords: migration
+    themes: [migration, population]
+    priority: 10
 
-## What it tracks
+  - id: ons_population_calendar
+    name: ONS Population Releases
+    region: UK
+    country: United Kingdom
+    source_type: release_calendar
+    parser: ons_release_calendar
+    url: https://www.ons.gov.uk/releasecalendar
+    keywords: population
+    themes: [population, births, deaths]
+    priority: 10
 
-This project is designed around LCDS-relevant themes:
+  - id: eurostat_release_calendar
+    name: Eurostat Release Calendar
+    region: Europe
+    country: European Union
+    source_type: release_calendar
+    parser: eurostat_release_calendar
+    url: https://ec.europa.eu/eurostat/news/release-calendar
+    themes: [population, migration, labour, household, asylum]
+    priority: 10
 
-- population estimates and projections
-- migration and asylum
-- fertility and mortality
-- census and household statistics
-- labour and demographic releases
-- population pyramid update signals
-- access changes such as DHS registration or dataset availability changes
+  - id: us_census_upcoming
+    name: US Census Upcoming Releases
+    region: North America
+    country: United States
+    source_type: release_calendar
+    parser: census_upcoming_releases
+    url: https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html
+    themes: [population, census, migration, household, labour]
+    priority: 10
 
-## Current source coverage
+  - id: dhs_data_portal
+    name: DHS Data Portal
+    region: Global
+    country: Multi-country
+    source_type: dataset_access
+    parser: simple_page
+    url: https://dhsprogram.com/data/
+    themes: [fertility, mortality, health, population, survey]
+    priority: 9
 
-The starter watchlist includes official pages from:
+  - id: dhs_available_datasets
+    name: DHS Available Datasets
+    region: Global
+    country: Multi-country
+    source_type: dataset_access
+    parser: dhs_available_datasets
+    url: https://dhsprogram.com/data/available-datasets.cfm
+    themes: [fertility, mortality, health, population, survey]
+    priority: 9
 
-- ONS
-- Eurostat
-- U.S. Census Bureau
-- DHS Program
-- UN World Population Prospects
-- PopulationPyramid.net
-- Statistics Sweden
-- Statistics Norway
-- Statistics Denmark
-- Statistics Finland
+  - id: un_wpp
+    name: UN World Population Prospects
+    region: Global
+    country: Global
+    source_type: dataset_page
+    parser: simple_page
+    url: https://population.un.org/wpp/
+    themes: [population, projections, pyramid]
+    priority: 9
 
-## Core outputs
+  - id: population_pyramid
+    name: PopulationPyramid.net
+    region: Global
+    country: Global
+    source_type: dataset_page
+    parser: simple_page
+    url: https://www.populationpyramid.net/
+    themes: [population, pyramid]
+    priority: 7
 
-The scraper writes four files into `data/`:
+  - id: scb_population_statistics
+    name: Statistics Sweden Population Statistics
+    region: Scandinavia
+    country: Sweden
+    source_type: dataset_page
+    parser: simple_page
+    url: https://www.scb.se/en/finding-statistics/statistics-by-subject-area/population-and-living-conditions/population-composition-and-development/population-statistics/
+    themes: [population, fertility, migration]
+    priority: 8
 
-- `dataset_tracker.csv` for the current watchlist view
-- `dataset_tracker_history.csv` for rolling historical snapshots
-- `dataset_changes.csv` for change detection between runs
-- `candidate_sources.csv` for reviewable new source candidates
+  - id: ssb_population
+    name: Statistics Norway Population
+    region: Scandinavia
+    country: Norway
+    source_type: dataset_page
+    parser: simple_page
+    url: https://www.ssb.no/en/befolkning/folketall/statistikk/befolkning
+    themes: [population, births, deaths, migration]
+    priority: 8
 
-## How it works
+  - id: dst_scheduled_releases
+    name: Statistics Denmark Scheduled Releases
+    region: Scandinavia
+    country: Denmark
+    source_type: release_calendar
+    parser: simple_page
+    url: https://www.dst.dk/en/Statistik/planlagte
+    themes: [population, labour, migration, household]
+    priority: 8
 
-1. `watchlist.yml` defines trusted sources, themes, and parser types.
-2. `scraper.py` pulls each page, applies a source-specific parser, and normalises the results.
-3. Results are retained in a rolling window and compared to the previous run.
-4. A discovery pass scans approved domains for promising new pages and adds them to a review queue.
-5. `app.py` presents the tracker through Streamlit with active filtering and export tools.
-6. GitHub Actions refreshes the tracker daily.
-
-## Local setup
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python scraper.py
-streamlit run app.py
-```
-
-## GitHub setup
-
-1. Create a new repository.
-2. Copy all project files into the repo.
-3. Enable GitHub Actions.
-4. Push the repo.
-5. Run the workflow manually once using `workflow_dispatch`.
-6. Deploy `app.py` on Streamlit Community Cloud or another Streamlit host.
-
-## Important notes
-
-- Some official sites change their HTML often, so parsers should be reviewed over time.
-- Candidate sources are discovered automatically but not trusted automatically.
-- The tracker stores plain-language summaries to keep the dashboard readable.
-- The default window keeps signals from roughly six months back and six months ahead while preserving a longer rolling history file.
-
-## Good next upgrades
-
-- add email or Slack alerts for date changes
-- add manual approval for candidate sources from inside the Streamlit app
-- add more official sources such as World Bank, OECD, national statistical offices, and HMD/HFD where appropriate
-- add topic scoring for stronger LCDS prioritisation
+  - id: statfi_population
+    name: Statistics Finland Population
+    region: Scandinavia
+    country: Finland
+    source_type: dataset_page
+    parser: simple_page
+    url: https://stat.fi/en/statistics/vamuu
+    themes: [population, births, deaths, migration]
+    priority: 8
