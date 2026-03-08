@@ -21,7 +21,9 @@ META_JSON = DATA_DIR / "last_run_meta.json"
 def load_csv(path: Path, columns: list[str]) -> pd.DataFrame:
     if path.exists():
         try:
-            df = pd.read_csv(path)
+            # FIX: Read as string (dtype=str) to prevent PyArrow/Streamlit crashes 
+            # due to mixed types (e.g. ints mixed with strings)
+            df = pd.read_csv(path, dtype=str, keep_default_na=False)
             for col in columns:
                 if col not in df.columns:
                     df[col] = ""
@@ -49,21 +51,24 @@ def prepare_tracker(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.copy()
 
+    # Ensure all columns exist
     for col in ["source_id", "source", "country", "region", "source_type", "parser",
                 "themes", "dataset_title", "summary", "status", "announcement_date",
                 "action_date", "url", "notes", "last_seen"]:
         if col not in df.columns:
             df[col] = ""
 
+    # FIX: Explicit type conversion for numeric/date columns
+    # We force errors="coerce" to turn bad data into NaT/NaN safely
     df["priority"] = pd.to_numeric(df.get("priority", 0), errors="coerce").fillna(0).astype(int)
     df["announcement_date_dt"] = pd.to_datetime(df["announcement_date"], errors="coerce")
     df["action_date_dt"] = pd.to_datetime(df["action_date"], errors="coerce")
 
-    df["status"] = df["status"].fillna("").astype(str).str.strip().str.lower()
-    df["dataset_title"] = df["dataset_title"].fillna("").astype(str)
-    df["summary"] = df["summary"].fillna("").astype(str)
-    df["themes"] = df["themes"].fillna("").astype(str)
-    df["notes"] = df["notes"].fillna("").astype(str)
+    # Ensure text columns are actually strings to please PyArrow
+    text_cols = ["source", "country", "region", "source_type", "parser", 
+                 "themes", "dataset_title", "summary", "status", "url", "notes"]
+    for col in text_cols:
+        df[col] = df[col].astype(str).replace("nan", "")
 
     return df
 
@@ -97,6 +102,7 @@ candidate_cols = [
     "candidate_url", "reason", "status", "last_seen"
 ]
 
+# Load Data
 df = prepare_tracker(load_csv(CURRENT_CSV, tracker_cols))
 changes = load_csv(CHANGES_CSV, change_cols)
 source_status = prepare_status(load_csv(STATUS_CSV, status_cols))
@@ -130,20 +136,21 @@ if meta:
 with st.sidebar:
     st.header("Filters")
 
-    countries = sorted(df["country"].dropna().astype(str).unique().tolist()) if not df.empty else []
-    selected_countries = st.multiselect("Country", countries, default=countries)
+    # Safely get unique values
+    countries = sorted(list(set(df["country"].astype(str).dropna()) - {"", "nan"})) if not df.empty else []
+    selected_countries = st.multiselect("Country", countries)
 
-    regions = sorted(df["region"].dropna().astype(str).unique().tolist()) if not df.empty else []
-    selected_regions = st.multiselect("Region", regions, default=regions)
+    regions = sorted(list(set(df["region"].astype(str).dropna()) - {"", "nan"})) if not df.empty else []
+    selected_regions = st.multiselect("Region", regions)
 
-    source_types = sorted(df["source_type"].dropna().astype(str).unique().tolist()) if not df.empty else []
-    selected_source_types = st.multiselect("Source type", source_types, default=source_types)
+    source_types = sorted(list(set(df["source_type"].astype(str).dropna()) - {"", "nan"})) if not df.empty else []
+    selected_source_types = st.multiselect("Source type", source_types)
 
-    statuses = sorted(df["status"].dropna().astype(str).unique().tolist()) if not df.empty else []
-    selected_statuses = st.multiselect("Status", statuses, default=statuses)
+    statuses = sorted(list(set(df["status"].astype(str).dropna()) - {"", "nan"})) if not df.empty else []
+    selected_statuses = st.multiselect("Status", statuses)
 
-    priorities = sorted(df["priority"].dropna().unique().tolist()) if not df.empty else []
-    selected_priorities = st.multiselect("Priority", priorities, default=priorities)
+    priorities = sorted(df["priority"].unique().tolist()) if not df.empty else []
+    selected_priorities = st.multiselect("Priority", priorities)
 
     keyword = st.text_input("Keyword search")
     dated_only = st.checkbox("Rows with action date only", value=False)
@@ -164,11 +171,12 @@ if not filtered.empty:
         filtered = filtered[filtered["priority"].isin(selected_priorities)]
 
     if keyword.strip():
+        # Case-insensitive string matching
         mask = (
-            filtered["dataset_title"].str.contains(keyword, case=False, na=False) |
-            filtered["summary"].str.contains(keyword, case=False, na=False) |
-            filtered["notes"].str.contains(keyword, case=False, na=False) |
-            filtered["themes"].str.contains(keyword, case=False, na=False)
+            filtered["dataset_title"].astype(str).str.contains(keyword, case=False, na=False) |
+            filtered["summary"].astype(str).str.contains(keyword, case=False, na=False) |
+            filtered["notes"].astype(str).str.contains(keyword, case=False, na=False) |
+            filtered["themes"].astype(str).str.contains(keyword, case=False, na=False)
         )
         filtered = filtered[mask]
 
@@ -185,6 +193,7 @@ with tab1:
     if filtered.empty:
         st.warning("No rows available. Check the Source status tab first.")
     else:
+        # Prepare display DF
         display = filtered[
             [
                 "source", "country", "region", "source_type", "priority", "status",
@@ -192,19 +201,21 @@ with tab1:
             ]
         ].copy()
 
+        # Safe Sort
         display = display.sort_values(
             by=["priority", "action_date_dt", "source"],
             ascending=[False, True, True],
             na_position="last"
         )
 
-        st.dataframe(display, use_container_width=True, hide_index=True)
+        st.dataframe(
+            display.drop(columns=["action_date_dt"], errors="ignore"), 
+            use_container_width=True, 
+            hide_index=True
+        )
         
-        # Download button
         st.download_button(
             label="Download filtered tracker CSV",
-            # We ignore errors because 'announcement_date_dt' might not exist if filtered is empty, 
-            # though we checked empty above.
             data=filtered.drop(columns=["announcement_date_dt", "action_date_dt"], errors="ignore").to_csv(index=False).encode("utf-8"),
             file_name="dataset_tracker_filtered.csv",
             mime="text/csv",
