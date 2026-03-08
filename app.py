@@ -21,8 +21,7 @@ META_JSON = DATA_DIR / "last_run_meta.json"
 def load_csv(path: Path, columns: list[str]) -> pd.DataFrame:
     if path.exists():
         try:
-            # FIX: Read as string (dtype=str) to prevent PyArrow/Streamlit crashes 
-            # due to mixed types (e.g. ints mixed with strings)
+            # Read as string to prevent mixed-type crashes
             df = pd.read_csv(path, dtype=str, keep_default_na=False)
             for col in columns:
                 if col not in df.columns:
@@ -51,24 +50,16 @@ def prepare_tracker(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.copy()
 
-    # Ensure all columns exist
     for col in ["source_id", "source", "country", "region", "source_type", "parser",
                 "themes", "dataset_title", "summary", "status", "announcement_date",
                 "action_date", "url", "notes", "last_seen"]:
         if col not in df.columns:
             df[col] = ""
 
-    # FIX: Explicit type conversion for numeric/date columns
-    # We force errors="coerce" to turn bad data into NaT/NaN safely
+    # Convert types safely
     df["priority"] = pd.to_numeric(df.get("priority", 0), errors="coerce").fillna(0).astype(int)
     df["announcement_date_dt"] = pd.to_datetime(df["announcement_date"], errors="coerce")
     df["action_date_dt"] = pd.to_datetime(df["action_date"], errors="coerce")
-
-    # Ensure text columns are actually strings to please PyArrow
-    text_cols = ["source", "country", "region", "source_type", "parser", 
-                 "themes", "dataset_title", "summary", "status", "url", "notes"]
-    for col in text_cols:
-        df[col] = df[col].astype(str).replace("nan", "")
 
     return df
 
@@ -136,7 +127,6 @@ if meta:
 with st.sidebar:
     st.header("Filters")
 
-    # Safely get unique values
     countries = sorted(list(set(df["country"].astype(str).dropna()) - {"", "nan"})) if not df.empty else []
     selected_countries = st.multiselect("Country", countries)
 
@@ -171,7 +161,6 @@ if not filtered.empty:
         filtered = filtered[filtered["priority"].isin(selected_priorities)]
 
     if keyword.strip():
-        # Case-insensitive string matching
         mask = (
             filtered["dataset_title"].astype(str).str.contains(keyword, case=False, na=False) |
             filtered["summary"].astype(str).str.contains(keyword, case=False, na=False) |
@@ -193,30 +182,26 @@ with tab1:
     if filtered.empty:
         st.warning("No rows available. Check the Source status tab first.")
     else:
-        # Prepare display DF
-        display = filtered[
-            [
-                "source", "country", "region", "source_type", "priority", "status",
-                "dataset_title", "summary", "announcement_date", "action_date", "url"
-            ]
-        ].copy()
-
-        # Safe Sort
-        display = display.sort_values(
+        # FIX: Sort *before* selecting columns so 'action_date_dt' is available
+        filtered_sorted = filtered.sort_values(
             by=["priority", "action_date_dt", "source"],
             ascending=[False, True, True],
             na_position="last"
         )
+        
+        # Now create the display view
+        display = filtered_sorted[
+            [
+                "source", "country", "region", "source_type", "priority", "status",
+                "dataset_title", "summary", "announcement_date", "action_date", "url"
+            ]
+        ]
 
-        st.dataframe(
-            display.drop(columns=["action_date_dt"], errors="ignore"), 
-            use_container_width=True, 
-            hide_index=True
-        )
+        st.dataframe(display, use_container_width=True, hide_index=True)
         
         st.download_button(
             label="Download filtered tracker CSV",
-            data=filtered.drop(columns=["announcement_date_dt", "action_date_dt"], errors="ignore").to_csv(index=False).encode("utf-8"),
+            data=filtered_sorted.drop(columns=["announcement_date_dt", "action_date_dt"], errors="ignore").to_csv(index=False).encode("utf-8"),
             file_name="dataset_tracker_filtered.csv",
             mime="text/csv",
         )
