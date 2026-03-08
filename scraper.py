@@ -20,13 +20,12 @@ CANDIDATES_CSV = DATA_DIR / "candidate_sources.csv"
 META_JSON = DATA_DIR / "last_run_meta.json"
 
 DEFAULT_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/2.7; +https://github.com/)"
+    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/2.8; +https://github.com/)"
 }
 
 NOW = datetime.now(timezone.utc)
 TODAY = NOW.date()
 
-# --- SETTINGS & KEYWORDS ---
 DEFAULT_SETTINGS = {
     "history_days": 365,
     "lookback_days": 180,
@@ -174,6 +173,9 @@ def relevant_terms(source: dict[str, Any], settings: dict[str, Any]) -> list[str
 
 def filter_relevant_text(text: str, source: dict[str, Any], settings: dict[str, Any]) -> bool:
     lower = text.lower()
+    # FILTER: Explicitly ignore cookie warnings
+    if "cookie" in lower or "settings" in lower or "privacy policy" in lower:
+        return False
     return any(term in lower for term in relevant_terms(source, settings))
 
 def add_row(rows: list[dict[str, Any]], source: dict[str, Any], settings: dict[str, Any], title: str, context: str):
@@ -204,7 +206,6 @@ def parse_ons_release_calendar(source: dict[str, Any], settings: dict[str, Any])
     soup = BeautifulSoup(html, "lxml")
     rows = []
     
-    # Broad ONS search
     cards = soup.find_all(["li", "div", "h3", "article"])
     seen = set()
     for card in cards:
@@ -280,12 +281,12 @@ def dedupe_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     if "priority" in df.columns:
         df["priority"] = pd.to_numeric(df["priority"], errors="coerce").fillna(0).astype(int)
     
-    # Sort to keep best candidate (Priority > Date > Source)
+    # Sort to keep best candidate
     sort_cols = [c for c in ["priority", "action_date", "source"] if c in df.columns]
     if sort_cols: 
         df = df.sort_values(by=sort_cols, ascending=[False, False, True])
     
-    # Dropping exact duplicates from a single run
+    # Drop duplicates
     df = df.drop_duplicates(subset=["source_id", "dataset_title", "action_date", "url"])
     return df.to_dict(orient="records")
 
@@ -367,17 +368,13 @@ def compute_changes(old_df: pd.DataFrame, new_df: pd.DataFrame) -> pd.DataFrame:
             })
         return pd.DataFrame(rows)
 
-    # --- FIX START ---
-    # We must ensure index is unique before creating dictionary
-    # We prioritize keeping rows that have an action_date
+    # PRE-DEDUPE to avoid Index Error
     if not old_df.empty:
         old_df = old_df.sort_values(by="action_date", ascending=False)
         old_df = old_df.drop_duplicates(subset=key_cols)
-        
     if not new_df.empty:
         new_df = new_df.sort_values(by="action_date", ascending=False)
         new_df = new_df.drop_duplicates(subset=key_cols)
-    # --- FIX END ---
 
     old_map = old_df.set_index(key_cols).to_dict(orient="index")
     new_map = new_df.set_index(key_cols).to_dict(orient="index")
@@ -455,9 +452,6 @@ def main() -> None:
     new_df = pd.DataFrame(all_rows, columns=tracker_columns)
     if not new_df.empty:
         new_df["priority"] = pd.to_numeric(new_df["priority"], errors="coerce").fillna(0).astype(int)
-        
-        # --- FIX: Strict Deduplication ---
-        # We must deduplicate strictly on ID+Title+URL before saving to avoid the unique index crash
         new_df = new_df.sort_values(by="action_date", ascending=False)
         new_df = new_df.drop_duplicates(subset=["source_id", "dataset_title", "url"])
 
