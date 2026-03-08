@@ -17,6 +17,7 @@ STATUS_CSV = DATA_DIR / "source_status.csv"
 CANDIDATES_CSV = DATA_DIR / "candidate_sources.csv"
 META_JSON = DATA_DIR / "last_run_meta.json"
 
+
 def load_csv(path: Path, columns: list[str]) -> pd.DataFrame:
     if path.exists():
         try:
@@ -25,9 +26,61 @@ def load_csv(path: Path, columns: list[str]) -> pd.DataFrame:
                 if col not in df.columns:
                     df[col] = ""
             return df
-        except Exception:
-            pass
+        except Exception as e:
+            st.error(f"Could not read {path.name}: {e}")
     return pd.DataFrame(columns=columns)
+
+
+def normalise_bool(series: pd.Series) -> pd.Series:
+    if series.empty:
+        return series
+    return (
+        series.astype(str)
+        .str.strip()
+        .str.lower()
+        .map({"true": True, "false": False, "1": True, "0": False})
+        .fillna(False)
+    )
+
+
+def prepare_tracker(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df
+
+    df = df.copy()
+
+    for col in ["source_id", "source", "country", "region", "source_type", "parser",
+                "themes", "dataset_title", "summary", "status", "announcement_date",
+                "action_date", "url", "notes", "last_seen"]:
+        if col not in df.columns:
+            df[col] = ""
+
+    df["priority"] = pd.to_numeric(df.get("priority", 0), errors="coerce").fillna(0).astype(int)
+    df["announcement_date_dt"] = pd.to_datetime(df["announcement_date"], errors="coerce")
+    df["action_date_dt"] = pd.to_datetime(df["action_date"], errors="coerce")
+
+    df["status"] = df["status"].fillna("").astype(str).str.strip().str.lower()
+    df["dataset_title"] = df["dataset_title"].fillna("").astype(str)
+    df["summary"] = df["summary"].fillna("").astype(str)
+    df["themes"] = df["themes"].fillna("").astype(str)
+    df["notes"] = df["notes"].fillna("").astype(str)
+
+    return df
+
+
+def prepare_status(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df
+
+    df = df.copy()
+    for col in ["source_id", "source", "url", "parser", "ok", "row_count", "error", "run_at"]:
+        if col not in df.columns:
+            df[col] = ""
+
+    df["ok"] = normalise_bool(df["ok"])
+    df["row_count"] = pd.to_numeric(df["row_count"], errors="coerce").fillna(0).astype(int)
+    return df
+
 
 tracker_cols = [
     "source_id", "source", "country", "region", "source_type", "parser",
@@ -44,9 +97,9 @@ candidate_cols = [
     "candidate_url", "reason", "status", "last_seen"
 ]
 
-df = load_csv(CURRENT_CSV, tracker_cols)
+df = prepare_tracker(load_csv(CURRENT_CSV, tracker_cols))
 changes = load_csv(CHANGES_CSV, change_cols)
-source_status = load_csv(STATUS_CSV, status_cols)
+source_status = prepare_status(load_csv(STATUS_CSV, status_cols))
 candidates = load_csv(CANDIDATES_CSV, candidate_cols)
 
 meta = {}
@@ -59,17 +112,19 @@ if META_JSON.exists():
 st.title("🌍 Global Population Data Watch")
 st.caption("Daily monitor for population, migration, census, labour, fertility, mortality, household, and population pyramid datasets.")
 
-top1, top2, top3, top4 = st.columns(4)
-top1.metric("Tracked rows", len(df))
-top2.metric("Changes logged", len(changes))
-top3.metric("Sources OK", int(source_status["ok"].sum()) if not source_status.empty and "ok" in source_status.columns else 0)
-top4.metric("Failed sources", int((~source_status["ok"]).sum()) if not source_status.empty and "ok" in source_status.columns else 0)
+ok_sources = int(source_status["ok"].sum()) if not source_status.empty else 0
+failed_sources = int((~source_status["ok"]).sum()) if not source_status.empty else 0
+
+m1, m2, m3, m4 = st.columns(4)
+m1.metric("Tracked rows", len(df))
+m2.metric("Changes logged", len(changes))
+m3.metric("Sources OK", ok_sources)
+m4.metric("Failed sources", failed_sources)
 
 if meta:
     st.info(
         f"Last run: {meta.get('run_at_utc', 'n/a')} | Sources: {meta.get('source_count', 0)} | "
-        f"Records: {meta.get('record_count', 0)} | Changes: {meta.get('change_count', 0)} | "
-        f"Window: -{meta.get('lookback_days', 180)} / +{meta.get('lookahead_days', 180)} days"
+        f"Records: {meta.get('record_count', 0)} | Changes: {meta.get('change_count', 0)}"
     )
 
 with st.sidebar:
@@ -87,12 +142,12 @@ with st.sidebar:
     statuses = sorted(df["status"].dropna().astype(str).unique().tolist()) if not df.empty else []
     selected_statuses = st.multiselect("Status", statuses, default=statuses)
 
-    priorities = sorted(df["priority"].dropna().tolist()) if not df.empty else []
+    priorities = sorted(df["priority"].dropna().unique().tolist()) if not df.empty else []
     selected_priorities = st.multiselect("Priority", priorities, default=priorities)
 
     keyword = st.text_input("Keyword search")
-    warnings_only = st.checkbox("Warnings only", value=False)
     dated_only = st.checkbox("Rows with action date only", value=False)
+    warnings_only = st.checkbox("Warnings only", value=False)
 
 filtered = df.copy()
 
@@ -110,25 +165,25 @@ if not filtered.empty:
 
     if keyword.strip():
         mask = (
-            filtered["dataset_title"].fillna("").str.contains(keyword, case=False, na=False)
-            | filtered["summary"].fillna("").str.contains(keyword, case=False, na=False)
-            | filtered["notes"].fillna("").str.contains(keyword, case=False, na=False)
-            | filtered["themes"].fillna("").str.contains(keyword, case=False, na=False)
+            filtered["dataset_title"].str.contains(keyword, case=False, na=False) |
+            filtered["summary"].str.contains(keyword, case=False, na=False) |
+            filtered["notes"].str.contains(keyword, case=False, na=False) |
+            filtered["themes"].str.contains(keyword, case=False, na=False)
         )
         filtered = filtered[mask]
 
+    if dated_only:
+        filtered = filtered[filtered["action_date_dt"].notna()]
+
     if warnings_only:
         filtered = filtered[filtered["status"] == "warning"]
-
-    if dated_only:
-        filtered = filtered[filtered["action_date"].fillna("").astype(str).str.strip() != ""]
 
 tab1, tab2, tab3, tab4 = st.tabs(["Tracker", "Changes", "Source status", "Candidate sources"])
 
 with tab1:
     st.subheader("Tracked releases and updates")
     if filtered.empty:
-        st.warning("No rows available. Check the Source status tab first to see whether the scraper ran and which sources failed.")
+        st.warning("No rows available. Check the Source status tab first.")
     else:
         display = filtered[
             [
@@ -137,12 +192,16 @@ with tab1:
             ]
         ].copy()
 
-        display = display.sort_values(by=["priority", "action_date", "source"], ascending=[False, True, True])
-        st.dataframe(display, use_container_width=True, hide_index=True)
+        display = display.sort_values(
+            by=["priority", "action_date_dt", "source"],
+            ascending=[False, True, True],
+            na_position="last"
+        )
 
+        st.dataframe(display, use_container_width=True, hide_index=True)
         st.download_button(
             label="Download filtered tracker CSV",
-            data=filtered.to_csv(index=False).encode("utf-8"),
+            data=filtered.drop(columns=["announcement_date_dt", "action_date_dt"], errors="ignore").to_csv(index=False).encode("utf-8"),
             file_name="dataset_tracker_filtered.csv",
             mime="text/csv",
         )
@@ -159,7 +218,7 @@ with tab3:
     if source_status.empty:
         st.warning("No source status file found yet.")
     else:
-        st.dataframe(source_status.sort_values(by=["ok", "source"], ascending=[False, True]), use_container_width=True, hide_index=True)
+        st.dataframe(source_status.sort_values(by=["ok", "row_count", "source"], ascending=[False, False, True]), use_container_width=True, hide_index=True)
 
 with tab4:
     st.subheader("Candidate sources for review")
@@ -169,7 +228,4 @@ with tab4:
         st.dataframe(candidates, use_container_width=True, hide_index=True)
 
 st.markdown("### Notes")
-st.write(
-    "This dashboard is designed to support a rolling global population data watch with readable summaries, "
-    "source-health visibility, and expansion through reviewed candidate sources."
-)
+st.write("This dashboard is designed to show source health clearly and keep filters stable even when the scraped CSV has mixed types.")
