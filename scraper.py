@@ -12,6 +12,7 @@ import yaml
 from bs4 import BeautifulSoup
 from dateutil import parser as date_parser
 
+# --- CONSTANTS ---
 DATA_DIR = Path("data")
 CURRENT_CSV = DATA_DIR / "dataset_tracker.csv"
 CHANGES_CSV = DATA_DIR / "dataset_changes.csv"
@@ -20,50 +21,32 @@ CANDIDATES_CSV = DATA_DIR / "candidate_sources.csv"
 META_JSON = DATA_DIR / "last_run_meta.json"
 
 DEFAULT_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/2.9; +https://github.com/)"
+    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/3.0; +https://github.com/)"
 }
 
 NOW = datetime.now(timezone.utc)
 TODAY = NOW.date()
 
-# --- SETTINGS & KEYWORDS ---
-DEFAULT_SETTINGS = {
-    "history_days": 365,
-    "lookback_days": 180,
-    "lookahead_days": 180,
-    "request_timeout_seconds": 25,
-    "user_agent": DEFAULT_HEADERS["User-Agent"],
-    "discovery_max_links_per_source": 30,
-    "discovery_keywords": [
-        "population", "migration", "demographic", "fertility", "mortality",
-        "census", "labour", "household", "births", "deaths", "asylum",
-        "projections", "estimates", "pyramid", "age", "release", "update"
-    ],
-    "trusted_domains": [
-        "ons.gov.uk", "ec.europa.eu", "census.gov", "dhsprogram.com",
-        "population.un.org", "populationpyramid.net", "scb.se", "ssb.no",
-        "dst.dk", "stat.fi"
-    ],
+# --- INTELLIGENCE CONFIG ---
+
+# Keywords to auto-detect themes
+THEME_MAP = {
+    "💰 Economy": ["gdp", "inflation", "price", "spending", "finance", "pension", "debt", "economic", "trade"],
+    "🏥 Health": ["health", "mortality", "death", "cancer", "hospital", "life expectancy", "disease", "covid"],
+    "✈️ Migration": ["migration", "asylum", "refugee", "visa", "immigra", "border", "foreign"],
+    "👶 Vital Stats": ["birth", "fertility", "baby", "maternity", "vital"],
+    "💼 Labour": ["labour", "employ", "job", "work", "wage", "earning", "vacanc"],
+    "📊 Census": ["census", "population count", "household", "demograph"],
 }
 
-GENERIC_TERMS = [
-    "population", "migration", "fertility", "mortality", "birth", "death",
-    "census", "labour", "employment", "household", "demography", "asylum",
-    "refugee", "projection", "estimate", "pyramid", "aging", "ageing",
-    "life expectancy", "survey", "release", "update", "statistics", "dataset"
+# Junk phrases to strip from Titles
+TITLE_NOISE = [
+    "data.census.gov", "API", "Microdata Access", "Top of Section", 
+    "release release", "updated updated", "upcoming release",
+    "Public Sector:", "Current Population Survey", "Release:", 
+    "View all", "Hide all", "Main figures", "Statistical release",
+    "cookies on", "privacy policy"
 ]
-
-SUMMARY_HINTS = {
-    "population": "Population counts, estimates, projections, or age structure.",
-    "migration": "Migration, asylum, or mobility related statistics and releases.",
-    "fertility": "Births, fertility rates, or family formation statistics.",
-    "mortality": "Deaths, survival, life expectancy, or mortality trends.",
-    "census": "Census-related release, update, or dissemination notice.",
-    "labour": "Employment, labour market, or workforce-related statistics.",
-    "household": "Households, living conditions, or family structure data.",
-    "pyramid": "Population pyramid or age structure dataset or update.",
-    "survey": "Survey dataset availability, access, or update notice.",
-}
 
 # --- CORE FUNCTIONS ---
 
@@ -73,49 +56,80 @@ def ensure_dirs() -> None:
 def load_watchlist() -> tuple[dict[str, Any], list[dict[str, Any]]]:
     with open("watchlist.yml", "r", encoding="utf-8") as f:
         raw = yaml.safe_load(f) or {}
-    settings = DEFAULT_SETTINGS.copy()
-    settings.update(raw.get("settings", {}))
-    return settings, raw.get("sources", [])
+    return raw.get("settings", {}), raw.get("sources", [])
 
 def get_headers(settings: dict[str, Any]) -> dict[str, str]:
     return {"User-Agent": settings.get("user_agent", DEFAULT_HEADERS["User-Agent"])}
 
 def fetch_html(url: str, settings: dict[str, Any]) -> str:
-    time.sleep(1) 
-    response = requests.get(
-        url,
-        headers=get_headers(settings),
-        timeout=int(settings.get("request_timeout_seconds", 20)),
-    )
-    response.raise_for_status()
-    return response.text
+    time.sleep(1.5) 
+    try:
+        response = requests.get(
+            url,
+            headers=get_headers(settings),
+            timeout=int(settings.get("request_timeout_seconds", 25)),
+        )
+        response.raise_for_status()
+        return response.text
+    except Exception as e:
+        print(f"  !! Failed to fetch {url}: {e}")
+        return ""
 
 def clean_text(value: str) -> str:
     if not value: return ""
     return re.sub(r"\s+", " ", str(value).replace("\xa0", " ")).strip()
 
-def infer_summary(title: str, themes: list[str], snippet: str) -> str:
-    text = f"{title} {snippet} {' '.join(themes)}".lower()
-    for key, sentence in SUMMARY_HINTS.items():
-        if key in text:
-            return sentence
-    return "Dataset release, update, access notice, or planned publication."
+# --- INTELLIGENCE FUNCTIONS ---
+
+def smart_clean_title(text: str) -> str:
+    """Surgically removes dates and noise from the raw title string."""
+    if not text: return ""
+    clean = text
+    
+    # 1. Remove Hard-coded Junk
+    for junk in TITLE_NOISE:
+        clean = re.sub(re.escape(junk), "", clean, flags=re.IGNORECASE)
+
+    # 2. Strip embedded dates (Start or End)
+    #    matches: "January 2026", "2026-05-01", "12/05/2026"
+    date_patterns = [
+        r'\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b',
+        r'\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b', 
+        r'\b\d{4}-\d{2}-\d{2}\b'
+    ]
+    for p in date_patterns:
+        clean = re.sub(p, "", clean, flags=re.IGNORECASE)
+
+    # 3. Clean Punctuation mess " : - "
+    clean = re.sub(r'\s+[:\-]\s+', ' ', clean)
+    clean = re.sub(r'\s+', ' ', clean).strip()
+    
+    # 4. Fallback if over-cleaned
+    if len(clean) < 5: return text[:100]
+    return clean
+
+def auto_tag_theme(text: str) -> str:
+    """Returns an emoji theme based on keywords."""
+    text = text.lower()
+    for theme, keywords in THEME_MAP.items():
+        if any(k in text for k in keywords):
+            return theme
+    return "📄 General"
 
 def detect_status(text: str) -> str:
     t = text.lower()
-    if any(x in t for x in ["removed", "withdrawn", "archived", "discontinued", "no longer available"]): return "warning"
-    if any(x in t for x in ["updated", "published", "released", "available now", "new data"]): return "updated"
-    if any(x in t for x in ["upcoming", "planned", "release", "scheduled", "due", "calendar"]): return "upcoming"
+    if any(x in t for x in ["removed", "withdrawn", "discontinued", "cancelled"]): return "warning"
+    if any(x in t for x in ["updated", "published", "released", "available now"]): return "updated"
+    if any(x in t for x in ["upcoming", "planned", "due", "calendar", "expected"]): return "upcoming"
     return "monitor"
 
 def extract_date(text: str):
-    if not text or not isinstance(text, str):
-        return None
+    if not text: return None
+    # Prioritize "12 January 2026" formats
     patterns = [
         r"\b\d{1,2}\s+[A-Z][a-z]{2,}\s+\d{4}\b",
-        r"\b[A-Z][a-z]{2,}\s+\d{1,2},?\s+\d{4}\b",
-        r"\b\d{4}-\d{2}-\d{2}\b",
-        r"\b\d{1,2}/\d{1,2}/\d{4}\b"
+        r"\b[A-Z][a-z]{2,}\s+\d{4}\b",  # "May 2026"
+        r"\b\d{4}-\d{2}-\d{2}\b"
     ]
     for pattern in patterns:
         match = re.search(pattern, text)
@@ -123,372 +137,140 @@ def extract_date(text: str):
             try:
                 dt = date_parser.parse(match.group(0), fuzzy=True, dayfirst=True)
                 return dt.date().isoformat()
-            except Exception:
-                continue
+            except: continue
     return None
 
-def get_windows(settings: dict[str, Any]):
-    past_window = TODAY - timedelta(days=int(settings.get("lookback_days", 180)))
-    future_window = TODAY + timedelta(days=int(settings.get("lookahead_days", 180)))
-    return past_window, future_window
+def is_blacklisted(text: str) -> bool:
+    """Returns True if the text is UI noise (cookies, search bars)."""
+    lower = text.lower()
+    blacklist = [
+        "cookie", "privacy policy", "settings", "javascript", 
+        "filter results", "clear all", "search", "show only", 
+        "day month year", "accessibility", "skip to main"
+    ]
+    return any(b in lower for b in blacklist)
 
-def keep_row_by_window(action_date: str | None, announcement_date: str | None, settings: dict[str, Any]) -> bool:
-    past_window, future_window = get_windows(settings)
-    dates = []
-    for value in [action_date, announcement_date]:
-        if value:
-            try:
-                dates.append(date_parser.parse(value).date())
-            except: pass
-    if not dates: return True 
-    return any(past_window <= d <= future_window for d in dates)
+# --- SCRAPER LOGIC ---
 
-def source_row_template(source: dict[str, Any]) -> dict[str, Any]:
-    return {
+def add_row(rows: list, source: dict, settings: dict, raw_text: str, context: str):
+    if len(raw_text) < 5 or is_blacklisted(raw_text): 
+        return
+
+    # Apply Intelligence
+    clean_title = smart_clean_title(raw_text)
+    theme = auto_tag_theme(clean_title + " " + context)
+    status = detect_status(context)
+    date_str = extract_date(context) or ""
+
+    # Check Date Window
+    if date_str:
+        try:
+            dt = date_parser.parse(date_str).date()
+            # Default window: 180 days back, 365 forward
+            if not (TODAY - timedelta(days=180) <= dt <= TODAY + timedelta(days=365)):
+                return
+        except: pass
+
+    rows.append({
         "source_id": source.get("id", ""),
         "source": source.get("name", ""),
         "country": source.get("country", ""),
         "region": source.get("region", ""),
         "source_type": source.get("source_type", ""),
-        "parser": source.get("parser", ""),
-        "themes": ", ".join(source.get("themes", [])),
+        "themes": theme,  # Using our smart theme instead of static
         "priority": source.get("priority", 5),
-        "dataset_title": "",
-        "summary": "",
-        "status": "monitor",
+        "dataset_title": clean_title,
+        "summary": clean_title, # Simple summary for now
+        "status": status,
         "announcement_date": TODAY.isoformat(),
-        "action_date": "",
+        "action_date": date_str,
         "url": source.get("url", ""),
         "notes": "",
         "last_seen": NOW.isoformat(),
-    }
+    })
 
-def relevant_terms(source: dict[str, Any], settings: dict[str, Any]) -> list[str]:
-    terms = []
-    if source.get("keywords"):
-        terms.extend([x.strip().lower() for x in str(source["keywords"]).split(",") if x.strip()])
-    terms.extend([str(x).lower() for x in source.get("themes", [])])
-    terms.extend([str(x).lower() for x in settings.get("discovery_keywords", [])])
-    terms.extend(GENERIC_TERMS)
-    return sorted(set([t for t in terms if t and len(t) > 2]))
-
-def filter_relevant_text(text: str, source: dict[str, Any], settings: dict[str, Any]) -> bool:
-    lower = text.lower()
+def parse_generic(source: dict, settings: dict) -> list[dict]:
+    # Universal parser that works for ONS, Eurostat, Census, etc.
+    html = fetch_html(source["url"], settings)
+    if not html: return []
     
-    # --- BLACKLIST: Ignore UI Elements & Cookies ---
-    blacklist = [
-        "cookie", "privacy policy", "settings", "javascript", 
-        "filter results", "clear all", "search release", "show only", 
-        "day month year", "census date", "cancelled", "page 1 of",
-        "skip to main content", "accessibility"
-    ]
-    if any(b in lower for b in blacklist):
-        return False
+    soup = BeautifulSoup(html, "lxml")
+    rows = []
+    seen = set()
+
+    # Broad Tag Search
+    targets = soup.find_all(["li", "tr", "article", "div", "h3", "h4", "a"])
+    
+    for tag in targets:
+        text = clean_text(tag.get_text(" ", strip=True))
+        if len(text) < 15 or text in seen: continue
         
-    return any(term in lower for term in relevant_terms(source, settings))
-
-def add_row(rows: list[dict[str, Any]], source: dict[str, Any], settings: dict[str, Any], title: str, context: str):
-    title = clean_text(title)
-    if len(title) < 5: return
-    row = source_row_template(source)
-    row["dataset_title"] = title[:220]
-    row["summary"] = infer_summary(title, source.get("themes", []), context)
-    row["status"] = detect_status(context)
-    row["action_date"] = extract_date(context) or ""
-    row["notes"] = clean_text(context)[:500]
-    if keep_row_by_window(row["action_date"], row["announcement_date"], settings):
-        rows.append(row)
-
-# --- PARSERS ---
-
-def parse_ons_release_calendar(source: dict[str, Any], settings: dict[str, Any]) -> list[dict[str, Any]]:
-    params = {"highlight": "true", "release-type": "type-upcoming", "sort": "date-newest"}
-    if source.get("keywords"): params["keywords"] = source["keywords"]
-    
-    url_parts = list(urlparse(source["url"]))
-    query = parse_qs(url_parts[4])
-    query.update(params)
-    url_parts[4] = urlencode(query, doseq=True)
-    full_url = urlunparse(url_parts)
-
-    html = fetch_html(full_url, settings)
-    soup = BeautifulSoup(html, "lxml")
-    rows = []
-    
-    # Filter ONS cards more specifically if possible, but broad is safer given dynamic classes.
-    # The blacklist in filter_relevant_text will handle the cleanup.
-    cards = soup.find_all(["li", "div", "h3", "article"])
-    seen = set()
-    for card in cards:
-        text = clean_text(card.get_text(" ", strip=True))
-        if len(text) < 15 or text in seen: continue
-        if filter_relevant_text(text, source, settings):
-            seen.add(text)
-            add_row(rows, source, settings, text[:220], text)
-
-    if not rows:
-        add_row(rows, source, settings, source["name"], "No matching ONS entries found.")
-    return dedupe_rows(rows)
-
-def parse_census_upcoming_releases(source: dict[str, Any], settings: dict[str, Any]) -> list[dict[str, Any]]:
-    html = fetch_html(source["url"], settings)
-    soup = BeautifulSoup(html, "lxml")
-    rows = []
-    for tag in soup.find_all(["li", "p", "tr", "td", "a", "h2", "h3", "div"]):
-        text = clean_text(tag.get_text(" ", strip=True))
-        if len(text) < 20: continue
-        if filter_relevant_text(text, source, settings):
-            add_row(rows, source, settings, text[:220], text)
-    return dedupe_rows(rows)
-
-def parse_eurostat_release_calendar(source: dict[str, Any], settings: dict[str, Any]) -> list[dict[str, Any]]:
-    html = fetch_html(source["url"], settings)
-    soup = BeautifulSoup(html, "lxml")
-    rows = []
-    tags = soup.find_all(["li", "a", "p", "h2", "h3", "h4", "td", "tr", "div", "span"])
-    seen = set()
-    for tag in tags:
-        text = clean_text(tag.get_text(" ", strip=True))
-        if len(text) < 15 or text in seen: continue
-        if filter_relevant_text(text, source, settings):
-            seen.add(text)
-            add_row(rows, source, settings, text[:220], text)
-
-    if not rows:
-        add_row(rows, source, settings, source["name"], "No matching Eurostat entries found.")
-    return dedupe_rows(rows)
-
-def parse_dhs_available_datasets(source: dict[str, Any], settings: dict[str, Any]) -> list[dict[str, Any]]:
-    html = fetch_html(source["url"], settings)
-    soup = BeautifulSoup(html, "lxml")
-    rows = []
-    for tag in soup.find_all(["tr", "td", "li", "a"]):
-        text = clean_text(tag.get_text(" ", strip=True))
-        if len(text) > 15 and filter_relevant_text(text, source, settings):
-             add_row(rows, source, settings, text[:220], text)
-    return dedupe_rows(rows)
-
-def parse_simple_page(source: dict[str, Any], settings: dict[str, Any]) -> list[dict[str, Any]]:
-    html = fetch_html(source["url"], settings)
-    soup = BeautifulSoup(html, "lxml")
-    rows = []
-    seen = set()
-    for tag in soup.find_all(["article", "section", "li", "tr", "p", "h2", "h3", "h4", "a"]):
-        text = clean_text(tag.get_text(" ", strip=True))
-        if len(text) < 15 or text in seen: continue
-        if filter_relevant_text(text, source, settings):
-            seen.add(text)
-            add_row(rows, source, settings, text[:220], text)
-            
-    if not rows:
-        title = soup.title.string if soup.title else source["name"]
-        add_row(rows, source, settings, str(title), clean_text(soup.get_text())[:500])
-        
-    return dedupe_rows(rows)
-
-def dedupe_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    if not rows: return []
-    df = pd.DataFrame(rows)
-    if "priority" in df.columns:
-        df["priority"] = pd.to_numeric(df["priority"], errors="coerce").fillna(0).astype(int)
-    
-    # Sort to keep best candidate
-    sort_cols = [c for c in ["priority", "action_date", "source"] if c in df.columns]
-    if sort_cols: 
-        df = df.sort_values(by=sort_cols, ascending=[False, False, True])
-    
-    # Drop duplicates
-    df = df.drop_duplicates(subset=["source_id", "dataset_title", "action_date", "url"])
-    return df.to_dict(orient="records")
-
-PARSERS = {
-    "ons_release_calendar": parse_ons_release_calendar,
-    "eurostat_release_calendar": parse_eurostat_release_calendar,
-    "census_upcoming_releases": parse_census_upcoming_releases,
-    "dhs_available_datasets": parse_dhs_available_datasets,
-    "simple_page": parse_simple_page,
-}
-
-def load_existing(path: Path, columns: list[str]) -> pd.DataFrame:
-    if path.exists():
-        try:
-            df = pd.read_csv(path, dtype=str, keep_default_na=False)
-            for col in columns:
-                if col not in df.columns: df[col] = ""
-            return df
-        except: pass
-    return pd.DataFrame(columns=columns)
-
-def discover_candidate_links(source: dict[str, Any], settings: dict[str, Any]) -> list[dict[str, Any]]:
-    rows = []
-    try:
-        html = fetch_html(source["url"], settings)
-        soup = BeautifulSoup(html, "lxml")
-        seen = set()
-        for a in soup.find_all("a", href=True):
-            href = a["href"].strip()
-            text = clean_text(a.get_text(" ", strip=True))
-            if not href or len(text) < 3 or href.startswith(("#", "javascript")): continue
-            if href.startswith("/"):
-                parsed = urlparse(source["url"])
-                href = f"{parsed.scheme}://{parsed.netloc}{href}"
-            
-            domain = urlparse(href).netloc.replace("www.", "")
-            if not any(domain.endswith(td) for td in settings.get("trusted_domains", [])): continue
-            
-            combined = f"{text} {href}".lower()
-            if not any(k.lower() in combined for k in settings.get("discovery_keywords", [])): continue
-            
-            key = (text, href)
-            if key in seen: continue
-            seen.add(key)
-            
-            rows.append({
-                "candidate_name": text[:180] or source["name"],
-                "country": source.get("country", ""),
-                "region": source.get("region", ""),
-                "theme": ", ".join(source.get("themes", [])),
-                "candidate_url": href,
-                "reason": f"Discovered from {source['name']}",
-                "status": "review",
-                "last_seen": NOW.isoformat(),
-            })
-            if len(rows) >= int(settings.get("discovery_max_links_per_source", 30)): break
-    except: pass
-    return rows
-
-def compute_changes(old_df: pd.DataFrame, new_df: pd.DataFrame) -> pd.DataFrame:
-    key_cols = ["source_id", "dataset_title", "url"]
-    compare_cols = ["status", "action_date", "summary", "notes"]
-    
-    old_df = old_df.fillna("").astype(str)
-    new_df = new_df.fillna("").astype(str)
-
-    if old_df.empty:
-        rows = []
-        for _, row in new_df.iterrows():
-            rows.append({
-                "change_type": "new",
-                "source_id": row["source_id"],
-                "source": row["source"],
-                "dataset_title": row["dataset_title"],
-                "url": row["url"],
-                "old_value": "",
-                "new_value": row["status"],
-                "changed_at": NOW.isoformat(),
-            })
-        return pd.DataFrame(rows)
-
-    if not old_df.empty:
-        old_df = old_df.sort_values(by="action_date", ascending=False)
-        old_df = old_df.drop_duplicates(subset=key_cols)
-    if not new_df.empty:
-        new_df = new_df.sort_values(by="action_date", ascending=False)
-        new_df = new_df.drop_duplicates(subset=key_cols)
-
-    old_map = old_df.set_index(key_cols).to_dict(orient="index")
-    new_map = new_df.set_index(key_cols).to_dict(orient="index")
-    changes = []
-
-    for key, new_vals in new_map.items():
-        if key not in old_map:
-            changes.append({
-                "change_type": "new",
-                "source_id": new_vals.get("source_id", ""),
-                "source": new_vals.get("source", ""),
-                "dataset_title": key[1],
-                "url": key[2],
-                "old_value": "",
-                "new_value": new_vals.get("status", ""),
-                "changed_at": NOW.isoformat(),
-            })
+        # Keyword Filter
+        keywords = settings.get("discovery_keywords", []) + ["release", "publication"]
+        if not any(k in text.lower() for k in keywords):
             continue
 
-        old_vals = old_map[key]
-        for col in compare_cols:
-            if str(old_vals.get(col, "")).strip() != str(new_vals.get(col, "")).strip():
-                changes.append({
-                    "change_type": f"changed_{col}",
-                    "source_id": new_vals.get("source_id", ""),
-                    "source": new_vals.get("source", ""),
-                    "dataset_title": key[1],
-                    "url": key[2],
-                    "old_value": old_vals.get(col, ""),
-                    "new_value": new_vals.get(col, ""),
-                    "changed_at": NOW.isoformat(),
-                })
-    return pd.DataFrame(changes)
+        seen.add(text)
+        add_row(rows, source, settings, text, text)
 
-def main() -> None:
+    return rows
+
+# --- MAIN EXECUTION ---
+
+def main():
     ensure_dirs()
     settings, sources = load_watchlist()
-    tracker_columns = [
-        "source_id", "source", "country", "region", "source_type", "parser",
-        "themes", "priority", "dataset_title", "summary", "status",
-        "announcement_date", "action_date", "url", "notes", "last_seen"
-    ]
-
-    status_rows = []
+    
     all_rows = []
-    candidate_rows = []
+    status_rows = []
 
-    print(f"Starting scrape at {NOW.isoformat()}...")
+    print(f"🚀 Starting Smart Scraper at {NOW.isoformat()}")
 
     for source in sources:
-        parser_name = source.get("parser", "simple_page")
-        parser_func = PARSERS.get(parser_name, parse_simple_page)
-        started = datetime.now(timezone.utc)
-        print(f"Scraping {source['name']} ({parser_name})...")
+        print(f"Processing: {source['name']}...")
+        start_time = datetime.now(timezone.utc)
         
         try:
-            rows = parser_func(source, settings)
-            print(f"  -> Found {len(rows)} items.")
+            # Use one robust generic parser for everything
+            rows = parse_generic(source, settings)
+            
+            # Deduplicate locally
+            df_local = pd.DataFrame(rows)
+            if not df_local.empty:
+                # Keep row with Date if duplicates exist
+                df_local = df_local.sort_values("action_date", ascending=False)
+                df_local = df_local.drop_duplicates(subset=["dataset_title"])
+                rows = df_local.to_dict(orient="records")
+
+            print(f"  -> Found {len(rows)} valid items.")
             all_rows.extend(rows)
             
-            links = discover_candidate_links(source, settings)
-            candidate_rows.extend(links)
-
             status_rows.append({
-                "source_id": source.get("id", ""), "source": source["name"], "url": source["url"],
-                "parser": parser_name, "ok": True, "row_count": len(rows), "error": "", "run_at": started.isoformat()
+                "source": source["name"], "ok": True, "count": len(rows), 
+                "run_at": start_time.isoformat()
             })
+            
         except Exception as e:
             print(f"  -> Error: {e}")
             status_rows.append({
-                "source_id": source.get("id", ""), "source": source["name"], "url": source["url"],
-                "parser": parser_name, "ok": False, "row_count": 0, "error": str(e)[:500], "run_at": started.isoformat()
+                "source": source["name"], "ok": False, "count": 0, 
+                "error": str(e), "run_at": start_time.isoformat()
             })
 
-    new_df = pd.DataFrame(all_rows, columns=tracker_columns)
+    # Global Deduplication & Save
+    new_df = pd.DataFrame(all_rows)
     if not new_df.empty:
-        new_df["priority"] = pd.to_numeric(new_df["priority"], errors="coerce").fillna(0).astype(int)
-        new_df = new_df.sort_values(by="action_date", ascending=False)
-        new_df = new_df.drop_duplicates(subset=["source_id", "dataset_title", "url"])
-
-    old_df = load_existing(CURRENT_CSV, tracker_columns)
-    changes_df = compute_changes(old_df, new_df)
-    status_df = pd.DataFrame(status_rows)
-    candidates_df = pd.DataFrame(candidate_rows)
-
-    if not candidates_df.empty:
-        candidates_df = candidates_df.drop_duplicates(subset=["candidate_name", "candidate_url"])
-
+        new_df = new_df.sort_values("action_date", ascending=False)
+        new_df = new_df.drop_duplicates(subset=["source", "dataset_title", "action_date"])
+        
     new_df.to_csv(CURRENT_CSV, index=False)
-    changes_df.to_csv(CHANGES_CSV, index=False)
-    status_df.to_csv(STATUS_CSV, index=False)
-    candidates_df.to_csv(CANDIDATES_CSV, index=False)
-
-    with open(META_JSON, "w", encoding="utf-8") as f:
-        json.dump({
-            "run_at_utc": NOW.isoformat(),
-            "source_count": len(sources),
-            "record_count": int(len(new_df)),
-            "change_count": int(len(changes_df)),
-            "ok_sources": int(status_df["ok"].sum()) if not status_df.empty else 0,
-            "failed_sources": int((~status_df["ok"]).sum()) if not status_df.empty else 0,
-        }, f, indent=2)
+    pd.DataFrame(status_rows).to_csv(STATUS_CSV, index=False)
     
-    print(f"Run complete. Total Records: {len(new_df)}")
+    # Meta
+    with open(META_JSON, "w") as f:
+        json.dump({"run_at": NOW.isoformat(), "total": len(new_df)}, f)
+
+    print("✅ Done.")
 
 if __name__ == "__main__":
     main()
