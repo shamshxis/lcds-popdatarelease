@@ -1,135 +1,183 @@
-from __future__ import annotations
-
-import json
 from pathlib import Path
+import json
 
 import pandas as pd
 import streamlit as st
 
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / 'data'
-CURRENT_CSV = DATA_DIR / 'dataset_tracker.csv'
-CHANGES_CSV = DATA_DIR / 'dataset_changes.csv'
-DISCOVERY_CSV = DATA_DIR / 'candidate_sources.csv'
-STATUS_CSV = DATA_DIR / 'source_status.csv'
-META_JSON = DATA_DIR / 'last_run_meta.json'
+st.set_page_config(
+    page_title="Global Population Data Watch",
+    page_icon="🌍",
+    layout="wide",
+)
 
-st.set_page_config(page_title='Global Pop Data Watch', page_icon='🌍', layout='wide')
-
-st.markdown("""
-<style>
-.block-container {padding-top: 1.2rem; padding-bottom: 1.2rem;}
-.hero {background: linear-gradient(135deg,#163e7a,#3b6db1); color: white; padding: 20px 24px; border-radius: 18px; margin-bottom: 18px;}
-.small {color:#5d6f87; font-size: 0.92rem;}
-</style>
-""", unsafe_allow_html=True)
+DATA_DIR = Path("data")
+CURRENT_CSV = DATA_DIR / "dataset_tracker.csv"
+CHANGES_CSV = DATA_DIR / "dataset_changes.csv"
+STATUS_CSV = DATA_DIR / "source_status.csv"
+CANDIDATES_CSV = DATA_DIR / "candidate_sources.csv"
+META_JSON = DATA_DIR / "last_run_meta.json"
 
 
-def load_csv(path: Path) -> pd.DataFrame:
+def load_csv(path: Path, columns: list[str]) -> pd.DataFrame:
     if path.exists():
         try:
-            return pd.read_csv(path)
+            df = pd.read_csv(path)
+            for col in columns:
+                if col not in df.columns:
+                    df[col] = ""
+            return df
         except Exception:
-            return pd.DataFrame()
-    return pd.DataFrame()
+            pass
+    return pd.DataFrame(columns=columns)
 
 
-current = load_csv(CURRENT_CSV)
-changes = load_csv(CHANGES_CSV)
-discovery = load_csv(DISCOVERY_CSV)
-status = load_csv(STATUS_CSV)
+tracker_cols = [
+    "source",
+    "country",
+    "region",
+    "theme",
+    "priority",
+    "dataset_title",
+    "summary",
+    "status",
+    "announcement_date",
+    "action_date",
+    "url",
+    "notes",
+    "last_seen",
+]
+change_cols = ["change_type", "source", "dataset_title", "url", "old_value", "new_value", "changed_at"]
+status_cols = ["source", "url", "parser", "ok", "row_count", "error", "run_at"]
+candidate_cols = ["candidate_name", "country", "region", "theme", "candidate_url", "reason", "status", "last_seen"]
+
+df = load_csv(CURRENT_CSV, tracker_cols)
+changes = load_csv(CHANGES_CSV, change_cols)
+source_status = load_csv(STATUS_CSV, status_cols)
+candidates = load_csv(CANDIDATES_CSV, candidate_cols)
+
 meta = {}
 if META_JSON.exists():
     try:
-        meta = json.loads(META_JSON.read_text(encoding='utf-8'))
+        meta = json.loads(META_JSON.read_text(encoding="utf-8"))
     except Exception:
         meta = {}
 
-st.markdown('<div class="hero"><h2 style="margin:0;">Global Population Data Watch</h2><div style="margin-top:6px;">Daily monitor for releases, access changes, removal signals, and population-data updates across UK, US, Europe, Nordics, DHS, and global sources.</div></div>', unsafe_allow_html=True)
+st.title("🌍 Global Population Data Watch")
+st.caption("Daily monitor for demographic, migration, labour, census, and population-related dataset releases and updates.")
 
 c1, c2, c3, c4 = st.columns(4)
-c1.metric('Tracker rows', int(meta.get('records_current', len(current))))
-c2.metric('Sources checked', int(meta.get('sources_checked', len(status))))
-c3.metric('Sources ok', int(meta.get('sources_ok', int(status['ok'].sum()) if not status.empty and 'ok' in status.columns else 0)))
-c4.metric('Candidate pages', int(meta.get('candidate_sources', len(discovery))))
+c1.metric("Tracked rows", len(df))
+c2.metric("Changes logged", len(changes))
+c3.metric("Sources OK", int(source_status["ok"].sum()) if not source_status.empty and "ok" in source_status.columns else 0)
+c4.metric("Failed sources", int((~source_status["ok"]).sum()) if not source_status.empty and "ok" in source_status.columns else 0)
 
-if current.empty:
-    st.warning('No tracker rows are currently loaded. Check the Source status tab first. If all sources failed, open the GitHub Actions log and inspect source_status.csv.')
+if meta:
+    st.info(
+        f"Last run: {meta.get('run_at_utc', 'n/a')} | Sources: {meta.get('source_count', 0)} | "
+        f"Records: {meta.get('record_count', 0)} | Changes: {meta.get('change_count', 0)}"
+    )
 
 with st.sidebar:
-    st.header('Filters')
-    country_opts = sorted(current['country'].dropna().astype(str).unique().tolist()) if not current.empty and 'country' in current.columns else []
-    status_opts = sorted(current['status'].dropna().astype(str).unique().tolist()) if not current.empty and 'status' in current.columns else []
-    source_opts = sorted(current['source_name'].dropna().astype(str).unique().tolist()) if not current.empty and 'source_name' in current.columns else []
-    selected_countries = st.multiselect('Country', country_opts, default=country_opts)
-    selected_status = st.multiselect('Status', status_opts, default=status_opts)
-    selected_sources = st.multiselect('Source', source_opts, default=source_opts)
-    keyword = st.text_input('Keyword')
-    show_errors_only = st.checkbox('Show parser errors only', value=False)
+    st.header("Filters")
 
+    countries = sorted([x for x in df.get("country", pd.Series(dtype=str)).dropna().unique().tolist() if str(x).strip()]) if not df.empty else []
+    selected_countries = st.multiselect("Country", countries, default=countries)
 
-def prep_dates(df: pd.DataFrame) -> pd.DataFrame:
-    if df.empty:
-        return df
-    out = df.copy()
-    for col in ['action_date', 'announcement_date']:
-        if col in out.columns:
-            out[col] = pd.to_datetime(out[col], errors='coerce')
-    return out
+    regions = sorted([x for x in df.get("region", pd.Series(dtype=str)).dropna().unique().tolist() if str(x).strip()]) if not df.empty else []
+    selected_regions = st.multiselect("Region", regions, default=regions)
 
-current = prep_dates(current)
-changes = prep_dates(changes)
+    statuses = sorted([x for x in df.get("status", pd.Series(dtype=str)).dropna().unique().tolist() if str(x).strip()]) if not df.empty else []
+    selected_statuses = st.multiselect("Status", statuses, default=statuses)
 
-filtered = current.copy()
+    priorities = sorted([x for x in df.get("priority", pd.Series(dtype=str)).dropna().unique().tolist() if str(x).strip()]) if not df.empty else []
+    selected_priorities = st.multiselect("Priority", priorities, default=priorities)
+
+    keyword = st.text_input("Keyword search")
+    upcoming_only = st.checkbox("Show upcoming only", value=False)
+    warnings_only = st.checkbox("Show warnings only", value=False)
+
+filtered = df.copy()
+
 if not filtered.empty:
     if selected_countries:
-        filtered = filtered[filtered['country'].astype(str).isin(selected_countries)]
-    if selected_status:
-        filtered = filtered[filtered['status'].astype(str).isin(selected_status)]
-    if selected_sources:
-        filtered = filtered[filtered['source_name'].astype(str).isin(selected_sources)]
-    if keyword:
-        mask = filtered['dataset_title'].astype(str).str.contains(keyword, case=False, na=False) | filtered['summary'].astype(str).str.contains(keyword, case=False, na=False)
+        filtered = filtered[filtered["country"].isin(selected_countries)]
+    if selected_regions:
+        filtered = filtered[filtered["region"].isin(selected_regions)]
+    if selected_statuses:
+        filtered = filtered[filtered["status"].isin(selected_statuses)]
+    if selected_priorities:
+        filtered = filtered[filtered["priority"].isin(selected_priorities)]
+
+    if keyword.strip():
+        mask = (
+            filtered["dataset_title"].fillna("").str.contains(keyword, case=False, na=False)
+            | filtered["summary"].fillna("").str.contains(keyword, case=False, na=False)
+            | filtered["notes"].fillna("").str.contains(keyword, case=False, na=False)
+            | filtered["theme"].fillna("").str.contains(keyword, case=False, na=False)
+        )
         filtered = filtered[mask]
-    if show_errors_only:
-        filtered = filtered[filtered['status'].astype(str).eq('parser_error')]
 
+    if upcoming_only:
+        filtered = filtered[filtered["status"].isin(["upcoming", "updated"])]
 
-tab1, tab2, tab3, tab4 = st.tabs(['Tracker', 'Changes', 'Source status', 'Discovery'])
+    if warnings_only:
+        filtered = filtered[filtered["status"] == "warning"]
+
+tab1, tab2, tab3, tab4 = st.tabs(["Tracker", "Changes", "Source status", "Candidate sources"])
 
 with tab1:
+    st.subheader("Tracked releases and updates")
     if filtered.empty:
-        st.info('No rows match the current filters.')
+        st.warning("No rows available. Check the Source status tab first to see whether the scraper ran and which sources failed.")
     else:
-        show = filtered.copy()
-        show['dataset_link'] = show.apply(lambda r: r['dataset_url'] if str(r.get('dataset_url', '')).startswith('http') else '', axis=1)
-        show = show.rename(columns={
-            'dataset_title': 'Dataset', 'country': 'Country', 'region': 'Region', 'source_name': 'Source',
-            'status': 'Status', 'action_type': 'Type', 'action_date': 'Action date', 'announcement_date': 'Announcement date',
-            'days_until_action': 'Days left', 'summary': 'Plain-language summary', 'tags': 'Themes'
-        })
-        st.dataframe(show[['Dataset','Country','Region','Source','Status','Type','Action date','Announcement date','Days left','Themes','Plain-language summary']], use_container_width=True, hide_index=True)
-        st.download_button('Download tracker CSV', filtered.to_csv(index=False), file_name='dataset_tracker.csv')
+        display = filtered[
+            [
+                "source",
+                "country",
+                "region",
+                "priority",
+                "status",
+                "dataset_title",
+                "summary",
+                "announcement_date",
+                "action_date",
+                "url",
+            ]
+        ].copy()
+
+        display = display.sort_values(by=["priority", "action_date", "source"], ascending=[True, True, True])
+        st.dataframe(display, use_container_width=True, hide_index=True)
+
+        st.download_button(
+            label="Download tracker CSV",
+            data=filtered.to_csv(index=False).encode("utf-8"),
+            file_name="dataset_tracker_filtered.csv",
+            mime="text/csv",
+        )
 
 with tab2:
+    st.subheader("Detected changes")
     if changes.empty:
-        st.info('No change log yet.')
+        st.info("No changes logged yet.")
     else:
-        st.dataframe(changes[['dataset_title','source_name','country','status','action_date','change_type','previous_action_date','previous_status']].rename(columns={'dataset_title':'Dataset','source_name':'Source','country':'Country','status':'Status','action_date':'Action date','change_type':'Change'}), use_container_width=True, hide_index=True)
+        st.dataframe(changes.sort_values(by="changed_at", ascending=False), use_container_width=True, hide_index=True)
 
 with tab3:
-    if status.empty:
-        st.info('No source status file found.')
+    st.subheader("Source status")
+    if source_status.empty:
+        st.warning("No source status file found yet.")
     else:
-        ok_count = int(status['ok'].sum()) if 'ok' in status.columns else 0
-        st.caption(f'{ok_count} of {len(status)} sources completed without parser exceptions.')
-        st.dataframe(status.rename(columns={'source_name':'Source','parser':'Parser','records':'Rows','error':'Error','elapsed_seconds':'Seconds'}), use_container_width=True, hide_index=True)
-        bad = status[~status['ok'].astype(bool)] if 'ok' in status.columns else pd.DataFrame()
-        if not bad.empty:
-            st.error('Some sources failed. The Error column usually shows the exact page or parser problem.')
+        st.dataframe(source_status.sort_values(by=["ok", "source"], ascending=[False, True]), use_container_width=True, hide_index=True)
 
 with tab4:
-    if discovery.empty:
-        st.info('No candidate pages discovered yet.')
+    st.subheader("Candidate sources")
+    if candidates.empty:
+        st.info("No candidate sources found.")
     else:
-        st.dataframe(discovery.rename(columns={'candidate_title':'Candidate title','candidate_url':'Candidate URL','candidate_domain':'Domain','relevance_score':'Score','seed_source_name':'Seed source'}), use_container_width=True, hide_index=True)
+        st.dataframe(candidates, use_container_width=True, hide_index=True)
+
+st.markdown("### Notes")
+st.write(
+    "This dashboard keeps a rolling watch on official demographic and population-related sources. "
+    "It is designed to prioritise human-readable summaries, visible source health, and easy filtering."
+)
