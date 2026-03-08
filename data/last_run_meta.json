@@ -1,8 +1,8 @@
 {
-  "run_at_utc": "2026-03-08T00:55:39.210064+00:00",
+  "run_at_utc": "2026-03-08T01:04:19.488717+00:00",
   "source_count": 12,
-  "record_count": 459,
-  "change_count": 667,
+  "record_count": 456,
+  "change_count": 4,
   "ok_sources": 10,
   "failed_sources": 2
 }
