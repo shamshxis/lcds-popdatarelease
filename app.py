@@ -17,7 +17,6 @@ STATUS_CSV = DATA_DIR / "source_status.csv"
 CANDIDATES_CSV = DATA_DIR / "candidate_sources.csv"
 META_JSON = DATA_DIR / "last_run_meta.json"
 
-
 def load_csv(path: Path, columns: list[str]) -> pd.DataFrame:
     if path.exists():
         try:
@@ -30,25 +29,20 @@ def load_csv(path: Path, columns: list[str]) -> pd.DataFrame:
             pass
     return pd.DataFrame(columns=columns)
 
-
 tracker_cols = [
-    "source",
-    "country",
-    "region",
-    "theme",
-    "priority",
-    "dataset_title",
-    "summary",
-    "status",
-    "announcement_date",
-    "action_date",
-    "url",
-    "notes",
-    "last_seen",
+    "source_id", "source", "country", "region", "source_type", "parser",
+    "themes", "priority", "dataset_title", "summary", "status",
+    "announcement_date", "action_date", "url", "notes", "last_seen"
 ]
-change_cols = ["change_type", "source", "dataset_title", "url", "old_value", "new_value", "changed_at"]
-status_cols = ["source", "url", "parser", "ok", "row_count", "error", "run_at"]
-candidate_cols = ["candidate_name", "country", "region", "theme", "candidate_url", "reason", "status", "last_seen"]
+change_cols = [
+    "change_type", "source_id", "source", "dataset_title",
+    "url", "old_value", "new_value", "changed_at"
+]
+status_cols = ["source_id", "source", "url", "parser", "ok", "row_count", "error", "run_at"]
+candidate_cols = [
+    "candidate_name", "country", "region", "theme",
+    "candidate_url", "reason", "status", "last_seen"
+]
 
 df = load_csv(CURRENT_CSV, tracker_cols)
 changes = load_csv(CHANGES_CSV, change_cols)
@@ -63,38 +57,42 @@ if META_JSON.exists():
         meta = {}
 
 st.title("🌍 Global Population Data Watch")
-st.caption("Daily monitor for demographic, migration, labour, census, and population-related dataset releases and updates.")
+st.caption("Daily monitor for population, migration, census, labour, fertility, mortality, household, and population pyramid datasets.")
 
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Tracked rows", len(df))
-c2.metric("Changes logged", len(changes))
-c3.metric("Sources OK", int(source_status["ok"].sum()) if not source_status.empty and "ok" in source_status.columns else 0)
-c4.metric("Failed sources", int((~source_status["ok"]).sum()) if not source_status.empty and "ok" in source_status.columns else 0)
+top1, top2, top3, top4 = st.columns(4)
+top1.metric("Tracked rows", len(df))
+top2.metric("Changes logged", len(changes))
+top3.metric("Sources OK", int(source_status["ok"].sum()) if not source_status.empty and "ok" in source_status.columns else 0)
+top4.metric("Failed sources", int((~source_status["ok"]).sum()) if not source_status.empty and "ok" in source_status.columns else 0)
 
 if meta:
     st.info(
         f"Last run: {meta.get('run_at_utc', 'n/a')} | Sources: {meta.get('source_count', 0)} | "
-        f"Records: {meta.get('record_count', 0)} | Changes: {meta.get('change_count', 0)}"
+        f"Records: {meta.get('record_count', 0)} | Changes: {meta.get('change_count', 0)} | "
+        f"Window: -{meta.get('lookback_days', 180)} / +{meta.get('lookahead_days', 180)} days"
     )
 
 with st.sidebar:
     st.header("Filters")
 
-    countries = sorted([x for x in df.get("country", pd.Series(dtype=str)).dropna().unique().tolist() if str(x).strip()]) if not df.empty else []
+    countries = sorted(df["country"].dropna().astype(str).unique().tolist()) if not df.empty else []
     selected_countries = st.multiselect("Country", countries, default=countries)
 
-    regions = sorted([x for x in df.get("region", pd.Series(dtype=str)).dropna().unique().tolist() if str(x).strip()]) if not df.empty else []
+    regions = sorted(df["region"].dropna().astype(str).unique().tolist()) if not df.empty else []
     selected_regions = st.multiselect("Region", regions, default=regions)
 
-    statuses = sorted([x for x in df.get("status", pd.Series(dtype=str)).dropna().unique().tolist() if str(x).strip()]) if not df.empty else []
+    source_types = sorted(df["source_type"].dropna().astype(str).unique().tolist()) if not df.empty else []
+    selected_source_types = st.multiselect("Source type", source_types, default=source_types)
+
+    statuses = sorted(df["status"].dropna().astype(str).unique().tolist()) if not df.empty else []
     selected_statuses = st.multiselect("Status", statuses, default=statuses)
 
-    priorities = sorted([x for x in df.get("priority", pd.Series(dtype=str)).dropna().unique().tolist() if str(x).strip()]) if not df.empty else []
+    priorities = sorted(df["priority"].dropna().tolist()) if not df.empty else []
     selected_priorities = st.multiselect("Priority", priorities, default=priorities)
 
     keyword = st.text_input("Keyword search")
-    upcoming_only = st.checkbox("Show upcoming only", value=False)
-    warnings_only = st.checkbox("Show warnings only", value=False)
+    warnings_only = st.checkbox("Warnings only", value=False)
+    dated_only = st.checkbox("Rows with action date only", value=False)
 
 filtered = df.copy()
 
@@ -103,6 +101,8 @@ if not filtered.empty:
         filtered = filtered[filtered["country"].isin(selected_countries)]
     if selected_regions:
         filtered = filtered[filtered["region"].isin(selected_regions)]
+    if selected_source_types:
+        filtered = filtered[filtered["source_type"].isin(selected_source_types)]
     if selected_statuses:
         filtered = filtered[filtered["status"].isin(selected_statuses)]
     if selected_priorities:
@@ -113,15 +113,15 @@ if not filtered.empty:
             filtered["dataset_title"].fillna("").str.contains(keyword, case=False, na=False)
             | filtered["summary"].fillna("").str.contains(keyword, case=False, na=False)
             | filtered["notes"].fillna("").str.contains(keyword, case=False, na=False)
-            | filtered["theme"].fillna("").str.contains(keyword, case=False, na=False)
+            | filtered["themes"].fillna("").str.contains(keyword, case=False, na=False)
         )
         filtered = filtered[mask]
 
-    if upcoming_only:
-        filtered = filtered[filtered["status"].isin(["upcoming", "updated"])]
-
     if warnings_only:
         filtered = filtered[filtered["status"] == "warning"]
+
+    if dated_only:
+        filtered = filtered[filtered["action_date"].fillna("").astype(str).str.strip() != ""]
 
 tab1, tab2, tab3, tab4 = st.tabs(["Tracker", "Changes", "Source status", "Candidate sources"])
 
@@ -132,24 +132,16 @@ with tab1:
     else:
         display = filtered[
             [
-                "source",
-                "country",
-                "region",
-                "priority",
-                "status",
-                "dataset_title",
-                "summary",
-                "announcement_date",
-                "action_date",
-                "url",
+                "source", "country", "region", "source_type", "priority", "status",
+                "dataset_title", "summary", "announcement_date", "action_date", "url"
             ]
         ].copy()
 
-        display = display.sort_values(by=["priority", "action_date", "source"], ascending=[True, True, True])
+        display = display.sort_values(by=["priority", "action_date", "source"], ascending=[False, True, True])
         st.dataframe(display, use_container_width=True, hide_index=True)
 
         st.download_button(
-            label="Download tracker CSV",
+            label="Download filtered tracker CSV",
             data=filtered.to_csv(index=False).encode("utf-8"),
             file_name="dataset_tracker_filtered.csv",
             mime="text/csv",
@@ -170,7 +162,7 @@ with tab3:
         st.dataframe(source_status.sort_values(by=["ok", "source"], ascending=[False, True]), use_container_width=True, hide_index=True)
 
 with tab4:
-    st.subheader("Candidate sources")
+    st.subheader("Candidate sources for review")
     if candidates.empty:
         st.info("No candidate sources found.")
     else:
@@ -178,6 +170,6 @@ with tab4:
 
 st.markdown("### Notes")
 st.write(
-    "This dashboard keeps a rolling watch on official demographic and population-related sources. "
-    "It is designed to prioritise human-readable summaries, visible source health, and easy filtering."
+    "This dashboard is designed to support a rolling global population data watch with readable summaries, "
+    "source-health visibility, and expansion through reviewed candidate sources."
 )
