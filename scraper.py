@@ -20,17 +20,18 @@ CANDIDATES_CSV = DATA_DIR / "candidate_sources.csv"
 META_JSON = DATA_DIR / "last_run_meta.json"
 
 DEFAULT_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/2.5; +https://github.com/)"
+    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/2.6; +https://github.com/)"
 }
 
 NOW = datetime.now(timezone.utc)
 TODAY = NOW.date()
 
+# --- SETTINGS & KEYWORDS ---
 DEFAULT_SETTINGS = {
     "history_days": 365,
     "lookback_days": 180,
     "lookahead_days": 180,
-    "request_timeout_seconds": 20,
+    "request_timeout_seconds": 25,
     "user_agent": DEFAULT_HEADERS["User-Agent"],
     "discovery_max_links_per_source": 30,
     "discovery_keywords": [
@@ -64,6 +65,8 @@ SUMMARY_HINTS = {
     "survey": "Survey dataset availability, access, or update notice.",
 }
 
+# --- CORE FUNCTIONS ---
+
 def ensure_dirs() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -78,7 +81,7 @@ def get_headers(settings: dict[str, Any]) -> dict[str, str]:
     return {"User-Agent": settings.get("user_agent", DEFAULT_HEADERS["User-Agent"])}
 
 def fetch_html(url: str, settings: dict[str, Any]) -> str:
-    time.sleep(1) 
+    time.sleep(1) # Be polite to servers
     response = requests.get(
         url,
         headers=get_headers(settings),
@@ -89,6 +92,7 @@ def fetch_html(url: str, settings: dict[str, Any]) -> str:
 
 def clean_text(value: str) -> str:
     if not value: return ""
+    # Normalize unicode spaces and strip
     return re.sub(r"\s+", " ", str(value).replace("\xa0", " ")).strip()
 
 def infer_summary(title: str, themes: list[str], snippet: str) -> str:
@@ -100,19 +104,20 @@ def infer_summary(title: str, themes: list[str], snippet: str) -> str:
 
 def detect_status(text: str) -> str:
     t = text.lower()
-    if any(x in t for x in ["removed", "withdrawn", "archived", "discontinued"]): return "warning"
-    if any(x in t for x in ["updated", "published", "released", "available now"]): return "updated"
-    if any(x in t for x in ["upcoming", "planned", "release", "scheduled", "due"]): return "upcoming"
+    if any(x in t for x in ["removed", "withdrawn", "archived", "discontinued", "no longer available"]): return "warning"
+    if any(x in t for x in ["updated", "published", "released", "available now", "new data"]): return "updated"
+    if any(x in t for x in ["upcoming", "planned", "release", "scheduled", "due", "calendar"]): return "upcoming"
     return "monitor"
 
 def extract_date(text: str):
     if not text or not isinstance(text, str):
         return None
+    # Expanded patterns for European/US formats
     patterns = [
-        r"\b\d{1,2}\s+[A-Z][a-z]{2,}\s+\d{4}\b",
-        r"\b[A-Z][a-z]{2,}\s+\d{1,2},?\s+\d{4}\b",
-        r"\b\d{4}-\d{2}-\d{2}\b",
-        r"\b\d{1,2}/\d{1,2}/\d{4}\b"
+        r"\b\d{1,2}\s+[A-Z][a-z]{2,}\s+\d{4}\b",  # 12 January 2024
+        r"\b[A-Z][a-z]{2,}\s+\d{1,2},?\s+\d{4}\b", # January 12, 2024
+        r"\b\d{4}-\d{2}-\d{2}\b",                  # 2024-01-12
+        r"\b\d{1,2}/\d{1,2}/\d{4}\b"               # 12/01/2024
     ]
     for pattern in patterns:
         match = re.search(pattern, text)
@@ -137,7 +142,7 @@ def keep_row_by_window(action_date: str | None, announcement_date: str | None, s
             try:
                 dates.append(date_parser.parse(value).date())
             except: pass
-    if not dates: return True
+    if not dates: return True # Keep if no date found (safer)
     return any(past_window <= d <= future_window for d in dates)
 
 def source_row_template(source: dict[str, Any]) -> dict[str, Any]:
@@ -185,11 +190,13 @@ def add_row(rows: list[dict[str, Any]], source: dict[str, Any], settings: dict[s
     if keep_row_by_window(row["action_date"], row["announcement_date"], settings):
         rows.append(row)
 
+# --- PARSERS ---
+
 def parse_ons_release_calendar(source: dict[str, Any], settings: dict[str, Any]) -> list[dict[str, Any]]:
+    # 1. FIX: Use 6-part list for urlunparse to avoid "too many values to unpack"
     params = {"highlight": "true", "release-type": "type-upcoming", "sort": "date-newest"}
     if source.get("keywords"): params["keywords"] = source["keywords"]
     
-    # FIX: Use urlunparse because urlparse returns 6 components
     url_parts = list(urlparse(source["url"]))
     query = parse_qs(url_parts[4])
     query.update(params)
@@ -199,11 +206,21 @@ def parse_ons_release_calendar(source: dict[str, Any], settings: dict[str, Any])
     html = fetch_html(full_url, settings)
     soup = BeautifulSoup(html, "lxml")
     rows = []
-    for card in soup.find_all(["li", "div"], class_=re.compile(r"(search-results__item|col-12|release__item)")):
-        text = clean_text(card.get_text(" ", strip=True))
-        if len(text) > 20 and filter_relevant_text(text, source, settings):
-            add_row(rows, source, settings, text[:220], text)
     
+    # 2. ONS uses Semantic UI, but we search broadly to be safe
+    # We look for ANY list item, div, or article that contains relevant text
+    cards = soup.find_all(["li", "div", "h3", "article"])
+    
+    seen = set()
+    for card in cards:
+        text = clean_text(card.get_text(" ", strip=True))
+        if len(text) < 15 or text in seen: continue
+        
+        # Only add if it hits keywords
+        if filter_relevant_text(text, source, settings):
+            seen.add(text)
+            add_row(rows, source, settings, text[:220], text)
+
     if not rows:
         add_row(rows, source, settings, source["name"], "No matching ONS entries found.")
     return dedupe_rows(rows)
@@ -212,9 +229,11 @@ def parse_census_upcoming_releases(source: dict[str, Any], settings: dict[str, A
     html = fetch_html(source["url"], settings)
     soup = BeautifulSoup(html, "lxml")
     rows = []
-    for tag in soup.find_all(["tr", "li", "div"], class_=re.compile(r"release|item|row")):
+    # Broad search for Census
+    for tag in soup.find_all(["li", "p", "tr", "td", "a", "h2", "h3", "div"]):
         text = clean_text(tag.get_text(" ", strip=True))
-        if len(text) > 20 and filter_relevant_text(text, source, settings):
+        if len(text) < 20: continue
+        if filter_relevant_text(text, source, settings):
             add_row(rows, source, settings, text[:220], text)
     return dedupe_rows(rows)
 
@@ -222,10 +241,19 @@ def parse_eurostat_release_calendar(source: dict[str, Any], settings: dict[str, 
     html = fetch_html(source["url"], settings)
     soup = BeautifulSoup(html, "lxml")
     rows = []
-    for tag in soup.find_all(["tr", "div"], class_=re.compile(r"release|row|calendar")):
+    
+    # 3. FIX: Reverted to BROAD search (removed class_=...) to catch Eurostat data
+    tags = soup.find_all(["li", "a", "p", "h2", "h3", "h4", "td", "tr", "div", "span"])
+    
+    seen = set()
+    for tag in tags:
         text = clean_text(tag.get_text(" ", strip=True))
-        if len(text) > 20 and filter_relevant_text(text, source, settings):
+        if len(text) < 15 or text in seen: continue
+        
+        if filter_relevant_text(text, source, settings):
+            seen.add(text)
             add_row(rows, source, settings, text[:220], text)
+
     if not rows:
         add_row(rows, source, settings, source["name"], "No matching Eurostat entries found.")
     return dedupe_rows(rows)
@@ -234,11 +262,11 @@ def parse_dhs_available_datasets(source: dict[str, Any], settings: dict[str, Any
     html = fetch_html(source["url"], settings)
     soup = BeautifulSoup(html, "lxml")
     rows = []
-    for table in soup.find_all("table"):
-        for tr in table.find_all("tr"):
-            text = clean_text(tr.get_text(" ", strip=True))
-            if len(text) > 20 and filter_relevant_text(text, source, settings):
-                 add_row(rows, source, settings, text[:220], text)
+    # DHS often uses tables
+    for tag in soup.find_all(["tr", "td", "li", "a"]):
+        text = clean_text(tag.get_text(" ", strip=True))
+        if len(text) > 15 and filter_relevant_text(text, source, settings):
+             add_row(rows, source, settings, text[:220], text)
     return dedupe_rows(rows)
 
 def parse_simple_page(source: dict[str, Any], settings: dict[str, Any]) -> list[dict[str, Any]]:
@@ -246,15 +274,21 @@ def parse_simple_page(source: dict[str, Any], settings: dict[str, Any]) -> list[
     soup = BeautifulSoup(html, "lxml")
     rows = []
     seen = set()
-    for tag in soup.find_all(["article", "section", "li", "tr", "p", "h2", "h3"]):
+    
+    # 4. Broad generic parser
+    for tag in soup.find_all(["article", "section", "li", "tr", "p", "h2", "h3", "h4", "a"]):
         text = clean_text(tag.get_text(" ", strip=True))
-        if len(text) < 20 or text in seen: continue
+        if len(text) < 15 or text in seen: continue
+        
         if filter_relevant_text(text, source, settings):
             seen.add(text)
             add_row(rows, source, settings, text[:220], text)
+            
     if not rows:
+        # Fallback: Capture page title if nothing else found
         title = soup.title.string if soup.title else source["name"]
         add_row(rows, source, settings, str(title), clean_text(soup.get_text())[:500])
+        
     return dedupe_rows(rows)
 
 def dedupe_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -262,8 +296,12 @@ def dedupe_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     df = pd.DataFrame(rows)
     if "priority" in df.columns:
         df["priority"] = pd.to_numeric(df["priority"], errors="coerce").fillna(0).astype(int)
+    
+    # Sort to keep best candidate (Priority > Date > Source)
     sort_cols = [c for c in ["priority", "action_date", "source"] if c in df.columns]
-    if sort_cols: df = df.sort_values(by=sort_cols, ascending=[False, False, True])
+    if sort_cols: 
+        df = df.sort_values(by=sort_cols, ascending=[False, False, True])
+        
     df = df.drop_duplicates(subset=["source_id", "dataset_title", "action_date", "url"])
     return df.to_dict(orient="records")
 
@@ -301,11 +339,15 @@ def discover_candidate_links(source: dict[str, Any], settings: dict[str, Any]) -
             
             domain = urlparse(href).netloc.replace("www.", "")
             if not any(domain.endswith(td) for td in settings.get("trusted_domains", [])): continue
-            if not any(k.lower() in (f"{text} {href}".lower()) for k in settings.get("discovery_keywords", [])): continue
+            
+            # Combine text and link for keyword search
+            combined = f"{text} {href}".lower()
+            if not any(k.lower() in combined for k in settings.get("discovery_keywords", [])): continue
             
             key = (text, href)
             if key in seen: continue
             seen.add(key)
+            
             rows.append({
                 "candidate_name": text[:180] or source["name"],
                 "country": source.get("country", ""),
@@ -388,23 +430,31 @@ def main() -> None:
     all_rows = []
     candidate_rows = []
 
+    print(f"Starting scrape at {NOW.isoformat()}...")
+
     for source in sources:
-        parser_func = PARSERS.get(source.get("parser"), parse_simple_page)
+        parser_name = source.get("parser", "simple_page")
+        parser_func = PARSERS.get(parser_name, parse_simple_page)
         started = datetime.now(timezone.utc)
-        print(f"Scraping {source['name']}...")
+        print(f"Scraping {source['name']} ({parser_name})...")
+        
         try:
             rows = parser_func(source, settings)
+            print(f"  -> Found {len(rows)} items.")
             all_rows.extend(rows)
-            candidate_rows.extend(discover_candidate_links(source, settings))
+            
+            links = discover_candidate_links(source, settings)
+            candidate_rows.extend(links)
+
             status_rows.append({
                 "source_id": source.get("id", ""), "source": source["name"], "url": source["url"],
-                "parser": source.get("parser"), "ok": True, "row_count": len(rows), "error": "", "run_at": started.isoformat()
+                "parser": parser_name, "ok": True, "row_count": len(rows), "error": "", "run_at": started.isoformat()
             })
         except Exception as e:
-            print(f"Error {source['name']}: {e}")
+            print(f"  -> Error: {e}")
             status_rows.append({
                 "source_id": source.get("id", ""), "source": source["name"], "url": source["url"],
-                "parser": source.get("parser"), "ok": False, "row_count": 0, "error": str(e)[:500], "run_at": started.isoformat()
+                "parser": parser_name, "ok": False, "row_count": 0, "error": str(e)[:500], "run_at": started.isoformat()
             })
 
     new_df = pd.DataFrame(all_rows, columns=tracker_columns)
@@ -434,7 +484,8 @@ def main() -> None:
             "ok_sources": int(status_df["ok"].sum()) if not status_df.empty else 0,
             "failed_sources": int((~status_df["ok"]).sum()) if not status_df.empty else 0,
         }, f, indent=2)
-    print(f"Done. Records: {len(new_df)}")
+    
+    print(f"Run complete. Total Records: {len(new_df)}")
 
 if __name__ == "__main__":
     main()
