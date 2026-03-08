@@ -1,164 +1,83 @@
-from pathlib import Path
-import json
-import re
-from datetime import datetime, timedelta
-
 import pandas as pd
 import streamlit as st
+from pathlib import Path
 
-# --- CONFIGURATION ---
-st.set_page_config(
-    page_title="Population Data Agenda",
-    page_icon="🗓️",
-    layout="wide",
-)
+# --- CONFIG ---
+st.set_page_config(page_title="Data Release Tracker", page_icon="📉", layout="wide")
 
-DATA_DIR = Path("data")
-CURRENT_CSV = DATA_DIR / "dataset_tracker.csv"
-CHANGES_CSV = DATA_DIR / "dataset_changes.csv"
-META_JSON = DATA_DIR / "last_run_meta.json"
+DATA_FILE = Path("data/dataset_tracker.csv")
 
-# --- INTELLIGENCE LAYER ---
-
-def get_category_icon(title: str, themes: str) -> str:
-    """Assigns an emoji based on the content."""
-    text = (title + " " + themes).lower()
-    if any(x in text for x in ["money", "finance", "pension", "economy", "gdp", "economic"]): return "💰"
-    if any(x in text for x in ["health", "mortality", "death", "cancer", "hospital"]): return "🏥"
-    if any(x in text for x in ["migra", "asylum", "refugee", "visa"]): return "✈️"
-    if any(x in text for x in ["birth", "fertil", "baby"]): return "👶"
-    if any(x in text for x in ["work", "labour", "employ", "job"]): return "💼"
-    if "census" in text: return "📊"
-    return "📄"
-
-def smart_clean_title(text: str) -> str:
-    """
-    Aggressively strips noise. 
-    It splits text at 'junk' markers and keeps only the left part (the real title).
-    """
-    if not isinstance(text, str): return ""
-    
-    clean = text
-    
-    # FILTER: Ignore known cookie noise titles completely
-    if "Cookies on" in clean or "Essential cookies" in clean:
-        return ""
-
-    # 1. Hard-coded "Splitters": If we see these, cut everything after them.
-    splitters = [
-        "API", "data.census.gov", "Microdata Access", "Basic Monthly", 
-        "Top of Section", "Current Population Survey", "https:", "http:",
-        "View all", "Hide all"
-    ]
-    
-    for s in splitters:
-        if s in clean:
-            clean = clean.split(s)[0]  # Keep only the left side
-
-    # 2. Remove Dates appearing at the START or END
-    date_patterns = [
-        r'\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}\b',
-        r'\b\d{1,2}/\d{1,2}/(\d{2,4})?', 
-        r'\b\d{4}-\d{2}-\d{2}\b'
-    ]
-    for p in date_patterns:
-        clean = re.sub(p, "", clean, flags=re.IGNORECASE)
-
-    # 3. Specific Replacements for known messy sources
-    clean = clean.replace("Public Sector:", "").replace("Release:", "")
-    
-    # 4. Final Cleanup
-    clean = re.sub(r'\s+[:\-]\s+', ' ', clean)  # Remove hanging colons " : "
-    clean = re.sub(r'\s+', ' ', clean).strip()  # Remove double spaces
-    
-    # 5. Fix empty result (if we over-cleaned)
-    if len(clean) < 3:
-        return text[:50] + "..."
-        
-    return clean.strip()
-
+# --- LOAD DATA ---
 def load_data():
-    if not CURRENT_CSV.exists(): return pd.DataFrame()
-    try:
-        df = pd.read_csv(CURRENT_CSV, dtype=str, keep_default_na=False)
-    except: return pd.DataFrame()
-
-    # Dates
-    df["action_date_dt"] = pd.to_datetime(df.get("action_date", ""), errors="coerce")
-    df["month_year"] = df["action_date_dt"].dt.strftime("%B %Y")
+    if not DATA_FILE.exists():
+        return pd.DataFrame()
     
-    # Text Cleaning
-    df["clean_title"] = df["dataset_title"].apply(smart_clean_title)
-    # Exclude empty titles (cookie noise)
-    df = df[df["clean_title"] != ""]
+    df = pd.read_csv(DATA_FILE, dtype=str).fillna("")
     
-    df["icon"] = df.apply(lambda x: get_category_icon(x["clean_title"], x.get("themes", "")), axis=1)
+    # Sort: Upcoming dates first
+    df["date_sort"] = pd.to_datetime(df["action_date"], errors="coerce")
+    df = df.sort_values(by="date_sort", ascending=True)
     
     return df
 
-# --- UI LAYOUT ---
-
+# --- MAIN ---
 df = load_data()
 
-st.title("🗓️ Population Data Agenda")
-st.markdown("A clean, bulleted schedule of upcoming data releases.")
+st.title("📉 Population Data Releases")
+st.markdown("One-line summary of upcoming releases, deletions, and updates.")
 
 if df.empty:
-    st.warning("No data found. Please run the scraper first.")
+    st.info("No data found. Run the scraper.")
     st.stop()
 
-# --- FILTERS (Sidebar) ---
-with st.sidebar:
-    st.header("Filters")
-    all_sources = sorted(list(set(df["source"])))
-    sel_source = st.multiselect("Source", all_sources, default=None)
+# --- FILTERS ---
+col1, col2 = st.columns([1, 3])
+with col1:
+    # Filter by Status (Type)
+    types = ["All"] + sorted(list(set(df["status"])))
+    sel_type = st.selectbox("Filter by Type", types)
     
-    all_countries = sorted(list(set(df["country"])))
-    sel_country = st.multiselect("Country", all_countries, default=None)
-
-    search = st.text_input("Search (e.g., 'Pension')")
+    # Filter by Source
+    sources = ["All"] + sorted(list(set(df["source"])))
+    sel_source = st.selectbox("Filter by Source", sources)
 
 # Apply Filters
 view = df.copy()
-if sel_source: view = view[view["source"].isin(sel_source)]
-if sel_country: view = view[view["country"].isin(sel_country)]
-if search: view = view[view["clean_title"].str.contains(search, case=False) | view["source"].str.contains(search, case=False)]
+if sel_type != "All":
+    view = view[view["status"] == sel_type]
+if sel_source != "All":
+    view = view[view["source"] == sel_source]
 
-# --- AGENDA VIEW ---
+# --- DISPLAY AS TABLE ---
+# We manually construct the table to ensure specific column order and formatting
 
-today = pd.Timestamp.now()
-future_mask = view["action_date_dt"] >= today
-upcoming = view[future_mask].sort_values("action_date_dt")
+st.markdown(f"**Showing {len(view)} releases**")
 
-if upcoming.empty:
-    st.info("✅ No upcoming releases scheduled.")
-else:
-    # Group by Month
-    months = upcoming["month_year"].unique()
+# Loop through rows to create a clean list view
+for index, row in view.iterrows():
     
-    for month in months:
-        st.markdown(f"### 📅 {month}")
-        month_data = upcoming[upcoming["month_year"] == month]
+    # Color code the status
+    status_color = "blue"
+    if "Remove" in row['status']: status_color = "red"
+    if "Release" in row['status']: status_color = "green"
+    
+    # Layout: Date | Status | Title/Summary | Link
+    c1, c2, c3, c4 = st.columns([2, 2, 6, 1])
+    
+    with c1:
+        st.write(f"**{row['action_date']}**")
+    
+    with c2:
+        st.markdown(f":{status_color}[{row['status']}]")
         
-        # Group by Day
-        days = month_data["action_date_dt"].unique()
-        
-        for day in days:
-            day_items = month_data[month_data["action_date_dt"] == day]
-            day_label = pd.to_datetime(day).strftime("**%d %a**") # "28 Thu"
+    with c3:
+        # The One Liner
+        clean_summary = row['summary'].replace(row['dataset_title'], "").strip()
+        st.markdown(f"**{row['dataset_title']}**")
+        if clean_summary:
+            st.caption(clean_summary)
             
-            c1, c2 = st.columns([1, 10])
-            with c1:
-                st.markdown(day_label)
-            with c2:
-                for _, row in day_items.iterrows():
-                    st.markdown(f"**{row['icon']} {row['clean_title']}**")
-                    st.caption(f"{row['source']} • [Source Link]({row['url']})")
-                    
-        st.divider()
-
-# Past Releases
-past = view[~future_mask].sort_values("action_date_dt", ascending=False)
-if not past.empty:
-    with st.expander(f"📚 Past Releases ({len(past)} items)"):
-        st.dataframe(past[["action_date", "source", "clean_title", "url"]], hide_index=True)
+    with c4:
+        st.markdown(f"[Link]({row['url']})")
+    
+    st.divider()
