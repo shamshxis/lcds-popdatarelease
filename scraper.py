@@ -1,9 +1,10 @@
 import json
 import re
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlencode, urlparse
+from urllib.parse import urlencode, urlparse, parse_qs, urlsplit, urlunsplit
 
 import pandas as pd
 import requests
@@ -19,7 +20,7 @@ CANDIDATES_CSV = DATA_DIR / "candidate_sources.csv"
 META_JSON = DATA_DIR / "last_run_meta.json"
 
 DEFAULT_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/2.2; +https://github.com/)"
+    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/2.3; +https://github.com/)"
 }
 
 NOW = datetime.now(timezone.utc)
@@ -77,6 +78,8 @@ def get_headers(settings: dict[str, Any]) -> dict[str, str]:
     return {"User-Agent": settings.get("user_agent", DEFAULT_HEADERS["User-Agent"])}
 
 def fetch_html(url: str, settings: dict[str, Any]) -> str:
+    # Adding a small safety pause to be polite
+    time.sleep(1)
     response = requests.get(
         url,
         headers=get_headers(settings),
@@ -86,6 +89,10 @@ def fetch_html(url: str, settings: dict[str, Any]) -> str:
     return response.text
 
 def clean_text(value: str) -> str:
+    if not value:
+        return ""
+    # Normalize unicode spaces
+    value = str(value).replace("\xa0", " ")
     return re.sub(r"\s+", " ", value).strip()
 
 def infer_summary(title: str, themes: list[str], snippet: str) -> str:
@@ -97,23 +104,29 @@ def infer_summary(title: str, themes: list[str], snippet: str) -> str:
 
 def detect_status(text: str) -> str:
     t = text.lower()
-    if any(x in t for x in ["removed", "withdrawn", "archived", "archive", "discontinued", "no longer available", "access suspended"]):
+    # "Updated" usually takes precedence over "Upcoming" if both appear (e.g. "Upcoming release updated")
+    # But "Removed" is most critical.
+    if any(x in t for x in ["removed", "withdrawn", "archived", "discontinued", "no longer available", "access suspended"]):
         return "warning"
-    if any(x in t for x in ["upcoming", "planned", "release", "next update", "scheduled", "to be published", "forthcoming"]):
-        return "upcoming"
     if any(x in t for x in ["updated", "published", "released", "new data", "available now", "last updated"]):
         return "updated"
+    if any(x in t for x in ["upcoming", "planned", "release", "next update", "scheduled", "to be published", "forthcoming", "due"]):
+        return "upcoming"
     return "monitor"
 
 def extract_date(text: str):
     if not text or not isinstance(text, str):
         return None
+    
+    # Expanded patterns to catch "Jan 12, 2024" or "12 Jan 2024" or "2024-01-12"
     patterns = [
-        r"\b\d{1,2}\s+[A-Z][a-z]+\s+\d{4}\b",
-        r"\b[A-Z][a-z]+\s+\d{4}\b",
-        r"\b\d{4}-\d{2}-\d{2}\b",
-        r"\b\d{1,2}/\d{1,2}/\d{4}\b",
+        r"\b\d{1,2}\s+[A-Z][a-z]{2,}\s+\d{4}\b",          # 12 January 2024
+        r"\b[A-Z][a-z]{2,}\s+\d{1,2},?\s+\d{4}\b",         # January 12, 2024
+        r"\b\d{4}-\d{2}-\d{2}\b",                          # 2024-01-12
+        r"\b\d{1,2}/\d{1,2}/\d{4}\b",                      # 12/01/2024
+        r"\b[A-Z][a-z]{2}\s\d{4}\b"                        # Jan 2024 (loose)
     ]
+    
     for pattern in patterns:
         match = re.search(pattern, text)
         if match:
@@ -132,14 +145,20 @@ def get_windows(settings: dict[str, Any]):
 def keep_row_by_window(action_date: str | None, announcement_date: str | None, settings: dict[str, Any]) -> bool:
     past_window, future_window = get_windows(settings)
     dates = []
+    
     for value in [action_date, announcement_date]:
         if value:
             try:
-                dates.append(date_parser.parse(value).date())
+                dt = date_parser.parse(value).date()
+                dates.append(dt)
             except Exception:
                 pass
+                
     if not dates:
+        # If no date found, we default to keeping it to be safe, or we could reject.
+        # Strategically: keep it if it's a timeless dataset page.
         return True
+        
     return any(past_window <= d <= future_window for d in dates)
 
 def source_row_template(source: dict[str, Any]) -> dict[str, Any]:
@@ -166,38 +185,55 @@ def relevant_terms(source: dict[str, Any], settings: dict[str, Any]) -> list[str
     terms = []
     if source.get("keywords"):
         terms.extend([x.strip().lower() for x in str(source["keywords"]).split(",") if x.strip()])
+    
+    # Add themes from config
     terms.extend([str(x).lower() for x in source.get("themes", [])])
+    # Add global discovery keywords
     terms.extend([str(x).lower() for x in settings.get("discovery_keywords", [])])
+    # Add generic terms
     terms.extend(GENERIC_TERMS)
-    return sorted(set([t for t in terms if t]))
+    
+    return sorted(set([t for t in terms if t and len(t) > 2]))
 
 def filter_relevant_text(text: str, source: dict[str, Any], settings: dict[str, Any]) -> bool:
     lower = text.lower()
     return any(term in lower for term in relevant_terms(source, settings))
 
 def add_row(rows: list[dict[str, Any]], source: dict[str, Any], settings: dict[str, Any], title: str, context: str):
+    # Avoid adding very short or empty rows
+    title = clean_text(title)
+    if len(title) < 5:
+        return
+
     row = source_row_template(source)
-    row["dataset_title"] = clean_text(title)[:220]
+    row["dataset_title"] = title[:220]
     row["summary"] = infer_summary(title, source.get("themes", []), context)
     row["status"] = detect_status(context)
     row["action_date"] = extract_date(context) or ""
     row["notes"] = clean_text(context)[:500]
+    
     if keep_row_by_window(row["action_date"], row["announcement_date"], settings):
         rows.append(row)
 
 def parse_ons_release_calendar(source: dict[str, Any], settings: dict[str, Any]) -> list[dict[str, Any]]:
+    # Properly merge params with existing URL
     params = {"highlight": "true", "release-type": "type-upcoming", "sort": "date-newest"}
     if source.get("keywords"):
         params["keywords"] = source["keywords"]
-    url = source["url"]
-    if "?" not in url:
-        url = f"{url}?{urlencode(params)}"
+    
+    url_parts = list(urlparse(source["url"]))
+    query = parse_qs(url_parts[4])
+    query.update(params)
+    url_parts[4] = urlencode(query, doseq=True)
+    full_url = urlunsplit(url_parts)
 
-    html = fetch_html(url, settings)
+    html = fetch_html(full_url, settings)
     soup = BeautifulSoup(html, "lxml")
     rows = []
 
-    cards = soup.find_all(["li", "article", "div"])
+    # ONS specific structures
+    cards = soup.find_all(["li", "div"], class_=re.compile(r"(search-results__item|col-12|release__item)"))
+    
     for card in cards:
         text = clean_text(card.get_text(" ", strip=True))
         if len(text) < 20:
@@ -213,16 +249,20 @@ def parse_census_upcoming_releases(source: dict[str, Any], settings: dict[str, A
     html = fetch_html(source["url"], settings)
     soup = BeautifulSoup(html, "lxml")
     rows = []
-
-    for tag in soup.find_all(["li", "p", "tr", "td", "a", "h2", "h3", "div"]):
+    
+    # Scrape tables and lists specifically
+    containers = soup.find_all(["tr", "li", "div"], class_=re.compile(r"release|item|row"))
+    
+    seen_texts = set()
+    for tag in containers:
         text = clean_text(tag.get_text(" ", strip=True))
-        if len(text) < 20:
+        if len(text) < 20 or text in seen_texts:
             continue
+        
         if filter_relevant_text(text, source, settings):
+            seen_texts.add(text)
             add_row(rows, source, settings, text[:220], text)
 
-    if not rows:
-        add_row(rows, source, settings, source["name"], "No matching Census entries found on the current page.")
     return dedupe_rows(rows)
 
 def parse_eurostat_release_calendar(source: dict[str, Any], settings: dict[str, Any]) -> list[dict[str, Any]]:
@@ -230,7 +270,10 @@ def parse_eurostat_release_calendar(source: dict[str, Any], settings: dict[str, 
     soup = BeautifulSoup(html, "lxml")
     rows = []
 
-    for tag in soup.find_all(["li", "a", "p", "h2", "h3", "h4", "td", "tr", "div"]):
+    # Target calendar rows
+    items = soup.find_all(["tr", "div"], class_=re.compile(r"release|row|calendar"))
+    
+    for tag in items:
         text = clean_text(tag.get_text(" ", strip=True))
         if len(text) < 20:
             continue
@@ -238,7 +281,7 @@ def parse_eurostat_release_calendar(source: dict[str, Any], settings: dict[str, 
             add_row(rows, source, settings, text[:220], text)
 
     if not rows:
-        add_row(rows, source, settings, source["name"], "No matching Eurostat entries found on the current page.")
+        add_row(rows, source, settings, source["name"], "No matching Eurostat entries found.")
     return dedupe_rows(rows)
 
 def parse_dhs_available_datasets(source: dict[str, Any], settings: dict[str, Any]) -> list[dict[str, Any]]:
@@ -246,15 +289,13 @@ def parse_dhs_available_datasets(source: dict[str, Any], settings: dict[str, Any
     soup = BeautifulSoup(html, "lxml")
     rows = []
 
-    page_text = clean_text(soup.get_text(" ", strip=True))
-    add_row(rows, source, settings, source["name"], page_text[:700])
-
-    for tag in soup.find_all(["a", "li", "p", "td", "tr", "div"]):
-        text = clean_text(tag.get_text(" ", strip=True))
-        if len(text) < 20:
-            continue
-        if filter_relevant_text(text, source, settings):
-            add_row(rows, source, settings, text[:220], text)
+    # DHS tables usually contain the data
+    tables = soup.find_all("table")
+    for table in tables:
+        for tr in table.find_all("tr"):
+            text = clean_text(tr.get_text(" ", strip=True))
+            if len(text) > 20 and filter_relevant_text(text, source, settings):
+                 add_row(rows, source, settings, text[:220], text)
 
     return dedupe_rows(rows)
 
@@ -263,16 +304,33 @@ def parse_simple_page(source: dict[str, Any], settings: dict[str, Any]) -> list[
     soup = BeautifulSoup(html, "lxml")
     rows = []
 
-    page_text = clean_text(soup.get_text(" ", strip=True))
-    if page_text:
-        add_row(rows, source, settings, source["name"], page_text[:700])
+    # General page scraping: prioritize semantic tags to avoid noise
+    # We iterate over specific tags rather than everything to avoid duplicates from nesting
+    target_tags = ["article", "section", "li", "tr", "p", "h2", "h3", "h4"]
+    elements = soup.find_all(target_tags)
+    
+    seen_texts = set()
 
-    for tag in soup.find_all(["a", "li", "p", "h1", "h2", "h3", "h4", "td", "tr", "div", "span"]):
+    for tag in elements:
+        # If this tag is inside another tag we already processed, we might duplicate.
+        # But beautifulsoup returns them in document order. 
         text = clean_text(tag.get_text(" ", strip=True))
+        
         if len(text) < 20:
             continue
+            
+        # Basic deduping of exact text blocks on the same page
+        if text in seen_texts:
+            continue
+        
         if filter_relevant_text(text, source, settings):
+            seen_texts.add(text)
             add_row(rows, source, settings, text[:220], text)
+
+    if not rows:
+        # Fallback: if nothing specific found, add the page itself as a monitored item
+        title = soup.title.string if soup.title else source["name"]
+        add_row(rows, source, settings, str(title), clean_text(soup.get_text())[:500])
 
     return dedupe_rows(rows)
 
@@ -280,9 +338,27 @@ def dedupe_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     if not rows:
         return []
     df = pd.DataFrame(rows)
+    
+    # Ensure priority is integer
     if "priority" in df.columns:
         df["priority"] = pd.to_numeric(df["priority"], errors="coerce").fillna(0).astype(int)
+    
+    # Sort to keep the most important/recent version of a duplicate
+    # We prefer: Higher priority -> Has action date -> alphabetically by source
+    sort_cols = ["priority", "action_date", "source"]
+    ascending_order = [False, False, True]
+    
+    # Handle missing columns safely
+    present_cols = [c for c in sort_cols if c in df.columns]
+    present_asc = [ascending_order[i] for i, c in enumerate(sort_cols) if c in df.columns]
+    
+    if present_cols:
+        df = df.sort_values(by=present_cols, ascending=present_asc)
+    
+    # Deduplicate based on ID + Title + Date + URL
+    # We ignore 'summary' in deduping so that if summary changes slightly it updates rather than creates new
     df = df.drop_duplicates(subset=["source_id", "dataset_title", "action_date", "url"])
+    
     return df.to_dict(orient="records")
 
 PARSERS = {
@@ -297,10 +373,12 @@ def load_existing(path: Path, columns: list[str]) -> pd.DataFrame:
     if path.exists():
         try:
             df = pd.read_csv(path)
+            # Ensure all expected columns exist
             for col in columns:
                 if col not in df.columns:
                     df[col] = ""
-            return df[columns]
+            # Fill NaNs immediately to avoid comparison issues later
+            return df.fillna("").astype(str)
         except Exception:
             pass
     return pd.DataFrame(columns=columns)
@@ -324,6 +402,8 @@ def discover_candidate_links(source: dict[str, Any], settings: dict[str, Any]) -
             if href.startswith("/"):
                 parsed = urlparse(source["url"])
                 href = f"{parsed.scheme}://{parsed.netloc}{href}"
+            elif href.startswith("#") or href.startswith("javascript"):
+                continue
 
             domain = urlparse(href).netloc.replace("www.", "")
             if not any(domain.endswith(td) for td in trusted_domains):
@@ -361,6 +441,10 @@ def compute_changes(old_df: pd.DataFrame, new_df: pd.DataFrame) -> pd.DataFrame:
     key_cols = ["source_id", "dataset_title", "url"]
     compare_cols = ["status", "action_date", "summary", "notes"]
 
+    # Ensure everything is string and filled for reliable comparison
+    old_df = old_df.fillna("").astype(str)
+    new_df = new_df.fillna("").astype(str)
+
     if old_df.empty:
         rows = []
         for _, row in new_df.iterrows():
@@ -376,6 +460,8 @@ def compute_changes(old_df: pd.DataFrame, new_df: pd.DataFrame) -> pd.DataFrame:
             })
         return pd.DataFrame(rows)
 
+    # Create dictionaries for fast lookup
+    # Using a tuple of keys as index
     old_map = old_df.set_index(key_cols).to_dict(orient="index")
     new_map = new_df.set_index(key_cols).to_dict(orient="index")
     changes = []
@@ -396,8 +482,9 @@ def compute_changes(old_df: pd.DataFrame, new_df: pd.DataFrame) -> pd.DataFrame:
 
         old_vals = old_map[key]
         for col in compare_cols:
-            old_v = str(old_vals.get(col, ""))
-            new_v = str(new_vals.get(col, ""))
+            old_v = str(old_vals.get(col, "")).strip()
+            new_v = str(new_vals.get(col, "")).strip()
+            
             if old_v != new_v:
                 changes.append({
                     "change_type": f"changed_{col}",
@@ -410,6 +497,9 @@ def compute_changes(old_df: pd.DataFrame, new_df: pd.DataFrame) -> pd.DataFrame:
                     "changed_at": NOW.isoformat(),
                 })
 
+    # Optional: Log missing items? (Items present in old but not in new)
+    # This often happens if a page changes structure. 
+    # We can log it, but maybe not delete it immediately from tracker.
     for key, old_vals in old_map.items():
         if key not in new_map:
             changes.append({
@@ -419,7 +509,7 @@ def compute_changes(old_df: pd.DataFrame, new_df: pd.DataFrame) -> pd.DataFrame:
                 "dataset_title": key[1],
                 "url": key[2],
                 "old_value": old_vals.get("status", ""),
-                "new_value": "",
+                "new_value": "missing",
                 "changed_at": NOW.isoformat(),
             })
 
@@ -443,6 +533,7 @@ def main() -> None:
         parser_name = source.get("parser", "simple_page")
         parser_func = PARSERS.get(parser_name, parse_simple_page)
         started = datetime.now(timezone.utc)
+        print(f"Scraping {source['name']} ({source['url']})...")
 
         try:
             rows = parser_func(source, settings)
@@ -460,6 +551,7 @@ def main() -> None:
                 "run_at": started.isoformat(),
             })
         except Exception as e:
+            print(f"Error scraping {source['name']}: {e}")
             status_rows.append({
                 "source_id": source.get("id", ""),
                 "source": source["name"],
@@ -471,14 +563,17 @@ def main() -> None:
                 "run_at": started.isoformat(),
             })
 
+    # Create new dataframe and deduplicate globally
     new_df = pd.DataFrame(all_rows, columns=tracker_columns)
-    if new_df.empty:
-        new_df = pd.DataFrame(columns=tracker_columns)
-    else:
+    if not new_df.empty:
         new_df["priority"] = pd.to_numeric(new_df["priority"], errors="coerce").fillna(0).astype(int)
-        new_df = new_df.fillna("").drop_duplicates(subset=["source_id", "dataset_title", "action_date", "url"])
-
+        # Global deduping
+        new_df = new_df.drop_duplicates(subset=["source_id", "dataset_title", "action_date", "url"])
+    
+    # Load old data
     old_df = load_existing(CURRENT_CSV, tracker_columns)
+    
+    # Calculate changes
     changes_df = compute_changes(old_df, new_df)
     status_df = pd.DataFrame(status_rows)
     candidates_df = pd.DataFrame(candidate_rows)
@@ -491,13 +586,17 @@ def main() -> None:
     else:
         candidates_df = candidates_df.drop_duplicates(subset=["candidate_name", "candidate_url"])
 
+    # Save all
     new_df.to_csv(CURRENT_CSV, index=False)
-    changes_df.to_csv(CHANGES_CSV, index=False)
+    # Append changes if you want history, or just overwrite latest changes
+    # Here we overwrite for the dashboard to show "latest changes"
+    changes_df.to_csv(CHANGES_CSV, index=False) 
     status_df.to_csv(STATUS_CSV, index=False)
     candidates_df.to_csv(CANDIDATES_CSV, index=False)
 
-    META_JSON.write_text(
-        json.dumps(
+    # Save Meta
+    with open(META_JSON, "w", encoding="utf-8") as f:
+        json.dump(
             {
                 "run_at_utc": NOW.isoformat(),
                 "source_count": len(sources),
@@ -506,10 +605,9 @@ def main() -> None:
                 "ok_sources": int(status_df["ok"].sum()) if not status_df.empty else 0,
                 "failed_sources": int((~status_df["ok"]).sum()) if not status_df.empty else 0,
             },
+            f,
             indent=2,
-        ),
-        encoding="utf-8",
-    )
+        )
 
     print(f"Run complete. Records: {len(new_df)} | Changes: {len(changes_df)} | Sources: {len(sources)}")
 
