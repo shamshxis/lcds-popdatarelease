@@ -2,8 +2,8 @@ settings:
   history_days: 365
   lookback_days: 180
   lookahead_days: 180
-  request_timeout_seconds: 12
-  user_agent: "Mozilla/5.0 (compatible; GlobalPopWatch/2.1; +https://github.com/)"
+  request_timeout_seconds: 15
+  user_agent: "Mozilla/5.0 (compatible; GlobalPopWatch/2.3; +https://github.com/)"
   discovery_max_links_per_source: 30
   discovery_keywords:
     - population
