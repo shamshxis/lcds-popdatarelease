@@ -40,11 +40,15 @@ def smart_clean_title(text: str) -> str:
     
     clean = text
     
+    # FILTER: Ignore known cookie noise titles completely
+    if "Cookies on" in clean or "Essential cookies" in clean:
+        return ""
+
     # 1. Hard-coded "Splitters": If we see these, cut everything after them.
-    #    (e.g., "Migration Flows 5/28/2026 API..." -> "Migration Flows")
     splitters = [
         "API", "data.census.gov", "Microdata Access", "Basic Monthly", 
-        "Top of Section", "Current Population Survey", "https:", "http:"
+        "Top of Section", "Current Population Survey", "https:", "http:",
+        "View all", "Hide all"
     ]
     
     for s in splitters:
@@ -52,7 +56,6 @@ def smart_clean_title(text: str) -> str:
             clean = clean.split(s)[0]  # Keep only the left side
 
     # 2. Remove Dates appearing at the START or END
-    #    (e.g. "May 2026 School Finances" -> "School Finances")
     date_patterns = [
         r'\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}\b',
         r'\b\d{1,2}/\d{1,2}/(\d{2,4})?', 
@@ -86,6 +89,9 @@ def load_data():
     
     # Text Cleaning
     df["clean_title"] = df["dataset_title"].apply(smart_clean_title)
+    # Exclude empty titles (cookie noise)
+    df = df[df["clean_title"] != ""]
+    
     df["icon"] = df.apply(lambda x: get_category_icon(x["clean_title"], x.get("themes", "")), axis=1)
     
     return df
