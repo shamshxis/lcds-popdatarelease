@@ -4,4 +4,4 @@ beautifulsoup4
 streamlit
 pyyaml
 python-dateutil
-urllib3
+lxml
