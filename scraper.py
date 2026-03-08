@@ -1,96 +1,198 @@
-import pandas as pd
-import streamlit as st
+import json
+import re
+import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Any
+from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
 
-# --- CONFIG ---
-st.set_page_config(page_title="Data Management View", page_icon="📋", layout="wide")
+import pandas as pd
+import requests
+import yaml
+from bs4 import BeautifulSoup
+from dateutil import parser as date_parser
 
-DATA_FILE = Path("data/dataset_tracker.csv")
+# --- CONSTANTS ---
+DATA_DIR = Path("data")
+CURRENT_CSV = DATA_DIR / "dataset_tracker.csv"
+CHANGES_CSV = DATA_DIR / "dataset_changes.csv"
+META_JSON = DATA_DIR / "last_run_meta.json"
 
-# --- MAPPINGS ---
-CONTROLLER_MAP = {
-    "ONS Population Releases": "ONS",
-    "ONS Migration Releases": "ONS",
-    "US Census Upcoming Releases": "US Census",
-    "Eurostat Release Calendar": "Eurostat",
-    "DHS Available Datasets": "DHS",
-    "Statistics Sweden Population Statistics": "SCB (Sweden)",
-    "Statistics Norway Population": "SSB (Norway)",
-    "Statistics Finland Population": "StatFi",
-    "Statistics Denmark Scheduled Releases": "DST (Denmark)"
+DEFAULT_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/3.5; +https://github.com/)"
 }
 
-# --- DATA PROCESSING ---
-def load_data():
-    if not DATA_FILE.exists(): return pd.DataFrame()
-    
-    df = pd.read_csv(DATA_FILE, dtype=str).fillna("")
-    
-    # 1. Create "Controller" column
-    df["Controller"] = df["source"].map(CONTROLLER_MAP).fillna(df["source"])
-    
-    # 2. Format Date "08 Mar 26"
-    df["dt"] = pd.to_datetime(df["action_date"], errors="coerce")
-    df = df.dropna(subset=["dt"])
-    df["Date"] = df["dt"].dt.strftime("%d %b %y")
-    df["Month"] = df["dt"].dt.strftime("%B %Y")
-    
-    # 3. Define "Action"
-    df["Action"] = df["status"].apply(lambda x: "⚠️ Delete" if "Remov" in x else "🚀 Release")
-    
-    # 4. Clean "Brief"
-    # If summary is same as title, just use title.
-    df["Brief"] = df.apply(lambda row: row["dataset_title"] if len(row["summary"]) < 5 else row["dataset_title"], axis=1)
-    
-    # Sort
-    df = df.sort_values(by=["dt", "Controller"])
-    
-    return df
+NOW = datetime.now(timezone.utc)
+TODAY = NOW.date()
 
-# --- UI ---
-st.title("📋 Management Data Brief")
-st.markdown("Top-level schedule of data releases and deletions.")
+# --- JUNK FILTER ---
+# If a title matches these patterns, it is NOT a dataset.
+JUNK_PATTERNS = [
+    r"^clear all", r"^filter", r"^search", r"^release date", 
+    r"^published", r"^time series", r"^correction", r"^notice",
+    r"^\d{1,2}:\d{2}",  # "9:30am"
+    r"^page \d", r"^next page", r"^previous page",
+    r"^cookies", r"^accessibility", r"^privacy",
+    r"^view all", r"^hide all", r"^download",
+    r"^[0-9\/\-\. ]+$", # Titles that are just numbers/dates
+]
 
-df = load_data()
+# --- CORE FUNCTIONS ---
 
-if df.empty:
-    st.warning("No data. Run scraper.")
-    st.stop()
+def ensure_dirs() -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-# --- FILTERS ---
-col1, col2 = st.columns(2)
-with col1:
-    controllers = ["All"] + sorted(df["Controller"].unique().tolist())
-    sel_cont = st.selectbox("Filter by Controller", controllers)
-with col2:
-    search = st.text_input("Search Briefs", "")
+def load_watchlist() -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    with open("watchlist.yml", "r", encoding="utf-8") as f:
+        raw = yaml.safe_load(f) or {}
+    return raw.get("settings", {}), raw.get("sources", [])
 
-view = df.copy()
-if sel_cont != "All": view = view[view["Controller"] == sel_cont]
-if search: view = view[view["Brief"].str.contains(search, case=False)]
+def get_headers(settings: dict[str, Any]) -> dict[str, str]:
+    return {"User-Agent": settings.get("user_agent", DEFAULT_HEADERS["User-Agent"])}
 
-# --- RENDER MONTHLY TABLES ---
-months = view["Month"].unique()
+def fetch_html(url: str, settings: dict[str, Any]) -> str:
+    time.sleep(1.0)
+    try:
+        response = requests.get(
+            url,
+            headers=get_headers(settings),
+            timeout=int(settings.get("request_timeout_seconds", 25)),
+        )
+        response.raise_for_status()
+        return response.text
+    except Exception as e:
+        print(f"  !! Failed to fetch {url}: {e}")
+        return ""
 
-for month in months:
-    st.subheader(month)
+def clean_text(value: str) -> str:
+    if not value: return ""
+    return re.sub(r"\s+", " ", str(value).replace("\xa0", " ")).strip()
+
+def is_content_junk(text: str) -> bool:
+    """Returns True if the text is navigation noise."""
+    lower = text.lower().strip()
+    if len(lower) < 5: return True
     
-    month_data = view[view["Month"] == month]
+    for pattern in JUNK_PATTERNS:
+        if re.search(pattern, lower):
+            return True
+    return False
+
+def extract_date(text: str):
+    """Strict date extractor."""
+    if not text: return None
     
-    # Display as a clean Streamlit Table
-    # We construct a simplified dataframe for display
-    display_table = month_data[["Controller", "Action", "Date", "Brief", "url"]].copy()
+    # Priority: "12 Jan 2026", "Jan 2026", "2026-01-01"
+    patterns = [
+        r"\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b", 
+        r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b",           
+        r"\b\d{4}-\d{2}-\d{2}\b"
+    ]
     
-    # Make URL clickable in standard dataframe using LinkColumn (Streamlit 1.23+)
-    st.dataframe(
-        display_table,
-        column_config={
-            "url": st.column_config.LinkColumn("Link", display_text="Open"),
-            "Brief": st.column_config.TextColumn("Summary of Brief", width="large"),
-            "Action": st.column_config.TextColumn("Action", width="small"),
-            "Controller": st.column_config.TextColumn("Controller", width="small"),
-            "Date": st.column_config.TextColumn("Date", width="small"),
-        },
-        hide_index=True,
-        use_container_width=True
-    )
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            try:
+                dt = date_parser.parse(match.group(0), fuzzy=True, dayfirst=True).date()
+                # Freshness Check: Keep recent (30 days ago) to future (2 years)
+                if (TODAY - timedelta(days=30)) <= dt <= (TODAY + timedelta(days=730)):
+                    return dt.isoformat()
+            except: continue
+    return None
+
+def detect_status(text: str) -> str:
+    t = text.lower()
+    if any(x in t for x in ["removed", "withdrawn", "cancelled"]): return "Removed"
+    if any(x in t for x in ["published", "released", "available"]): return "Released"
+    return "Scheduled"
+
+def parse_source(source: dict, settings: dict) -> list[dict]:
+    html = fetch_html(source["url"], settings)
+    if not html: return []
+    
+    soup = BeautifulSoup(html, "lxml")
+    rows = []
+    seen = set()
+
+    # Broad search for potential dataset containers
+    targets = soup.find_all(["tr", "li", "article", "div", "h3", "h4"])
+    
+    for tag in targets:
+        raw_text = clean_text(tag.get_text(" ", strip=True))
+        
+        # 1. MUST have a valid date
+        date_str = extract_date(raw_text)
+        if not date_str: continue
+
+        # 2. Extract Title & Link
+        link = tag.find("a", href=True)
+        if link:
+            title = clean_text(link.get_text())
+            url = link["href"]
+            if url.startswith("/"):
+                parsed = urlparse(source["url"])
+                url = f"{parsed.scheme}://{parsed.netloc}{url}"
+        else:
+            # Fallback: Use text before the date as title
+            parts = raw_text.split(date_str)
+            title = parts[0].strip() if parts else raw_text[:100]
+            url = source["url"]
+
+        # 3. CRITICAL: Junk Check
+        if is_content_junk(title): continue
+
+        # 4. Create "One Liner" Brief
+        # Remove date and title from raw text to leave the description
+        brief = raw_text.replace(date_str, "").replace(title, "").strip()
+        brief = re.sub(r"\s+", " ", brief).strip(" -:.")
+        if len(brief) < 5: brief = title # Fallback if brief is empty
+
+        # Dedupe
+        key = (title, date_str)
+        if key in seen: continue
+        seen.add(key)
+
+        rows.append({
+            "source": source["name"],
+            "country": source.get("country", ""),
+            "dataset_title": title,
+            "summary": brief[:200], # Keep it short
+            "status": detect_status(raw_text),
+            "action_date": date_str,
+            "url": url,
+            "source_id": source.get("id", "")
+        })
+
+    return rows
+
+def main():
+    ensure_dirs()
+    settings, sources = load_watchlist()
+    
+    all_rows = []
+    print("🚀 Starting Management-Ready Scraper...")
+
+    for source in sources:
+        print(f"Scanning {source['name']}...")
+        try:
+            rows = parse_source(source, settings)
+            print(f"  -> Found {len(rows)} clean items.")
+            all_rows.extend(rows)
+        except Exception as e:
+            print(f"  -> Error: {e}")
+
+    df = pd.DataFrame(all_rows)
+    if not df.empty:
+        # Global Dedupe
+        df = df.drop_duplicates(subset=["source", "dataset_title", "action_date"])
+        df = df.sort_values(by="action_date")
+    
+    df.to_csv(CURRENT_CSV, index=False)
+    
+    with open(META_JSON, "w") as f:
+        json.dump({"run_at": NOW.isoformat(), "count": len(df)}, f)
+
+    print("✅ Done.")
+
+if __name__ == "__main__":
+    main()
