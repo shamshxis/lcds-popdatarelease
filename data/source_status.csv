@@ -1,13 +1,13 @@
 source_id,source,url,parser,ok,row_count,error,run_at
-ons_migration_calendar,ONS Migration Releases,https://www.ons.gov.uk/releasecalendar,ons_release_calendar,True,21,,2026-03-08T00:46:13.377559+00:00
-ons_population_calendar,ONS Population Releases,https://www.ons.gov.uk/releasecalendar,ons_release_calendar,True,25,,2026-03-08T00:46:14.041759+00:00
-eurostat_release_calendar,Eurostat Release Calendar,https://ec.europa.eu/eurostat/news/release-calendar,eurostat_release_calendar,True,1,,2026-03-08T00:46:14.547688+00:00
-us_census_upcoming,US Census Upcoming Releases,https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html,census_upcoming_releases,True,61,,2026-03-08T00:46:15.695281+00:00
-dhs_data_portal,DHS Data Portal,https://dhsprogram.com/data/,simple_page,True,26,,2026-03-08T00:46:16.049197+00:00
-dhs_available_datasets,DHS Available Datasets,https://dhsprogram.com/data/available-datasets.cfm,dhs_available_datasets,True,95,,2026-03-08T00:46:16.466938+00:00
-un_wpp,UN World Population Prospects,https://population.un.org/wpp/,simple_page,True,1,,2026-03-08T00:46:17.948094+00:00
-population_pyramid,PopulationPyramid.net,https://www.populationpyramid.net/,simple_page,True,50,,2026-03-08T00:46:18.074843+00:00
-scb_population_statistics,Statistics Sweden Population Statistics,https://www.scb.se/en/finding-statistics/statistics-by-subject-area/population-and-living-conditions/population-composition-and-development/population-statistics/,simple_page,True,287,,2026-03-08T00:46:18.441865+00:00
-ssb_population,Statistics Norway Population,https://www.ssb.no/en/befolkning/folketall/statistikk/befolkning,simple_page,True,88,,2026-03-08T00:46:19.816451+00:00
-dst_scheduled_releases,Statistics Denmark Scheduled Releases,https://www.dst.dk/en/Statistik/planlagte,simple_page,True,10,,2026-03-08T00:46:21.172363+00:00
-statfi_population,Statistics Finland Population,https://stat.fi/en/statistics/vamuu,simple_page,True,20,,2026-03-08T00:46:22.553708+00:00
+ons_migration_calendar,ONS Migration Releases,https://www.ons.gov.uk/releasecalendar,ons_release_calendar,False,0,too many values to unpack (expected 6),2026-03-08T00:55:39.220980+00:00
+ons_population_calendar,ONS Population Releases,https://www.ons.gov.uk/releasecalendar,ons_release_calendar,False,0,too many values to unpack (expected 6),2026-03-08T00:55:39.221062+00:00
+eurostat_release_calendar,Eurostat Release Calendar,https://ec.europa.eu/eurostat/news/release-calendar,eurostat_release_calendar,True,2,,2026-03-08T00:55:39.221094+00:00
+us_census_upcoming,US Census Upcoming Releases,https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html,census_upcoming_releases,True,46,,2026-03-08T00:55:46.127082+00:00
+dhs_data_portal,DHS Data Portal,https://dhsprogram.com/data/,simple_page,True,37,,2026-03-08T00:55:48.431855+00:00
+dhs_available_datasets,DHS Available Datasets,https://dhsprogram.com/data/available-datasets.cfm,dhs_available_datasets,True,18,,2026-03-08T00:55:50.855260+00:00
+un_wpp,UN World Population Prospects,https://population.un.org/wpp/,simple_page,True,1,,2026-03-08T00:55:54.111608+00:00
+population_pyramid,PopulationPyramid.net,https://www.populationpyramid.net/,simple_page,True,42,,2026-03-08T00:55:56.259241+00:00
+scb_population_statistics,Statistics Sweden Population Statistics,https://www.scb.se/en/finding-statistics/statistics-by-subject-area/population-and-living-conditions/population-composition-and-development/population-statistics/,simple_page,True,166,,2026-03-08T00:55:58.565181+00:00
+ssb_population,Statistics Norway Population,https://www.ssb.no/en/befolkning/folketall/statistikk/befolkning,simple_page,True,100,,2026-03-08T00:56:01.815751+00:00
+dst_scheduled_releases,Statistics Denmark Scheduled Releases,https://www.dst.dk/en/Statistik/planlagte,simple_page,True,12,,2026-03-08T00:56:05.167456+00:00
+statfi_population,Statistics Finland Population,https://stat.fi/en/statistics/vamuu,simple_page,True,35,,2026-03-08T00:56:08.917416+00:00
