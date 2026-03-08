@@ -25,7 +25,6 @@ st.markdown("""
 DATA_FILE = Path("data/dataset_tracker.csv")
 
 # --- MAPPINGS ---
-# Maps long scraper names to short, punchy codes for the table
 CONTROLLER_MAP = {
     "ONS Population Releases": "ONS",
     "ONS Migration Releases": "ONS",
@@ -43,34 +42,32 @@ def load_data():
         return pd.DataFrame()
     
     # Load data
-    df = pd.read_csv(DATA_FILE, dtype=str).fillna("")
+    try:
+        df = pd.read_csv(DATA_FILE, dtype=str).fillna("")
+    except Exception:
+        return pd.DataFrame()
     
     if df.empty:
         return df
 
-    # 1. Controller: Map raw source names to short codes
+    # 1. Controller Mapping
     df["Controller"] = df["source"].map(CONTROLLER_MAP).fillna(df["source"])
     
-    # 2. Date Handling: Parse ISO dates from scraper
+    # 2. Date Handling
     df["dt"] = pd.to_datetime(df["action_date"], errors="coerce")
-    df = df.dropna(subset=["dt"]) # Drop rows with invalid dates
+    df = df.dropna(subset=["dt"]) 
     
-    # Create Display Columns
-    df["Date"] = df["dt"].dt.strftime("%d %b %y") # "08 Mar 26"
-    df["Month"] = df["dt"].dt.strftime("%B %Y")   # "March 2026"
+    # Display Columns
+    df["Date"] = df["dt"].dt.strftime("%d %b %y") 
+    df["Month"] = df["dt"].dt.strftime("%B %Y")   
     
-    # 3. Action Tag: Simple "Release" vs "Delete" logic
-    # The Semantic scraper handles status, but we format it here for the UI
+    # 3. Action Tag
     df["Action"] = df["status"].apply(lambda x: "⚠️ Delete" if "Remov" in str(x) else "🚀 Release")
     
-    # 4. Summary Cleanup: Ensure we don't have empty summaries
-    # Use title as fallback if summary is missing
+    # 4. Summary Cleanup
     df["Brief"] = df.apply(lambda row: row["dataset_title"] if len(str(row.get("summary", ""))) < 5 else row["summary"], axis=1)
     
-    # 5. Sorting: Chronological by default
-    df = df.sort_values(by=["dt", "Controller"])
-    
-    return df
+    return df.sort_values(by=["dt", "Controller"])
 
 # --- MAIN UI ---
 
@@ -82,10 +79,10 @@ st.markdown("""
 df = load_data()
 
 if df.empty:
-    st.info("ℹ️ No relevant data found. The AI filter might be too strict, or the scraper hasn't run yet.")
+    st.info("ℹ️ No relevant data found. The scraper is running or the AI filter is too strict.")
     st.stop()
 
-# --- SIDEBAR FILTERS ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.header("🔍 Filter Brief")
     
@@ -94,16 +91,15 @@ with st.sidebar:
     sel_cont = st.selectbox("By Controller", all_controllers)
     
     # Month Filter
-    # Sort months chronologically
-    all_months = ["All"] + sorted(df["Month"].unique().tolist(), key=lambda m: datetime.strptime(m, "%B %Y"))
-    sel_month = st.selectbox("By Month", all_months)
+    months_list = sorted(df["Month"].unique().tolist(), key=lambda m: datetime.strptime(m, "%B %Y"))
+    sel_month = st.selectbox("By Month", ["All"] + months_list)
     
     # Search
     search_q = st.text_input("Keyword Search", placeholder="e.g. Migration")
     
     st.markdown("---")
     st.caption(f"**Total Records:** {len(df)}")
-    st.caption(f"**Last Scrape:** {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    st.caption(f"**Last Update:** {datetime.now().strftime('%Y-%m-%d %H:%M')}")
 
 # --- FILTER LOGIC ---
 view = df.copy()
@@ -115,7 +111,6 @@ if sel_month != "All":
     view = view[view["Month"] == sel_month]
 
 if search_q:
-    # Search in Title, Brief, or Controller
     mask = (
         view["dataset_title"].str.contains(search_q, case=False) |
         view["Brief"].str.contains(search_q, case=False) |
@@ -123,36 +118,34 @@ if search_q:
     )
     view = view[mask]
 
-# --- RENDER MANAGEMENT TABLES ---
-
-# Group by Month for the main view
-months = view["Month"].unique()
-
-for month in months:
-    st.subheader(f"📅 {month}")
+# --- RENDER TABLES ---
+if view.empty:
+    st.warning("No records match your filters.")
+else:
+    # Group by Month
+    display_months = view["Month"].unique()
     
-    month_data = view[view["Month"] == month]
-    
-    # Construct the exact table for management
-    display_table = month_data[["Controller", "Action", "Date", "Brief", "url"]].copy()
-    
-    # Rename for display
-    display_table.columns = ["Controller", "Action", "Date", "Summary / Brief", "Link"]
-    
-    st.dataframe(
-        display_table,
-        column_config={
-            "Link": st.column_config.LinkColumn("Source", display_text="Open"),
-            "Summary / Brief": st.column_config.TextColumn("Dataset Brief", width="large"),
-            "Action": st.column_config.TextColumn("Status", width="small"),
-            "Controller": st.column_config.TextColumn("Owner", width="small"),
-            "Date": st.column_config.TextColumn("Date", width="small"),
-        },
-        hide_index=True,
-        use_container_width=True
-    )
-    
-    st.markdown("<br>", unsafe_allow_html=True) # Spacer
+    for month in display_months:
+        st.subheader(f"📅 {month}")
+        month_data = view[view["Month"] == month]
+        
+        # Prepare Table
+        table_data = month_data[["Controller", "Action", "Date", "Brief", "url"]].copy()
+        table_data.columns = ["Controller", "Action", "Date", "Summary / Brief", "Link"]
+        
+        st.dataframe(
+            table_data,
+            column_config={
+                "Link": st.column_config.LinkColumn("Source", display_text="Open"),
+                "Summary / Brief": st.column_config.TextColumn("Dataset Brief", width="large"),
+                "Action": st.column_config.TextColumn("Status", width="small"),
+                "Controller": st.column_config.TextColumn("Owner", width="small"),
+                "Date": st.column_config.TextColumn("Date", width="small"),
+            },
+            hide_index=True,
+            use_container_width=True
+        )
+        st.markdown("<br>", unsafe_allow_html=True)
 
 # --- DOWNLOAD ---
 csv = view.to_csv(index=False).encode('utf-8')
