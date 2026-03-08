@@ -199,8 +199,12 @@ with tab1:
         )
 
         st.dataframe(display, use_container_width=True, hide_index=True)
+        
+        # Download button
         st.download_button(
             label="Download filtered tracker CSV",
+            # We ignore errors because 'announcement_date_dt' might not exist if filtered is empty, 
+            # though we checked empty above.
             data=filtered.drop(columns=["announcement_date_dt", "action_date_dt"], errors="ignore").to_csv(index=False).encode("utf-8"),
             file_name="dataset_tracker_filtered.csv",
             mime="text/csv",
