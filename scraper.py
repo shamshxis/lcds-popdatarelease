@@ -21,34 +21,22 @@ CANDIDATES_CSV = DATA_DIR / "candidate_sources.csv"
 META_JSON = DATA_DIR / "last_run_meta.json"
 
 DEFAULT_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/3.0; +https://github.com/)"
+    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/3.1; +https://github.com/)"
 }
 
 NOW = datetime.now(timezone.utc)
 TODAY = NOW.date()
 
-# --- INTELLIGENCE CONFIG ---
+# --- CONFIG ---
 
-# Keywords to auto-detect themes
-THEME_MAP = {
-    "💰 Economy": ["gdp", "inflation", "price", "spending", "finance", "pension", "debt", "economic", "trade"],
-    "🏥 Health": ["health", "mortality", "death", "cancer", "hospital", "life expectancy", "disease", "covid"],
-    "✈️ Migration": ["migration", "asylum", "refugee", "visa", "immigra", "border", "foreign"],
-    "👶 Vital Stats": ["birth", "fertility", "baby", "maternity", "vital"],
-    "💼 Labour": ["labour", "employ", "job", "work", "wage", "earning", "vacanc"],
-    "📊 Census": ["census", "population count", "household", "demograph"],
-}
-
-# Junk phrases to strip from Titles
-TITLE_NOISE = [
-    "data.census.gov", "API", "Microdata Access", "Top of Section", 
-    "release release", "updated updated", "upcoming release",
-    "Public Sector:", "Current Population Survey", "Release:", 
-    "View all", "Hide all", "Main figures", "Statistical release",
-    "cookies on", "privacy policy"
+# If a title is just these words, it's junk.
+BAD_TITLES = [
+    "click here", "read more", "download", "pdf", "csv", "xlsx", 
+    "view", "more info", "accessibility", "privacy policy", 
+    "cookies", "contact us", "home", "search", "filter"
 ]
 
-# --- CORE FUNCTIONS ---
+# --- FUNCTIONS ---
 
 def ensure_dirs() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -62,7 +50,7 @@ def get_headers(settings: dict[str, Any]) -> dict[str, str]:
     return {"User-Agent": settings.get("user_agent", DEFAULT_HEADERS["User-Agent"])}
 
 def fetch_html(url: str, settings: dict[str, Any]) -> str:
-    time.sleep(1.5) 
+    time.sleep(1.0)
     try:
         response = requests.get(
             url,
@@ -77,120 +65,53 @@ def fetch_html(url: str, settings: dict[str, Any]) -> str:
 
 def clean_text(value: str) -> str:
     if not value: return ""
-    return re.sub(r"\s+", " ", str(value).replace("\xa0", " ")).strip()
-
-# --- INTELLIGENCE FUNCTIONS ---
-
-def smart_clean_title(text: str) -> str:
-    """Surgically removes dates and noise from the raw title string."""
-    if not text: return ""
-    clean = text
-    
-    # 1. Remove Hard-coded Junk
-    for junk in TITLE_NOISE:
-        clean = re.sub(re.escape(junk), "", clean, flags=re.IGNORECASE)
-
-    # 2. Strip embedded dates (Start or End)
-    #    matches: "January 2026", "2026-05-01", "12/05/2026"
-    date_patterns = [
-        r'\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b',
-        r'\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b', 
-        r'\b\d{4}-\d{2}-\d{2}\b'
-    ]
-    for p in date_patterns:
-        clean = re.sub(p, "", clean, flags=re.IGNORECASE)
-
-    # 3. Clean Punctuation mess " : - "
-    clean = re.sub(r'\s+[:\-]\s+', ' ', clean)
-    clean = re.sub(r'\s+', ' ', clean).strip()
-    
-    # 4. Fallback if over-cleaned
-    if len(clean) < 5: return text[:100]
-    return clean
-
-def auto_tag_theme(text: str) -> str:
-    """Returns an emoji theme based on keywords."""
-    text = text.lower()
-    for theme, keywords in THEME_MAP.items():
-        if any(k in text for k in keywords):
-            return theme
-    return "📄 General"
-
-def detect_status(text: str) -> str:
-    t = text.lower()
-    if any(x in t for x in ["removed", "withdrawn", "discontinued", "cancelled"]): return "warning"
-    if any(x in t for x in ["updated", "published", "released", "available now"]): return "updated"
-    if any(x in t for x in ["upcoming", "planned", "due", "calendar", "expected"]): return "upcoming"
-    return "monitor"
+    # Remove weird whitespace and invisible chars
+    text = re.sub(r"\s+", " ", str(value).replace("\xa0", " ")).strip()
+    return text
 
 def extract_date(text: str):
+    """Strict date extractor. Returns ISO string or None."""
     if not text: return None
-    # Prioritize "12 January 2026" formats
+    
+    # Priority: "12 January 2026" or "Jan 2026"
+    # We ignore simple years "2026" to avoid catching copyright footers
     patterns = [
-        r"\b\d{1,2}\s+[A-Z][a-z]{2,}\s+\d{4}\b",
-        r"\b[A-Z][a-z]{2,}\s+\d{4}\b",  # "May 2026"
-        r"\b\d{4}-\d{2}-\d{2}\b"
+        r"\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b", # 12 Jan 2026
+        r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b",           # Jan 2026
+        r"\b\d{4}-\d{2}-\d{2}\b",                                                            # 2026-01-01
+        r"\b\d{1,2}/\d{1,2}/\d{4}\b"                                                         # 01/01/2026
     ]
+    
     for pattern in patterns:
-        match = re.search(pattern, text)
+        match = re.search(pattern, text, re.IGNORECASE)
         if match:
             try:
                 dt = date_parser.parse(match.group(0), fuzzy=True, dayfirst=True)
+                # Filter: Date must be within reason (e.g., +/- 2 years)
+                if abs((dt.date() - TODAY).days) > 730:
+                    continue 
                 return dt.date().isoformat()
             except: continue
     return None
 
-def is_blacklisted(text: str) -> bool:
-    """Returns True if the text is UI noise (cookies, search bars)."""
+def detect_status(text: str) -> str:
+    t = text.lower()
+    if any(x in t for x in ["removed", "withdrawn", "cancelled", "discontinued"]): return "Removed"
+    if any(x in t for x in ["updated", "published", "released", "available"]): return "Released"
+    if any(x in t for x in ["upcoming", "planned", "due", "schedule"]): return "Upcoming"
+    return "Scheduled" # Default for things with future dates
+
+def is_junk(text: str) -> bool:
+    """Returns True if the text is navigation/footer noise."""
     lower = text.lower()
-    blacklist = [
-        "cookie", "privacy policy", "settings", "javascript", 
-        "filter results", "clear all", "search", "show only", 
-        "day month year", "accessibility", "skip to main"
-    ]
-    return any(b in lower for b in blacklist)
+    if len(lower) < 4: return True # Too short
+    if any(b in lower for b in BAD_TITLES): return True
+    if "copyright" in lower or "all rights reserved" in lower: return True
+    return False
 
-# --- SCRAPER LOGIC ---
+# --- PARSING ---
 
-def add_row(rows: list, source: dict, settings: dict, raw_text: str, context: str):
-    if len(raw_text) < 5 or is_blacklisted(raw_text): 
-        return
-
-    # Apply Intelligence
-    clean_title = smart_clean_title(raw_text)
-    theme = auto_tag_theme(clean_title + " " + context)
-    status = detect_status(context)
-    date_str = extract_date(context) or ""
-
-    # Check Date Window
-    if date_str:
-        try:
-            dt = date_parser.parse(date_str).date()
-            # Default window: 180 days back, 365 forward
-            if not (TODAY - timedelta(days=180) <= dt <= TODAY + timedelta(days=365)):
-                return
-        except: pass
-
-    rows.append({
-        "source_id": source.get("id", ""),
-        "source": source.get("name", ""),
-        "country": source.get("country", ""),
-        "region": source.get("region", ""),
-        "source_type": source.get("source_type", ""),
-        "themes": theme,  # Using our smart theme instead of static
-        "priority": source.get("priority", 5),
-        "dataset_title": clean_title,
-        "summary": clean_title, # Simple summary for now
-        "status": status,
-        "announcement_date": TODAY.isoformat(),
-        "action_date": date_str,
-        "url": source.get("url", ""),
-        "notes": "",
-        "last_seen": NOW.isoformat(),
-    })
-
-def parse_generic(source: dict, settings: dict) -> list[dict]:
-    # Universal parser that works for ONS, Eurostat, Census, etc.
+def parse_source(source: dict, settings: dict) -> list[dict]:
     html = fetch_html(source["url"], settings)
     if not html: return []
     
@@ -198,77 +119,95 @@ def parse_generic(source: dict, settings: dict) -> list[dict]:
     rows = []
     seen = set()
 
-    # Broad Tag Search
-    targets = soup.find_all(["li", "tr", "article", "div", "h3", "h4", "a"])
+    # We look for container elements that usually hold data
+    # Browsing through <li>, <tr>, <article>, <div> blocks
+    targets = soup.find_all(["tr", "li", "article", "div", "h3", "h4"])
     
     for tag in targets:
-        text = clean_text(tag.get_text(" ", strip=True))
-        if len(text) < 15 or text in seen: continue
+        # Get all text in this block
+        raw_text = clean_text(tag.get_text(" ", strip=True))
         
-        # Keyword Filter
-        keywords = settings.get("discovery_keywords", []) + ["release", "publication"]
-        if not any(k in text.lower() for k in keywords):
+        # 1. STRICT FILTER: Must have a Date
+        date_str = extract_date(raw_text)
+        if not date_str:
+            continue # Skip junk!
+
+        # 2. Extract Title (First link or just text)
+        link = tag.find("a", href=True)
+        if link:
+            title = clean_text(link.get_text())
+            url = link["href"]
+            if url.startswith("/"):
+                parsed = urlparse(source["url"])
+                url = f"{parsed.scheme}://{parsed.netloc}{url}"
+        else:
+            title = raw_text[:100] # Use first 100 chars as title if no link
+            url = source["url"]
+
+        if is_junk(title):
             continue
 
-        seen.add(text)
-        add_row(rows, source, settings, text, text)
+        # 3. Create the "One Liner" Summary
+        # Remove the date from the text so it doesn't look messy
+        one_liner = raw_text.replace(date_str, "").strip()
+        one_liner = re.sub(r"\s+", " ", one_liner)
+        
+        # Dedupe check
+        key = (title, date_str)
+        if key in seen: continue
+        seen.add(key)
+
+        rows.append({
+            "source": source["name"],
+            "country": source.get("country", ""),
+            "dataset_title": title,
+            "summary": one_liner[:300], # The clean description
+            "status": detect_status(raw_text),
+            "action_date": date_str,
+            "url": url,
+            "source_id": source.get("id", "")
+        })
 
     return rows
 
-# --- MAIN EXECUTION ---
+# --- MAIN ---
 
 def main():
     ensure_dirs()
     settings, sources = load_watchlist()
     
     all_rows = []
-    status_rows = []
-
-    print(f"🚀 Starting Smart Scraper at {NOW.isoformat()}")
+    
+    print("🚀 Starting Strict Scraper...")
 
     for source in sources:
-        print(f"Processing: {source['name']}...")
-        start_time = datetime.now(timezone.utc)
-        
+        print(f"Scanning {source['name']}...")
         try:
-            # Use one robust generic parser for everything
-            rows = parse_generic(source, settings)
-            
-            # Deduplicate locally
-            df_local = pd.DataFrame(rows)
-            if not df_local.empty:
-                # Keep row with Date if duplicates exist
-                df_local = df_local.sort_values("action_date", ascending=False)
-                df_local = df_local.drop_duplicates(subset=["dataset_title"])
-                rows = df_local.to_dict(orient="records")
-
-            print(f"  -> Found {len(rows)} valid items.")
+            rows = parse_source(source, settings)
+            print(f"  -> Found {len(rows)} verified releases.")
             all_rows.extend(rows)
-            
-            status_rows.append({
-                "source": source["name"], "ok": True, "count": len(rows), 
-                "run_at": start_time.isoformat()
-            })
-            
         except Exception as e:
             print(f"  -> Error: {e}")
-            status_rows.append({
-                "source": source["name"], "ok": False, "count": 0, 
-                "error": str(e), "run_at": start_time.isoformat()
-            })
 
-    # Global Deduplication & Save
-    new_df = pd.DataFrame(all_rows)
-    if not new_df.empty:
-        new_df = new_df.sort_values("action_date", ascending=False)
-        new_df = new_df.drop_duplicates(subset=["source", "dataset_title", "action_date"])
-        
-    new_df.to_csv(CURRENT_CSV, index=False)
-    pd.DataFrame(status_rows).to_csv(STATUS_CSV, index=False)
+    # Create DataFrame
+    df = pd.DataFrame(all_rows)
     
+    if not df.empty:
+        # Deduplicate
+        df = df.drop_duplicates(subset=["source", "dataset_title", "action_date"])
+        # Sort by Date
+        df = df.sort_values(by="action_date", ascending=True)
+    
+    # Save
+    df.to_csv(CURRENT_CSV, index=False)
+    
+    # Create empty changes file if not exists
+    if not CHANGES_CSV.exists():
+        pd.DataFrame(columns=["change_type", "dataset_title", "changed_at"]).to_csv(CHANGES_CSV, index=False)
+        
     # Meta
     with open(META_JSON, "w") as f:
-        json.dump({"run_at": NOW.isoformat(), "total": len(new_df)}, f)
+        json.dump({"run_at": NOW.isoformat(), "count": len(df)}, f)
 
     print("✅ Done.")
 
