@@ -1,0 +1,55 @@
+sources:
+
+  - name: ONS Release Calendar
+    country: UK
+    topic: migration,population,labour
+    type: release_calendar
+    url: https://www.ons.gov.uk/releasecalendar
+
+  - name: Eurostat Release Calendar
+    country: EU
+    topic: population,fertility,migration
+    type: release_calendar
+    url: https://ec.europa.eu/eurostat/news/release-calendar
+
+  - name: US Census Upcoming Releases
+    country: USA
+    topic: population,census,migration
+    type: release_calendar
+    url: https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html
+
+  - name: UN World Population Prospects
+    country: Global
+    topic: population,pyramids
+    type: dataset_page
+    url: https://population.un.org/wpp/
+
+  - name: DHS Data Portal
+    country: Global
+    topic: fertility,health,demography
+    type: dataset_access
+    url: https://dhsprogram.com/data/
+
+  - name: Statistics Sweden
+    country: Sweden
+    topic: population
+    type: dataset_page
+    url: https://www.scb.se/en/
+
+  - name: Statistics Norway
+    country: Norway
+    topic: population
+    type: dataset_page
+    url: https://www.ssb.no/en/
+
+  - name: Statistics Denmark
+    country: Denmark
+    topic: population
+    type: dataset_page
+    url: https://www.dst.dk/en/
+
+  - name: Statistics Finland
+    country: Finland
+    topic: population
+    type: dataset_page
+    url: https://stat.fi/en/
