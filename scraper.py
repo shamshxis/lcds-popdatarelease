@@ -19,7 +19,7 @@ CANDIDATES_CSV = DATA_DIR / "candidate_sources.csv"
 META_JSON = DATA_DIR / "last_run_meta.json"
 
 DEFAULT_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/2.1; +https://github.com/)"
+    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/2.2; +https://github.com/)"
 }
 
 NOW = datetime.now(timezone.utc)
@@ -29,13 +29,13 @@ DEFAULT_SETTINGS = {
     "history_days": 365,
     "lookback_days": 180,
     "lookahead_days": 180,
-    "request_timeout_seconds": 12,
+    "request_timeout_seconds": 20,
     "user_agent": DEFAULT_HEADERS["User-Agent"],
     "discovery_max_links_per_source": 30,
     "discovery_keywords": [
         "population", "migration", "demographic", "fertility", "mortality",
         "census", "labour", "household", "births", "deaths", "asylum",
-        "projections", "estimates", "pyramid", "age"
+        "projections", "estimates", "pyramid", "age", "release", "update"
     ],
     "trusted_domains": [
         "ons.gov.uk", "ec.europa.eu", "census.gov", "dhsprogram.com",
@@ -44,11 +44,11 @@ DEFAULT_SETTINGS = {
     ],
 }
 
-THEME_KEYWORDS = [
+GENERIC_TERMS = [
     "population", "migration", "fertility", "mortality", "birth", "death",
     "census", "labour", "employment", "household", "demography", "asylum",
     "refugee", "projection", "estimate", "pyramid", "aging", "ageing",
-    "life expectancy", "survey"
+    "life expectancy", "survey", "release", "update", "statistics", "dataset"
 ]
 
 SUMMARY_HINTS = {
@@ -71,8 +71,7 @@ def load_watchlist() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         raw = yaml.safe_load(f) or {}
     settings = DEFAULT_SETTINGS.copy()
     settings.update(raw.get("settings", {}))
-    sources = raw.get("sources", [])
-    return settings, sources
+    return settings, raw.get("sources", [])
 
 def get_headers(settings: dict[str, Any]) -> dict[str, str]:
     return {"User-Agent": settings.get("user_agent", DEFAULT_HEADERS["User-Agent"])}
@@ -81,7 +80,7 @@ def fetch_html(url: str, settings: dict[str, Any]) -> str:
     response = requests.get(
         url,
         headers=get_headers(settings),
-        timeout=int(settings.get("request_timeout_seconds", 12)),
+        timeout=int(settings.get("request_timeout_seconds", 20)),
     )
     response.raise_for_status()
     return response.text
@@ -102,7 +101,7 @@ def detect_status(text: str) -> str:
         return "warning"
     if any(x in t for x in ["upcoming", "planned", "release", "next update", "scheduled", "to be published", "forthcoming"]):
         return "upcoming"
-    if any(x in t for x in ["updated", "published", "released", "new data", "available now"]):
+    if any(x in t for x in ["updated", "published", "released", "new data", "available now", "last updated"]):
         return "updated"
     return "monitor"
 
@@ -163,129 +162,84 @@ def source_row_template(source: dict[str, Any]) -> dict[str, Any]:
         "last_seen": NOW.isoformat(),
     }
 
+def relevant_terms(source: dict[str, Any], settings: dict[str, Any]) -> list[str]:
+    terms = []
+    if source.get("keywords"):
+        terms.extend([x.strip().lower() for x in str(source["keywords"]).split(",") if x.strip()])
+    terms.extend([str(x).lower() for x in source.get("themes", [])])
+    terms.extend([str(x).lower() for x in settings.get("discovery_keywords", [])])
+    terms.extend(GENERIC_TERMS)
+    return sorted(set([t for t in terms if t]))
+
 def filter_relevant_text(text: str, source: dict[str, Any], settings: dict[str, Any]) -> bool:
     lower = text.lower()
-    source_keywords = str(source.get("keywords", "")).lower().split(",") if source.get("keywords") else []
-    themes = [str(x).lower() for x in source.get("themes", [])]
-    discovery_keywords = [str(x).lower() for x in settings.get("discovery_keywords", [])]
-    checks = [x.strip() for x in source_keywords + themes + discovery_keywords + THEME_KEYWORDS if x.strip()]
-    return any(k in lower for k in checks)
+    return any(term in lower for term in relevant_terms(source, settings))
+
+def add_row(rows: list[dict[str, Any]], source: dict[str, Any], settings: dict[str, Any], title: str, context: str):
+    row = source_row_template(source)
+    row["dataset_title"] = clean_text(title)[:220]
+    row["summary"] = infer_summary(title, source.get("themes", []), context)
+    row["status"] = detect_status(context)
+    row["action_date"] = extract_date(context) or ""
+    row["notes"] = clean_text(context)[:500]
+    if keep_row_by_window(row["action_date"], row["announcement_date"], settings):
+        rows.append(row)
 
 def parse_ons_release_calendar(source: dict[str, Any], settings: dict[str, Any]) -> list[dict[str, Any]]:
-    params = {
-        "highlight": "true",
-        "release-type": "type-upcoming",
-        "sort": "date-newest"
-    }
+    params = {"highlight": "true", "release-type": "type-upcoming", "sort": "date-newest"}
     if source.get("keywords"):
         params["keywords"] = source["keywords"]
     url = source["url"]
     if "?" not in url:
         url = f"{url}?{urlencode(params)}"
+
     html = fetch_html(url, settings)
     soup = BeautifulSoup(html, "lxml")
     rows = []
 
-    candidates = soup.find_all(["a", "h2", "h3", "li", "p", "time"])
-    texts = [clean_text(tag.get_text(" ", strip=True)) for tag in candidates]
-    texts = [t for t in texts if t]
-
-    for i, text in enumerate(texts):
-        if len(text) < 12:
+    cards = soup.find_all(["li", "article", "div"])
+    for card in cards:
+        text = clean_text(card.get_text(" ", strip=True))
+        if len(text) < 20:
             continue
-        if not filter_relevant_text(text, source, settings):
-            continue
-
-        context = " ".join(texts[i:i+4])
-        row = source_row_template(source)
-        row["dataset_title"] = text[:220]
-        row["summary"] = infer_summary(text, source.get("themes", []), context)
-        row["status"] = detect_status(context)
-        row["action_date"] = extract_date(context) or ""
-        row["notes"] = context[:400]
-
-        if keep_row_by_window(row["action_date"], row["announcement_date"], settings):
-            rows.append(row)
+        if filter_relevant_text(text, source, settings):
+            add_row(rows, source, settings, text[:220], text)
 
     if not rows:
-        row = source_row_template(source)
-        row["dataset_title"] = source["name"]
-        row["summary"] = "No matching release rows parsed from the current ONS calendar page."
-        row["status"] = "monitor"
-        row["notes"] = "Parser ran successfully but found no matching entries."
-        rows.append(row)
-
-    return pd.DataFrame(rows).drop_duplicates(
-        subset=["source_id", "dataset_title", "action_date", "url"]
-    ).to_dict(orient="records")
+        add_row(rows, source, settings, source["name"], "No matching ONS entries found on the current page.")
+    return dedupe_rows(rows)
 
 def parse_census_upcoming_releases(source: dict[str, Any], settings: dict[str, Any]) -> list[dict[str, Any]]:
     html = fetch_html(source["url"], settings)
     soup = BeautifulSoup(html, "lxml")
     rows = []
 
-    for tag in soup.find_all(["li", "p", "tr", "td", "a", "h2", "h3"]):
+    for tag in soup.find_all(["li", "p", "tr", "td", "a", "h2", "h3", "div"]):
         text = clean_text(tag.get_text(" ", strip=True))
         if len(text) < 20:
             continue
-        if not filter_relevant_text(text, source, settings):
-            continue
-
-        row = source_row_template(source)
-        row["dataset_title"] = text[:220]
-        row["summary"] = infer_summary(text, source.get("themes", []), text)
-        row["status"] = detect_status(text)
-        row["action_date"] = extract_date(text) or ""
-        row["notes"] = text[:400]
-
-        if keep_row_by_window(row["action_date"], row["announcement_date"], settings):
-            rows.append(row)
+        if filter_relevant_text(text, source, settings):
+            add_row(rows, source, settings, text[:220], text)
 
     if not rows:
-        row = source_row_template(source)
-        row["dataset_title"] = source["name"]
-        row["summary"] = "No matching release rows parsed from the Census upcoming releases page."
-        row["status"] = "monitor"
-        row["notes"] = "Parser ran successfully but found no matching entries."
-        rows.append(row)
-
-    return pd.DataFrame(rows).drop_duplicates(
-        subset=["source_id", "dataset_title", "action_date", "url"]
-    ).to_dict(orient="records")
+        add_row(rows, source, settings, source["name"], "No matching Census entries found on the current page.")
+    return dedupe_rows(rows)
 
 def parse_eurostat_release_calendar(source: dict[str, Any], settings: dict[str, Any]) -> list[dict[str, Any]]:
     html = fetch_html(source["url"], settings)
     soup = BeautifulSoup(html, "lxml")
     rows = []
 
-    for tag in soup.find_all(["li", "a", "p", "h2", "h3", "h4", "td", "tr"]):
+    for tag in soup.find_all(["li", "a", "p", "h2", "h3", "h4", "td", "tr", "div"]):
         text = clean_text(tag.get_text(" ", strip=True))
-        if len(text) < 15:
+        if len(text) < 20:
             continue
-        if not filter_relevant_text(text, source, settings):
-            continue
-
-        row = source_row_template(source)
-        row["dataset_title"] = text[:220]
-        row["summary"] = infer_summary(text, source.get("themes", []), text)
-        row["status"] = detect_status(text)
-        row["action_date"] = extract_date(text) or ""
-        row["notes"] = text[:400]
-
-        if keep_row_by_window(row["action_date"], row["announcement_date"], settings):
-            rows.append(row)
+        if filter_relevant_text(text, source, settings):
+            add_row(rows, source, settings, text[:220], text)
 
     if not rows:
-        row = source_row_template(source)
-        row["dataset_title"] = source["name"]
-        row["summary"] = "No matching Eurostat release rows parsed from the current page."
-        row["status"] = "monitor"
-        row["notes"] = "Parser ran successfully but found no matching entries."
-        rows.append(row)
-
-    return pd.DataFrame(rows).drop_duplicates(
-        subset=["source_id", "dataset_title", "action_date", "url"]
-    ).to_dict(orient="records")
+        add_row(rows, source, settings, source["name"], "No matching Eurostat entries found on the current page.")
+    return dedupe_rows(rows)
 
 def parse_dhs_available_datasets(source: dict[str, Any], settings: dict[str, Any]) -> list[dict[str, Any]]:
     html = fetch_html(source["url"], settings)
@@ -293,67 +247,43 @@ def parse_dhs_available_datasets(source: dict[str, Any], settings: dict[str, Any
     rows = []
 
     page_text = clean_text(soup.get_text(" ", strip=True))
-    row = source_row_template(source)
-    row["dataset_title"] = source["name"]
-    row["summary"] = "DHS dataset access and availability page used to monitor additions, removals, or access changes."
-    row["status"] = detect_status(page_text)
-    row["notes"] = page_text[:600]
-    rows.append(row)
+    add_row(rows, source, settings, source["name"], page_text[:700])
 
-    for tag in soup.find_all(["a", "li", "p", "td", "tr"]):
+    for tag in soup.find_all(["a", "li", "p", "td", "tr", "div"]):
         text = clean_text(tag.get_text(" ", strip=True))
         if len(text) < 20:
             continue
-        if not filter_relevant_text(text, source, settings):
-            continue
+        if filter_relevant_text(text, source, settings):
+            add_row(rows, source, settings, text[:220], text)
 
-        entry = source_row_template(source)
-        entry["dataset_title"] = text[:220]
-        entry["summary"] = infer_summary(text, source.get("themes", []), text)
-        entry["status"] = detect_status(text)
-        entry["action_date"] = extract_date(text) or ""
-        entry["notes"] = text[:400]
-        rows.append(entry)
-
-    return pd.DataFrame(rows).drop_duplicates(
-        subset=["source_id", "dataset_title", "action_date", "url"]
-    ).to_dict(orient="records")
+    return dedupe_rows(rows)
 
 def parse_simple_page(source: dict[str, Any], settings: dict[str, Any]) -> list[dict[str, Any]]:
     html = fetch_html(source["url"], settings)
     soup = BeautifulSoup(html, "lxml")
     rows = []
 
-    for tag in soup.find_all(["a", "li", "p", "h1", "h2", "h3", "h4", "td", "tr"]):
+    page_text = clean_text(soup.get_text(" ", strip=True))
+    if page_text:
+        add_row(rows, source, settings, source["name"], page_text[:700])
+
+    for tag in soup.find_all(["a", "li", "p", "h1", "h2", "h3", "h4", "td", "tr", "div", "span"]):
         text = clean_text(tag.get_text(" ", strip=True))
-        if len(text) < 15:
+        if len(text) < 20:
             continue
+        if filter_relevant_text(text, source, settings):
+            add_row(rows, source, settings, text[:220], text)
 
-        if not filter_relevant_text(text, source, settings):
-            continue
+    return dedupe_rows(rows)
 
-        row = source_row_template(source)
-        row["dataset_title"] = text[:220]
-        row["summary"] = infer_summary(text, source.get("themes", []), text)
-        row["status"] = detect_status(text)
-        row["action_date"] = extract_date(text) or ""
-        row["notes"] = text[:400]
-
-        if keep_row_by_window(row["action_date"], row["announcement_date"], settings):
-            rows.append(row)
-
+def dedupe_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     if not rows:
-        page_text = clean_text(soup.get_text(" ", strip=True))
-        row = source_row_template(source)
-        row["dataset_title"] = source["name"]
-        row["summary"] = infer_summary(source["name"], source.get("themes", []), page_text)
-        row["status"] = detect_status(page_text)
-        row["notes"] = page_text[:600]
-        rows.append(row)
-
-    return pd.DataFrame(rows).drop_duplicates(
-        subset=["source_id", "dataset_title", "action_date", "url"]
-    ).to_dict(orient="records")
+        return []
+    df = pd.DataFrame(rows)
+    if "priority" in df.columns:
+        df["priority"] = pd.to_numeric(df["priority"], errors="coerce").fillna(0).astype(int)
+    df = df.drop_duplicates(subset=["source_id", "dataset_title", "action_date", "url"])
+    return df.to_dict(orient="records")
 
 PARSERS = {
     "ons_release_calendar": parse_ons_release_calendar,
@@ -517,9 +447,7 @@ def main() -> None:
         try:
             rows = parser_func(source, settings)
             all_rows.extend(rows)
-
-            discovered = discover_candidate_links(source, settings)
-            candidate_rows.extend(discovered)
+            candidate_rows.extend(discover_candidate_links(source, settings))
 
             status_rows.append({
                 "source_id": source.get("id", ""),
@@ -547,9 +475,8 @@ def main() -> None:
     if new_df.empty:
         new_df = pd.DataFrame(columns=tracker_columns)
     else:
-        new_df = new_df.fillna("").drop_duplicates(
-            subset=["source_id", "dataset_title", "action_date", "url"]
-        )
+        new_df["priority"] = pd.to_numeric(new_df["priority"], errors="coerce").fillna(0).astype(int)
+        new_df = new_df.fillna("").drop_duplicates(subset=["source_id", "dataset_title", "action_date", "url"])
 
     old_df = load_existing(CURRENT_CSV, tracker_columns)
     changes_df = compute_changes(old_df, new_df)
@@ -578,9 +505,6 @@ def main() -> None:
                 "change_count": int(len(changes_df)),
                 "ok_sources": int(status_df["ok"].sum()) if not status_df.empty else 0,
                 "failed_sources": int((~status_df["ok"]).sum()) if not status_df.empty else 0,
-                "history_days": int(settings.get("history_days", 365)),
-                "lookback_days": int(settings.get("lookback_days", 180)),
-                "lookahead_days": int(settings.get("lookahead_days", 180)),
             },
             indent=2,
         ),
