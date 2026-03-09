@@ -1,124 +1,73 @@
 settings:
-  history_days: 365
-  lookahead_days: 365
-  request_timeout_seconds: 15
-  user_agent: "Mozilla/5.0 (ResearchBot/LCDS-3.0)"
+  user_agent: "Mozilla/5.0 (ResearchBot/LCDS-Enterprise)"
+  timeout: 15
 
 sources:
-  # --- UK (ONS) ---
-  - name: "ONS: Births in England & Wales"
+  # --- API DRIVEN (Fast & Reliable) ---
+  - name: "ONS Release Calendar"
     country: "UK"
-    url: "https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/bulletins/birthsummarytablesenglandandwales/2022"
-    parser: "ons_html"
+    url: "https://www.ons.gov.uk/releasecalendar/data?view=upcoming&size=50"
+    parser: "ons_json_api"
     priority: "High"
 
-  - name: "ONS: Deaths Registered Weekly"
-    country: "UK"
-    url: "https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/deaths/bulletins/deathsregisteredweeklyinenglandandwales/latest"
-    parser: "ons_html"
-    priority: "High"
-
-  - name: "ONS: Long-Term Migration"
-    country: "UK"
-    url: "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/longterminternationalmigrationprovisional/latest"
-    parser: "ons_html"
-    priority: "High"
-
-  # --- EUROPE (EUROSTAT) ---
-  - name: "Eurostat: Excess Mortality"
+  - name: "Eurostat Release Calendar"
     country: "EU"
-    url: "https://ec.europa.eu/eurostat/statistics-explained/index.php?title=Excess_mortality_statistics"
-    parser: "generic_date"
-    priority: "Medium"
-
-  - name: "Eurostat: Population Projections"
-    country: "EU"
-    url: "https://ec.europa.eu/eurostat/web/population-demography/population-projections"
-    parser: "generic_date"
-    priority: "Medium"
-
-  # --- USA (CENSUS & CDC) ---
-  - name: "US Census: Projections"
-    country: "USA"
-    url: "https://www.census.gov/data/tables/2023/demo/popproj/2023-summary-tables.html"
-    parser: "generic_date"
-    priority: "Medium"
-
-  - name: "CDC Wonder: Provisional Deaths"
-    country: "USA"
-    url: "https://wonder.cdc.gov/mcd-icd10-provisional.html"
-    parser: "generic_date"
-    priority: "Medium"
-
-  # --- GLOBAL / UN ---
-  - name: "UN World Population Prospects"
-    country: "Global"
-    url: "https://population.un.org/wpp/"
-    parser: "generic_date"
+    url: "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml"
+    parser: "eurostat_xml"
     priority: "High"
 
-  - name: "DHS Available Datasets"
+  # --- RSS FEEDS (News & Alerts) ---
+  - name: "DHS Program News"
     country: "Global"
-    url: "https://dhsprogram.com/data/available-datasets.cfm"
-    parser: "generic_date"
+    url: "https://dhsprogram.com/rss/news.cfm"
+    parser: "rss_feed"
     priority: "Medium"
 
-  - name: "Human Mortality Database (HMD)"
-    country: "Global"
-    url: "https://www.mortality.org/News/Events"
-    parser: "generic_date"
-    priority: "High"
+  - name: "FinData News"
+    country: "Finland"
+    url: "https://findata.fi/en/feed/"
+    parser: "rss_feed"
+    priority: "Medium"
 
-  - name: "Human Fertility Database (HFD)"
+  - name: "Retraction Watch"
     country: "Global"
-    url: "https://www.humanfertility.org/Home/News"
-    parser: "generic_date"
-    priority: "High"
-
-  - name: "PopulationPyramid.net"
-    country: "Global"
-    url: "https://www.populationpyramid.net/"
-    parser: "generic_date"
+    url: "https://retractionwatch.com/feed/"
+    parser: "rss_feed"
     priority: "Low"
 
-  # --- SCANDINAVIA (High Quality Registers) ---
-  - name: "Statistics Sweden: Population"
-    country: "Sweden"
-    url: "https://www.scb.se/en/finding-statistics/statistics-by-subject-area/population-and-living-conditions/population-composition-and-development/population-statistics/"
-    parser: "generic_date"
+  # --- HTML SCRAPERS (Deep Scan) ---
+  - name: "CBS Netherlands Calendar"
+    country: "Netherlands"
+    url: "https://www.cbs.nl/en-gb/publication-calendar"
+    parser: "html_deep_scan" # CBS table is robust enough for deep scan
     priority: "Medium"
 
-  - name: "Statistics Norway: Population"
-    country: "Norway"
-    url: "https://www.ssb.no/en/befolkning/folketall/statistikk/befolkning"
-    parser: "generic_date"
-    priority: "Medium"
-
-  - name: "Statistics Finland: Population"
-    country: "Finland"
-    url: "https://stat.fi/en/statistics/vamuu"
-    parser: "generic_date"
-    priority: "Medium"
-
-  - name: "Statistics Denmark: Scheduled"
+  - name: "Statistics Denmark Scheduled"
     country: "Denmark"
     url: "https://www.dst.dk/en/Statistik/planlagte"
-    parser: "generic_date"
+    parser: "html_deep_scan"
     priority: "Medium"
 
-  - name: "Statice: Overview"
-    country: "Iceland"
-    url: "https://www.statice.is/statistics/population/inhabitants/overview/"
-    parser: "generic_date"
-    priority: "Low"
+  - name: "Statistics Norway Upcoming"
+    country: "Norway"
+    url: "https://www.ssb.no/en/kommende-publiseringer"
+    parser: "html_deep_scan"
+    priority: "Medium"
 
-# --- MEDIA / RSS FEEDS (For "News Capture") ---
-feeds:
-  - name: "ONS Release Calendar"
-    url: "https://www.ons.gov.uk/releasecalendar/rss"
-  - name: "Eurostat News"
-    url: "https://ec.europa.eu/eurostat/cache/RSS/rss.xml"
-  - name: "DHS Program News"
-    url: "https://dhsprogram.com/rss/news.cfm"
-  - name: "Retraction Watch (Data Quality)"
-    url: "https://retractionwatch.com/feed/"
+  - name: "Statistics Sweden Calendar"
+    country: "Sweden"
+    url: "https://www.scb.se/en/finding-statistics/publishing-calendar/"
+    parser: "html_deep_scan"
+    priority: "Medium"
+
+  - name: "US Census Upcoming"
+    country: "USA"
+    url: "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
+    parser: "html_deep_scan"
+    priority: "Medium"
+
+  - name: "Human Mortality Database"
+    country: "Global"
+    url: "https://www.mortality.org/News/Events"
+    parser: "html_deep_scan"
+    priority: "High"
