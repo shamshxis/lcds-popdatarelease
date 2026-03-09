@@ -1,103 +1,97 @@
 import pandas as pd
 import streamlit as st
-from pathlib import Path
+import os
 from datetime import datetime
 
 # --- CONFIG ---
-st.set_page_config(
-    page_title="Population Data Brief", 
-    page_icon="📋", 
-    layout="wide"
-)
+st.set_page_config(page_title="LCDS Data Brief", page_icon="📋", layout="wide")
 
-# Custom CSS for clean headers
 st.markdown("""
 <style>
-    h1 { margin-bottom: 0px; }
+    h1 { margin-bottom: 0px; font-family: 'Helvetica', sans-serif; }
+    .status-scheduled { color: #d39e00; font-weight: bold; }
+    .status-published { color: #198754; font-weight: bold; }
+    .status-announce { color: #0d6efd; font-weight: bold; }
     div[data-testid="stStatusWidget"] { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
 
-DATA_FILE = Path("data/dataset_tracker.csv")
+DATA_FILE = "data/dataset_tracker.csv"
 
-CONTROLLER_MAP = {
-    "ONS Population Releases": "ONS",
-    "ONS Migration Releases": "ONS",
-    "US Census Upcoming Releases": "US Census",
-    "Eurostat Release Calendar": "Eurostat",
-    "DHS Available Datasets": "DHS",
-    "Statistics Sweden Population Statistics": "SCB (SE)",
-    "Statistics Norway Population": "SSB (NO)",
-    "Statistics Finland Population": "StatFi",
-    "Statistics Denmark Scheduled Releases": "DST (DK)"
-}
-
+# --- HELPER: LOAD DATA ---
 def load_data():
-    if not DATA_FILE.exists(): return pd.DataFrame()
+    if not os.path.exists(DATA_FILE): return pd.DataFrame()
     
-    df = pd.read_csv(DATA_FILE, dtype=str).fillna("")
-    if df.empty: return df
-
-    # Formatting
-    df["Controller"] = df["source"].map(CONTROLLER_MAP).fillna(df["source"])
+    df = pd.read_csv(DATA_FILE)
     df["dt"] = pd.to_datetime(df["action_date"], errors="coerce")
     df = df.dropna(subset=["dt"])
     
+    # Format for Display
     df["Date"] = df["dt"].dt.strftime("%d %b %Y")
     df["Month"] = df["dt"].dt.strftime("%B %Y")
+    df["YearMonth"] = df["dt"].dt.strftime("%Y-%m") # For sorting
     
-    # Ensure Status is clean for the badge
-    # Maps "✅ Published" -> "Published" for the column config
-    df["Status_Clean"] = df["status"].str.replace("✅ ", "").str.replace("📅 ", "").str.replace("⚠️ ", "")
+    return df.sort_values(by=["YearMonth", "dt"], ascending=[False, False])
+
+# --- UI HEADER ---
+st.title("📋 LCDS Management Data Brief")
+st.markdown("Monitoring **Migration, Fertility, Mortality, and Population** releases (±1 Year).")
+
+# --- SIDEBAR CONTROLS ---
+with st.sidebar:
+    st.header("🎛️ Controls")
+    if st.button("🔄 Refresh Data", type="primary"):
+        with st.spinner("Scanning Watchlist & Media..."):
+            os.system("python scraper.py")
+            st.cache_data.clear()
+            st.rerun()
     
-    return df.sort_values(by=["dt", "Controller"])
+    st.divider()
+    st.info("Data Sources: ONS, Eurostat, US Census, Human Mortality Database, Scandinavian Registers.")
 
-# --- UI ---
-
-st.title("📋 Management Data Brief")
-st.markdown("Schedule of population data releases.")
-
+# --- MAIN LOGIC ---
 df = load_data()
 
 if df.empty:
-    st.info("No data available.")
+    st.info("⚠️ System Initializing. Please click 'Refresh Data'.")
     st.stop()
 
 # --- FILTERS ---
-with st.sidebar:
-    st.header("Filters")
-    sel_cont = st.selectbox("Controller", ["All"] + sorted(df["Controller"].unique().tolist()))
-    sel_month = st.selectbox("Month", ["All"] + list(df["Month"].unique()))
-    search = st.text_input("Search", "")
+col1, col2, col3 = st.columns([1, 1, 2])
+sel_source = col1.selectbox("Source", ["All"] + sorted(df["source"].unique().tolist()))
+sel_status = col2.selectbox("Status", ["All"] + sorted(df["status"].unique().tolist()))
+search = col3.text_input("Search Datasets", "")
 
 view = df.copy()
-if sel_cont != "All": view = view[view["Controller"] == sel_cont]
-if sel_month != "All": view = view[view["Month"] == sel_month]
+if sel_source != "All": view = view[view["source"] == sel_source]
+if sel_status != "All": view = view[view["status"] == sel_status]
 if search: view = view[view["dataset_title"].str.contains(search, case=False)]
 
-# --- TABLE ---
-# Group by Month if "All" months are selected
-months = view["Month"].unique() if sel_month == "All" else [sel_month]
+# --- METRICS ---
+c1, c2, c3 = st.columns(3)
+upcoming = view[view['dt'] >= datetime.now()]
+past = view[view['dt'] < datetime.now()]
 
-for month in months:
-    if month == "All": continue
-    
+c1.metric("Total Tracked Assets", len(view))
+c2.metric("Upcoming Releases", len(upcoming))
+c3.metric("Recent Releases", len(past))
+
+st.divider()
+
+# --- TABLE RENDER (By Month) ---
+# Get unique months from the *view*
+unique_months = view.sort_values("YearMonth", ascending=False)["Month"].unique()
+
+for month in unique_months:
     st.subheader(month)
     m_data = view[view["Month"] == month]
     
-    # Display columns
-    display = m_data[["Status_Clean", "Date", "Controller", "dataset_title", "url"]]
-    
     st.dataframe(
-        display,
+        m_data[["status", "Date", "source", "dataset_title", "url"]],
         column_config={
-            "Status_Clean": st.column_config.Column(
-                "Status",
-                width="small",
-                help="Current status of the dataset",
-            ),
-            "Date": st.column_config.TextColumn("Release Date", width="small"),
-            "Controller": st.column_config.TextColumn("Owner", width="small"),
+            "status": st.column_config.TextColumn("Status", width="small"),
+            "Date": st.column_config.TextColumn("Date", width="small"),
+            "source": st.column_config.TextColumn("Owner", width="small"),
             "dataset_title": st.column_config.TextColumn("Dataset Brief", width="large"),
             "url": st.column_config.LinkColumn("Link", display_text="Open Source"),
         },
