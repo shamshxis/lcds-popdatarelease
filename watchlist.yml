@@ -3,7 +3,7 @@ settings:
   timeout: 15
 
 sources:
-  # --- API DRIVEN (Fast & Reliable) ---
+  # --- API / XML / RSS (High Reliability) ---
   - name: "ONS Release Calendar"
     country: "UK"
     url: "https://www.ons.gov.uk/releasecalendar/data?view=upcoming&size=50"
@@ -16,7 +16,6 @@ sources:
     parser: "eurostat_xml"
     priority: "High"
 
-  # --- RSS FEEDS (News & Alerts) ---
   - name: "DHS Program News"
     country: "Global"
     url: "https://dhsprogram.com/rss/news.cfm"
@@ -35,26 +34,26 @@ sources:
     parser: "rss_feed"
     priority: "Low"
 
-  # --- HTML SCRAPERS (Deep Scan) ---
-  - name: "CBS Netherlands Calendar"
+  # --- HTML DEEP SCANS (Registries) ---
+  - name: "CBS Netherlands"
     country: "Netherlands"
     url: "https://www.cbs.nl/en-gb/publication-calendar"
-    parser: "html_deep_scan" # CBS table is robust enough for deep scan
+    parser: "html_table_scan" # CBS uses a clean table
     priority: "Medium"
 
-  - name: "Statistics Denmark Scheduled"
+  - name: "Statistics Denmark"
     country: "Denmark"
     url: "https://www.dst.dk/en/Statistik/planlagte"
-    parser: "html_deep_scan"
+    parser: "html_table_scan"
     priority: "Medium"
 
-  - name: "Statistics Norway Upcoming"
+  - name: "Statistics Norway"
     country: "Norway"
     url: "https://www.ssb.no/en/kommende-publiseringer"
     parser: "html_deep_scan"
     priority: "Medium"
 
-  - name: "Statistics Sweden Calendar"
+  - name: "Statistics Sweden"
     country: "Sweden"
     url: "https://www.scb.se/en/finding-statistics/publishing-calendar/"
     parser: "html_deep_scan"
