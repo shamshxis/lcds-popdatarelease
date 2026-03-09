@@ -155,3 +155,91 @@ sources:
     url: https://stat.fi/en/statistics/vamuu
     themes: [population, births, deaths, migration]
     priority: 8
+
+    settings:
+  history_days: 365
+  lookahead_days: 365
+  user_agent: "Mozilla/5.0 (ResearchBot/LCDS-3.0)"
+
+sources:
+  # --- UK (ONS) ---
+  - name: "ONS: Births in England & Wales"
+    country: "UK"
+    url: "https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/bulletins/birthsummarytablesenglandandwales/2022"
+    parser: "ons_html"
+    priority: "High"
+
+  - name: "ONS: Deaths Registered Weekly"
+    country: "UK"
+    url: "https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/deaths/bulletins/deathsregisteredweeklyinenglandandwales/latest"
+    parser: "ons_html"
+    priority: "High"
+
+  - name: "ONS: Long-Term Migration"
+    country: "UK"
+    url: "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/longterminternationalmigrationprovisional/latest"
+    parser: "ons_html"
+    priority: "High"
+
+  # --- EUROPE (EUROSTAT) ---
+  - name: "Eurostat: Excess Mortality"
+    country: "EU"
+    url: "https://ec.europa.eu/eurostat/statistics-explained/index.php?title=Excess_mortality_statistics"
+    parser: "eurostat_html"
+    priority: "Medium"
+
+  - name: "Eurostat: Population Projections"
+    country: "EU"
+    url: "https://ec.europa.eu/eurostat/web/population-demography/population-projections"
+    parser: "generic_date"
+    priority: "Medium"
+
+  # --- USA (CENSUS & CDC) ---
+  - name: "US Census: Projections"
+    country: "USA"
+    url: "https://www.census.gov/data/tables/2023/demo/popproj/2023-summary-tables.html"
+    parser: "generic_date"
+    priority: "Medium"
+
+  - name: "CDC Wonder: Provisional Deaths"
+    country: "USA"
+    url: "https://wonder.cdc.gov/mcd-icd10-provisional.html"
+    parser: "generic_date"
+    priority: "Medium"
+
+  # --- GLOBAL ACADEMIC (LCDS Core) ---
+  - name: "Human Mortality Database (HMD)"
+    country: "Global"
+    url: "https://www.mortality.org/News/Events"
+    parser: "generic_date"
+    priority: "High"
+
+  - name: "Human Fertility Database (HFD)"
+    country: "Global"
+    url: "https://www.humanfertility.org/Home/News"
+    parser: "generic_date"
+    priority: "High"
+
+  # --- SCANDINAVIA (High Quality Registers) ---
+  - name: "Statistics Sweden: Population"
+    country: "Sweden"
+    url: "https://www.scb.se/en/finding-statistics/statistics-by-subject-area/population-and-living-conditions/population-composition-and-development/population-statistics/"
+    parser: "generic_date"
+    priority: "Low"
+
+  - name: "Statice: Overview"
+    country: "Iceland"
+    url: "https://www.statice.is/statistics/population/inhabitants/overview/"
+    parser: "generic_date"
+    priority: "Low"
+
+# --- MEDIA / RSS FEEDS (For "News Capture") ---
+feeds:
+  - name: "ONS Release Calendar"
+    url: "https://www.ons.gov.uk/releasecalendar/rss"
+  - name: "Eurostat News"
+    url: "https://ec.europa.eu/eurostat/cache/RSS/rss.xml"
+  - name: "DHS Program News"
+    url: "https://dhsprogram.com/rss/news.cfm"
+  - name: "Retraction Watch (Data Quality)"
+    url: "https://retractionwatch.com/feed/"
