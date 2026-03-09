@@ -1,13 +1,17 @@
 settings:
   user_agent: "Mozilla/5.0 (ResearchBot/LCDS-ExecutiveWatch)"
   timeout: 20
-  max_workers: 8
+  max_workers: 10
+  page_workers: 4
 
 sources:
   - name: "ONS Upcoming Releases"
     group: "UK"
     source_type: "Official"
     url: "https://www.ons.gov.uk/releasecalendar?release-type=type-upcoming"
+    fallback_urls:
+      - "https://www.ons.gov.uk/releasecalendar"
+      - "https://www.ons.gov.uk/releasecalendar?release-type=type-cancelled"
     parser: "ons_release_calendar"
     keywords_any:
       - population
@@ -23,63 +27,47 @@ sources:
       - asylum
       - refugee
       - labour
-      - workless
       - family
-      - divorce
       - marriage
+      - divorce
+      - health survey
       - admin-based population
     exclude_keywords:
       - producer price
-      - business investment
-      - retail sales
       - gdp
       - trade
+      - manufacturing
     track_missing_as_deleted: true
-    priority_weight: 15
+    priority_weight: 20
 
-  - name: "ONS Cancelled Releases"
-    group: "UK"
-    source_type: "Official"
-    url: "https://www.ons.gov.uk/releasecalendar?release-type=type-cancelled"
-    parser: "ons_release_calendar"
-    keywords_any:
-      - population
-      - census
-      - migration
-      - fertility
-      - birth
-      - death
-      - mortality
-      - household
-      - life expectancy
-      - demographic
-      - asylum
-      - refugee
-      - labour
-      - family
-    priority_weight: 30
-
-  - name: "US Census Upcoming Releases"
+  - name: "US Census Releases"
     group: "USA"
     source_type: "Official"
     url: "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
+    fallback_urls:
+      - "https://www.census.gov/data/what-is-data-census-gov/latest-releases/2025.html"
+      - "https://www.census.gov/newsroom/tip-sheets/2025/tp25-05.html"
+      - "https://www.census.gov/newsroom/tip-sheets/2025/tp25-06.html"
     parser: "census_upcoming"
     keywords_any:
-      - population
-      - migration
-      - census
       - current population survey
-      - acs
-      - births
-      - deaths
+      - population
+      - census
+      - migration
       - household
       - microdata
-    priority_weight: 12
+      - american community survey
+      - demographic
+      - fertility
+      - mortality
+    priority_weight: 16
 
   - name: "CBS Netherlands Publication Calendar"
     group: "Netherlands"
     source_type: "Official"
     url: "https://www.cbs.nl/en-gb/publication-calendar"
+    fallback_urls:
+      - "https://www.cbs.nl/en-gb/about-us/we-produce-and-disseminate-statistics/publication-policy"
     parser: "cbs_calendar"
     keywords_any:
       - population
@@ -91,13 +79,17 @@ sources:
       - household
       - labour market
       - demographics
-    priority_weight: 10
+      - housing
+    priority_weight: 12
 
-  - name: "Eurostat News Releases"
+  - name: "Eurostat Release Calendar"
     group: "EU"
     source_type: "Official"
-    url: "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml"
-    parser: "xml_release"
+    url: "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_EN.ics"
+    fallback_urls:
+      - "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml"
+      - "https://ec.europa.eu/eurostat/en/web/products-eurostat-news/w/wdn-20250102-1"
+    parser: "ics_calendar"
     keywords_any:
       - population
       - demography
@@ -108,13 +100,55 @@ sources:
       - household
       - labour
       - census
-    priority_weight: 14
+    priority_weight: 18
 
-  - name: "Statistics Denmark Planned Releases"
+  - name: "Statistics Norway Upcoming Releases"
+    group: "Norway"
+    source_type: "Official"
+    url: "https://www.ssb.no/en/kommende-publiseringer"
+    fallback_urls:
+      - "https://www.ssb.no/en/kommende-publiseringer/"
+      - "https://www.ssb.no/en/statbank1"
+    parser: "generic_calendar"
+    keywords_any:
+      - population
+      - migration
+      - births
+      - deaths
+      - fertility
+      - household
+      - asylum
+      - mortality
+      - labour force
+    priority_weight: 10
+
+  - name: "Statistics Sweden Publishing Calendar"
+    group: "Sweden"
+    source_type: "Official"
+    url: "https://www.scb.se/en/finding-statistics/publishing-calendar/"
+    fallback_urls:
+      - "https://www.scb.se/en/About-us/official-statistics-of-sweden/government-agencies-responsible-for-official-statistics/statistikansvariga-myndigheter-med-annan-publiceringstidpunkt-an-8.00"
+      - "https://www.scb.se/en/About-us/news-and-press-releases/press-contacts/"
+    parser: "generic_calendar"
+    keywords_any:
+      - population
+      - migration
+      - asylum
+      - births
+      - deaths
+      - fertility
+      - household
+      - mortality
+      - demographic
+    priority_weight: 10
+
+  - name: "Statistics Denmark Releases"
     group: "Denmark"
     source_type: "Official"
-    url: "https://www.dst.dk/en/Statistik/planlagte"
-    parser: "generic_calendar"
+    url: "https://www.dst.dk/en/presse"
+    fallback_urls:
+      - "https://www.dst.dk/en/presse/danmarks-statistiks-pressepolitik"
+    parser: "html_signal_scan"
     keywords_any:
       - population
       - migration
@@ -124,13 +158,18 @@ sources:
       - mortality
       - household
       - labour
+      - release
+      - publication
     priority_weight: 8
 
-  - name: "Statistics Norway Upcoming Releases"
-    group: "Norway"
+  - name: "Statistics Finland Releases"
+    group: "Finland"
     source_type: "Official"
-    url: "https://www.ssb.no/en/kommende-publiseringer"
-    parser: "generic_calendar"
+    url: "https://stat.fi/en/news/Schedule-for-statistical-releases-in-2026-has-been-published"
+    fallback_urls:
+      - "https://stat.fi/org/periaatteet/index_en.html/publication-principles-for-statistics"
+      - "https://stat.fi/til/index_en.html"
+    parser: "html_signal_scan"
     keywords_any:
       - population
       - migration
@@ -138,23 +177,11 @@ sources:
       - deaths
       - fertility
       - household
-      - asylum
-    priority_weight: 8
-
-  - name: "Statistics Sweden Publishing Calendar"
-    group: "Sweden"
-    source_type: "Official"
-    url: "https://www.scb.se/en/finding-statistics/publishing-calendar/"
-    parser: "generic_calendar"
-    keywords_any:
-      - population
-      - migration
-      - asylum
-      - births
-      - deaths
-      - fertility
-      - household
-    priority_weight: 8
+      - mortality
+      - release calendar
+      - discontinued
+      - changes in statistics
+    priority_weight: 10
 
   - name: "UN Population Division News"
     group: "UN"
@@ -169,6 +196,7 @@ sources:
       - mortality
       - census
       - ageing
+      - family
     priority_weight: 10
 
   - name: "DHS Program News"
@@ -184,7 +212,8 @@ sources:
       - mortality
       - fertility
       - household
-    priority_weight: 7
+      - family planning
+    priority_weight: 8
 
   - name: "Human Mortality Database Events"
     group: "Global"
@@ -199,11 +228,13 @@ sources:
       - population
     priority_weight: 12
 
-  - name: "Registry and Infrastructure Signals"
+  - name: "Finngen Signals"
     group: "Europe Registries"
-    source_type: "Monitor"
+    source_type: "Signal"
     url: "https://www.finngen.fi/en/news"
-    parser: "generic_calendar"
+    fallback_urls:
+      - "https://www.finngen.fi/en/access_results"
+    parser: "html_signal_scan"
     keywords_any:
       - registry
       - population
@@ -212,6 +243,6 @@ sources:
       - archive
       - decommission
       - discontinued
-      - migration
       - mortality
-    priority_weight: 12
+      - access
+    priority_weight: 10
