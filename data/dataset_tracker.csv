@@ -1,9 +1,9 @@
-dataset_title,source,action_date,status,url,priority
-Statistics Norway,Norway,2026-03-09 22:14:33.079538,⚠️ Monitoring,https://www.ssb.no/en/kommende-publiseringer,Low
-US Census Upcoming,USA,2026-03-09 22:14:33.079538,⚠️ Monitoring,https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html,Low
-Human Mortality Database,Global,2026-03-09 22:14:33.079538,⚠️ Monitoring,https://www.mortality.org/News/Events,Low
-Statistics Sweden,Sweden,2026-03-09 22:14:33.079538,⚠️ Monitoring,https://www.scb.se/en/finding-statistics/publishing-calendar/,Low
-Amendments to the Act on Secondary Use regarding clinical research on 1 January 2026 – see instructions for transferring data,FinData News,2025-12-30 13:08:36.000000,📢 Announcement,https://findata.fi/en/news/amendments-to-the-act-on-secondary-use-regarding-clinical-research-on-1-january-2026-see-instructions-for-transferring-data/,Medium
-Findata’s service and permit fees will change in 2026,FinData News,2025-12-17 10:21:59.000000,📢 Announcement,https://findata.fi/en/news/findatas-service-and-permit-fees-will-change-in-2026/,Medium
-Share your views on Findata’s services,FinData News,2025-11-13 07:18:11.000000,📢 Announcement,https://findata.fi/en/news/share-your-views-on-findatas-services/,Medium
-Nordic Health Data Summit showcased Nordic leadership in health data collaboration,FinData News,2025-10-31 10:29:48.000000,📢 Announcement,https://findata.fi/en/news/nordic-health-data-summit-showcased-nordic-leadership-in-health-data-collaboration/,Medium
+dataset_title,source,action_date,status,url,last_checked,priority
+Statistics Norway,Norway,2026-03-09 22:14:33.079538,⚠️ Monitoring,https://www.ssb.no/en/kommende-publiseringer,,Low
+US Census Upcoming,USA,2026-03-09 22:14:33.079538,⚠️ Monitoring,https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html,,Low
+Human Mortality Database,Global,2026-03-09 22:14:33.079538,⚠️ Monitoring,https://www.mortality.org/News/Events,,Low
+Statistics Sweden,Sweden,2026-03-09 22:14:33.079538,⚠️ Monitoring,https://www.scb.se/en/finding-statistics/publishing-calendar/,,Low
+Amendments to the Act on Secondary Use regarding clinical research on 1 January 2026 – see instructions for transferring data,FinData News,2025-12-30 13:08:36.000000,📢 Announcement,https://findata.fi/en/news/amendments-to-the-act-on-secondary-use-regarding-clinical-research-on-1-january-2026-see-instructions-for-transferring-data/,2026-03-09,
+Findata’s service and permit fees will change in 2026,FinData News,2025-12-17 10:21:59.000000,📢 Announcement,https://findata.fi/en/news/findatas-service-and-permit-fees-will-change-in-2026/,2026-03-09,
+Share your views on Findata’s services,FinData News,2025-11-13 07:18:11.000000,📢 Announcement,https://findata.fi/en/news/share-your-views-on-findatas-services/,2026-03-09,
+Nordic Health Data Summit showcased Nordic leadership in health data collaboration,FinData News,2025-10-31 10:29:48.000000,📢 Announcement,https://findata.fi/en/news/nordic-health-data-summit-showcased-nordic-leadership-in-health-data-collaboration/,2026-03-09,
