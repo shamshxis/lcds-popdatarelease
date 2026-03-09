@@ -3,62 +3,37 @@ import streamlit as st
 import os
 from datetime import datetime
 
-st.set_page_config(page_title="LCDS Data Watchdog", page_icon="🛡️", layout="wide")
-
-st.markdown("""
-<style>
-    .status-scheduled { color: #d39e00; font-weight: bold; }
-    .status-published { color: #198754; font-weight: bold; }
-    .status-announce { color: #0d6efd; font-weight: bold; }
-    .cache-tag { font-size: 0.8em; color: #888; font-style: italic; }
-</style>
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="LCDS Global Brief", page_icon="📋", layout="wide")
+st.title("📋 LCDS Management Brief")
 
 DATA_FILE = "data/dataset_tracker.csv"
 
-# --- SIDEBAR ---
-with st.sidebar:
-    st.title("🛡️ Data Watchdog")
-    if st.button("🔄 Run Smart Scan", type="primary"):
-        with st.spinner("Scanning & merging history..."):
-            os.system("python scraper.py")
-            st.cache_data.clear()
-            st.rerun()
-
-# --- LOAD DATA ---
-if not os.path.exists(DATA_FILE):
-    st.info("⚠️ Initializing database...")
+if st.button("🔄 Refresh Data"):
     os.system("python scraper.py")
+    st.cache_data.clear()
     st.rerun()
 
-try:
-    df = pd.read_csv(DATA_FILE)
-    df["dt"] = pd.to_datetime(df["action_date"], errors="coerce")
-    df = df.dropna(subset=["dt"])
-    df = df.sort_values(by="dt", ascending=True)
-except:
-    st.error("Database error. Rescanning...")
+if os.path.exists(DATA_FILE):
+    try:
+        df = pd.read_csv(DATA_FILE)
+        df["dt"] = pd.to_datetime(df["action_date"], errors="coerce")
+        df = df.dropna(subset=["dt"]).sort_values(by="dt")
+        
+        # Group by Month
+        df["Month"] = df["dt"].dt.strftime("%B %Y")
+        
+        for month in df["Month"].unique():
+            st.subheader(month)
+            m_data = df[df["Month"] == month]
+            st.dataframe(
+                m_data[["status", "action_date", "source", "dataset_title", "url"]],
+                column_config={"url": st.column_config.LinkColumn("Link")},
+                hide_index=True,
+                use_container_width=True
+            )
+    except:
+        st.error("Data file corrupt. Click Refresh.")
+else:
+    st.info("System Initializing...")
     os.system("python scraper.py")
     st.rerun()
-
-# --- MAIN UI ---
-st.subheader("📅 Population Data Release Schedule")
-
-# Metrics
-upcoming = len(df[df['dt'] >= datetime.now()])
-st.metric("Upcoming Releases", upcoming, f"Total Assets: {len(df)}")
-
-# Table
-st.dataframe(
-    df[["status", "action_date", "source", "dataset_title", "url", "last_checked"]],
-    column_config={
-        "status": st.column_config.TextColumn("Status", width="small"),
-        "action_date": st.column_config.DateColumn("Date", format="DD MMM YYYY"),
-        "source": st.column_config.TextColumn("Owner"),
-        "dataset_title": st.column_config.TextColumn("Dataset", width="large"),
-        "url": st.column_config.LinkColumn("Link"),
-        "last_checked": st.column_config.TextColumn("Verified", width="small")
-    },
-    hide_index=True,
-    use_container_width=True
-)
