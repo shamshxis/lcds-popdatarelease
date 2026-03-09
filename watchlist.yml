@@ -1,58 +1,53 @@
 settings:
-  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
   timeout: 20
 
 sources:
-  # --- UK (ONS) ---
-  - name: "ONS Release Calendar"
-    country: "UK"
+  # --- HIGH VALUE: UK & EU ---
+  - name: "ONS Population Releases"
     url: "https://www.ons.gov.uk/releasecalendar/data?view=upcoming&size=50"
-    parser: "ons_json_api"
-    fallback_parser: "ons_html_fallback" # If API blocks, use this
-    priority: "High"
-
-  # --- EU (EUROSTAT) ---
+    parser: "ons_json_api" # Hidden API
+    fallback: "ons_html_fallback"
+    
   - name: "Eurostat Release Calendar"
-    country: "EU"
     url: "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml"
     parser: "eurostat_xml"
-    priority: "High"
 
-  # --- REGISTRIES (HTML Tables) ---
+  # --- REGISTRIES (The Hard Ones) ---
   - name: "CBS Netherlands"
-    country: "Netherlands"
     url: "https://www.cbs.nl/en-gb/publication-calendar"
-    parser: "html_table_scan"
-    priority: "Medium"
-
+    parser: "html_table_scan" # Scans <tr> tags
+    
   - name: "Statistics Denmark"
-    country: "Denmark"
     url: "https://www.dst.dk/en/Statistik/planlagte"
     parser: "html_table_scan"
-    priority: "Medium"
 
-  # --- DEEP SCANS (Regex) ---
+  - name: "Statistics Norway"
+    url: "https://www.ssb.no/en/kommende-publiseringer"
+    parser: "html_table_scan"
+
+  - name: "Statistics Sweden"
+    url: "https://www.scb.se/en/finding-statistics/publishing-calendar/"
+    parser: "html_table_scan"
+
+  # --- GLOBAL INTELLIGENCE ---
   - name: "US Census Upcoming"
-    country: "USA"
     url: "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
+    parser: "html_deep_scan" # Regex Hunter
+
+  - name: "DHS Available Datasets"
+    url: "https://dhsprogram.com/data/available-datasets.cfm"
     parser: "html_deep_scan"
-    priority: "Medium"
 
   - name: "Human Mortality Database"
-    country: "Global"
     url: "https://www.mortality.org/News/Events"
     parser: "html_deep_scan"
-    priority: "High"
 
-  # --- RSS FEEDS (News) ---
-  - name: "DHS Program News"
-    country: "Global"
-    url: "https://dhsprogram.com/rss/news.cfm"
-    parser: "rss_feed"
-    priority: "Medium"
-
+  # --- NEWS FEEDS ---
   - name: "FinData News"
-    country: "Finland"
     url: "https://findata.fi/en/feed/"
     parser: "rss_feed"
-    priority: "Medium"
+
+  - name: "Retraction Watch"
+    url: "https://retractionwatch.com/feed/"
+    parser: "rss_feed"
