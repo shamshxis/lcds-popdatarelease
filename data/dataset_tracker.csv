@@ -1,3 +1,17 @@
 dataset_title,source,action_date,status,url,priority
-ONS: Long-Term Migration,UK,2026-05-21,📅 Scheduled,https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/longterminternationalmigrationprovisional/latest,Medium
-Statistics Norway: Population,Norway,2026-05-20,📅 Scheduled,https://www.ssb.no/en/befolkning/folketall/statistikk/befolkning,Medium
+ONS: Long-Term Migration,ONS (UK),2026-05-21 00:00:00.000000,📅 Scheduled,https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/longterminternationalmigrationprovisional/latest,High
+Statistics Norway: Population,Norway,2026-05-20 00:00:00.000000,📅 Scheduled,https://www.ssb.no/en/befolkning/folketall/statistikk/befolkning,Medium
+Eurostat: Population Projections,EU,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://ec.europa.eu/eurostat/web/population-demography/population-projections,Low
+US Census: Projections,USA,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://www.census.gov/data/tables/2023/demo/popproj/2023-summary-tables.html,Low
+CDC Wonder: Provisional Deaths,USA,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://wonder.cdc.gov/mcd-icd10-provisional.html,Low
+UN World Population Prospects,Global,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://population.un.org/wpp/,Low
+DHS Available Datasets,Global,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://dhsprogram.com/data/available-datasets.cfm,Low
+Human Mortality Database (HMD),Global,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://www.mortality.org/News/Events,Low
+Human Fertility Database (HFD),Global,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://www.humanfertility.org/Home/News,Low
+PopulationPyramid.net,Global,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://www.populationpyramid.net/,Low
+Statistics Sweden: Population,Sweden,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://www.scb.se/en/finding-statistics/statistics-by-subject-area/population-and-living-conditions/population-composition-and-development/population-statistics/,Low
+Statistics Finland: Population,Finland,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://stat.fi/en/statistics/vamuu,Low
+Statistics Denmark: Scheduled,Denmark,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://www.dst.dk/en/Statistik/planlagte,Low
+Statice: Overview,Iceland,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://www.statice.is/statistics/population/inhabitants/overview/,Low
+Eurostat: Excess Mortality,EU,2026-03-09 00:00:00.000000,📅 Scheduled,https://ec.europa.eu/eurostat/statistics-explained/index.php?title=Excess_mortality_statistics,Medium
+ONS: Births in England & Wales,ONS (UK),2023-08-17 00:00:00.000000,✅ Published,https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/bulletins/birthsummarytablesenglandandwales/2022,High
