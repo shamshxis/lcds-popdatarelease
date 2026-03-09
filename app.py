@@ -9,9 +9,6 @@ st.set_page_config(page_title="LCDS Data Brief", page_icon="📋", layout="wide"
 st.markdown("""
 <style>
     h1 { margin-bottom: 0px; font-family: 'Helvetica', sans-serif; }
-    .status-scheduled { color: #d39e00; font-weight: bold; }
-    .status-published { color: #198754; font-weight: bold; }
-    .status-announce { color: #0d6efd; font-weight: bold; }
     div[data-testid="stStatusWidget"] { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
@@ -31,7 +28,9 @@ def load_data():
     df["Month"] = df["dt"].dt.strftime("%B %Y")
     df["YearMonth"] = df["dt"].dt.strftime("%Y-%m") # For sorting
     
-    return df.sort_values(by=["YearMonth", "dt"], ascending=[False, False])
+    # Sort: Future first (Ascending date) or Newest first? 
+    # Management usually wants "What's Next?" -> Ascending
+    return df.sort_values(by=["dt"], ascending=True)
 
 # --- UI HEADER ---
 st.title("📋 LCDS Management Data Brief")
@@ -47,7 +46,7 @@ with st.sidebar:
             st.rerun()
     
     st.divider()
-    st.info("Data Sources: ONS, Eurostat, US Census, Human Mortality Database, Scandinavian Registers.")
+    st.info("Tracking ONS, Eurostat, DHS, Census, and Nordic Registers.")
 
 # --- MAIN LOGIC ---
 df = load_data()
@@ -70,17 +69,17 @@ if search: view = view[view["dataset_title"].str.contains(search, case=False)]
 # --- METRICS ---
 c1, c2, c3 = st.columns(3)
 upcoming = view[view['dt'] >= datetime.now()]
-past = view[view['dt'] < datetime.now()]
+today_release = view[view['dt'].dt.date == datetime.now().date()]
 
-c1.metric("Total Tracked Assets", len(view))
-c2.metric("Upcoming Releases", len(upcoming))
-c3.metric("Recent Releases", len(past))
+c1.metric("Upcoming Releases", len(upcoming))
+c2.metric("Released Today", len(today_release))
+c3.metric("Total Assets", len(view))
 
 st.divider()
 
 # --- TABLE RENDER (By Month) ---
-# Get unique months from the *view*
-unique_months = view.sort_values("YearMonth", ascending=False)["Month"].unique()
+# Sort months chronologically
+unique_months = view.sort_values("YearMonth")["Month"].unique()
 
 for month in unique_months:
     st.subheader(month)
