@@ -1,5 +1,4 @@
 import yaml
-import json
 import os
 import requests
 import re
@@ -23,38 +22,48 @@ class SmartWatchdog:
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
         }
         self.today = datetime.now().replace(tzinfo=None)
-        
-        # Load Memory (Existing Data)
-        if os.path.exists(OUTPUT_FILE):
-            self.memory = pd.read_csv(OUTPUT_FILE).to_dict('records')
-        else:
-            self.memory = []
+        self.memory_df = self.load_memory()
 
     def normalize_date(self, date_str):
+        """Converts any date string into a clean, timezone-naive Timestamp"""
         if not date_str: return None
         try:
+            # Parse and strip timezone
             dt = date_parser.parse(str(date_str), fuzzy=True, dayfirst=True)
-            return dt.replace(tzinfo=None)
+            return dt.replace(tzinfo=None) 
         except: return None
+
+    def load_memory(self):
+        """Loads existing CSV and forces 'action_date' to be Datetime objects"""
+        if os.path.exists(OUTPUT_FILE):
+            try:
+                df = pd.read_csv(OUTPUT_FILE)
+                # CRITICAL FIX: Convert string dates to Datetime objects immediately
+                df['action_date'] = pd.to_datetime(df['action_date'], errors='coerce')
+                # Drop rows where date failed to parse
+                df = df.dropna(subset=['action_date'])
+                return df
+            except Exception as e:
+                print(f"⚠️ Memory load error: {e}. Starting fresh.")
+                return pd.DataFrame()
+        return pd.DataFrame()
 
     # ---------------------------------------------------------
     # PARSERS
     # ---------------------------------------------------------
 
     def parser_ons_json_api(self, source):
-        """Primary ONS Method: Hidden JSON API"""
         results = []
         try:
-            # Fake AJAX request
             headers = self.headers.copy()
             headers['X-Requested-With'] = 'XMLHttpRequest'
             
-            resp = requests.get(source['url'], headers=headers, timeout=10)
+            resp = requests.get(source['url'], headers=headers, timeout=15)
             
-            # IF BLOCKED (Returns HTML instead of JSON) -> Trigger Fallback
+            # FALLBACK TRIGGER: If ONS returns HTML instead of JSON
             if "json" not in resp.headers.get("Content-Type", "").lower():
-                print(f"   ⚠️ ONS API Blocked. Triggering Fallback...")
-                # Change URL to HTML version and use fallback parser
+                print(f"   ⚠️ ONS API Blocked. Switching to HTML Scan...")
+                # Redirect to the visual calendar page and use the Deep Scan parser
                 source['url'] = "https://www.ons.gov.uk/releasecalendar?view=upcoming"
                 return self.parser_html_deep_scan(source)
 
@@ -68,12 +77,14 @@ class SmartWatchdog:
                 if any(k in title.lower() for k in ['birth', 'death', 'population', 'migration', 'census']):
                     d_obj = self.normalize_date(date_raw)
                     if d_obj:
+                        status = "📅 Scheduled" if d_obj > self.today else "✅ Published"
+                        link = "https://www.ons.gov.uk" + item.get('uri', '')
                         results.append({
                             "dataset_title": title,
                             "source": "ONS (UK)",
                             "action_date": d_obj,
-                            "status": "📅 Scheduled" if d_obj > self.today else "✅ Published",
-                            "url": "https://www.ons.gov.uk" + item.get('uri', ''),
+                            "status": status,
+                            "url": link,
                             "last_checked": self.today.strftime("%Y-%m-%d")
                         })
         except Exception as e:
@@ -81,15 +92,16 @@ class SmartWatchdog:
         return results
 
     def parser_html_table_scan(self, source):
-        """Scans <table> tags (Best for Registries like CBS/DST)"""
+        """Best for CBS Netherlands, Denmark, etc."""
         results = []
         try:
             resp = requests.get(source['url'], headers=self.headers, timeout=15)
             soup = BeautifulSoup(resp.content, 'html.parser')
             
+            # Find any table row
             for row in soup.find_all('tr'):
                 text = row.get_text(" ", strip=True)
-                # Regex: Find YYYY-MM-DD or DD MMM YYYY
+                # Strict Regex: YYYY-MM-DD or DD Month YYYY
                 date_match = re.search(r'([0-9]{4}-[0-9]{2}-[0-9]{2}|[0-9]{1,2}\s+[A-Za-z]{3,}\s+[0-9]{4})', text)
                 
                 if date_match and any(k in text.lower() for k in ['population', 'census', 'death', 'birth', 'migration']):
@@ -109,13 +121,13 @@ class SmartWatchdog:
         return results
 
     def parser_html_deep_scan(self, source):
-        """Fallback: Aggressive Regex Hunter"""
+        """Regex Hunter (US Census, Mortality DB)"""
         results = []
         try:
             resp = requests.get(source['url'], headers=self.headers, timeout=15)
             text = BeautifulSoup(resp.content, 'html.parser').get_text(" ", strip=True)
             
-            # Look for "Next release: [Date]"
+            # Regex for "Next release: [Date]"
             match = re.search(r'(?:Next|Upcoming|Expected|Schedule)[^0-9]{1,30}?([0-9]{1,2}\s+[A-Za-z]{3,}\s+[0-9]{4})', text, re.IGNORECASE)
             
             if match:
@@ -129,15 +141,10 @@ class SmartWatchdog:
                         "url": source['url'],
                         "last_checked": self.today.strftime("%Y-%m-%d")
                     })
-            else:
-                # If scraping fails, CHECK MEMORY. Do we have an old record for this?
-                # If yes, keep it but mark as "Cached"
-                pass 
         except: pass
         return results
 
     def parser_eurostat_xml(self, source):
-        """Eurostat XML Parser"""
         results = []
         try:
             resp = requests.get(source['url'], headers=self.headers, timeout=15)
@@ -158,7 +165,6 @@ class SmartWatchdog:
         return results
 
     def parser_rss(self, source):
-        """RSS Feed Parser"""
         results = []
         try:
             feed = feedparser.parse(source['url'])
@@ -196,40 +202,49 @@ class SmartWatchdog:
         with open(WATCHLIST_FILE, 'r') as f:
             config = yaml.safe_load(f)
         
-        new_data = []
+        # 1. SCRAPE FRESH DATA
+        new_records = []
         with ThreadPoolExecutor(max_workers=5) as executor:
             futures = {executor.submit(self.process_source, s): s for s in config['sources']}
             for future in as_completed(futures):
                 try:
-                    new_data.extend(future.result())
+                    data = future.result()
+                    new_records.extend(data)
                 except Exception as e:
                     print(f"   ❌ Thread Error: {e}")
 
-        # --- MEMORY MERGE (The "Smart" Part) ---
-        # 1. Convert new data to DataFrame
-        if not new_data:
-            print("⚠️ No new data found. Retaining memory.")
+        # 2. MERGE WITH MEMORY (TYPE-SAFE)
+        if not new_records:
+            print("⚠️ No new data found. Keeping memory.")
+            if not self.memory_df.empty:
+                self.memory_df.to_csv(OUTPUT_FILE, index=False)
             return
 
-        df_new = pd.DataFrame(new_data)
+        df_new = pd.DataFrame(new_records)
         
-        # 2. Load old data (Memory)
-        if self.memory:
-            df_old = pd.DataFrame(self.memory)
-            # Filter out old rows that correspond to sources we just successfully scraped
-            # (We overwrite them with fresh data)
+        # Ensure new data has Datetime objects
+        if 'action_date' in df_new.columns:
+            df_new['action_date'] = pd.to_datetime(df_new['action_date'])
+
+        # Combine Old + New
+        if not self.memory_df.empty:
+            # Drop old rows from memory if we just scraped a fresher version
             scraped_sources = df_new['source'].unique()
-            df_old_kept = df_old[~df_old['source'].isin(scraped_sources)]
-            
-            # Combine: Fresh Data + Unscraped Memory
+            df_old_kept = self.memory_df[~self.memory_df['source'].isin(scraped_sources)]
             df_final = pd.concat([df_new, df_old_kept])
         else:
             df_final = df_new
 
-        # 3. Save
-        df_final = df_final.sort_values(by='action_date', ascending=False).drop_duplicates(subset=['dataset_title', 'action_date'])
+        # 3. CLEAN & SAVE
+        # Now we can sort safely because everything is a Datetime object
+        df_final = df_final.sort_values(by='action_date', ascending=False)
+        
+        # Drop duplicates
+        df_final = df_final.drop_duplicates(subset=['dataset_title', 'action_date'])
+
+        # Final Verification before Save
+        print(f"💾 Saving {len(df_final)} items to database...")
         df_final.to_csv(OUTPUT_FILE, index=False)
-        print(f"💾 Database updated. Total Assets: {len(df_final)}")
 
 if __name__ == "__main__":
     SmartWatchdog().run()
