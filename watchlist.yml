@@ -1,66 +1,217 @@
 settings:
-  user_agent: "Mozilla/5.0 (ResearchBot/LCDS-Enterprise)"
+  user_agent: "Mozilla/5.0 (ResearchBot/LCDS-ExecutiveWatch)"
   timeout: 20
+  max_workers: 8
 
 sources:
-  # --- API / STRUCTURED (High Reliability) ---
-  - name: "ONS Release Calendar"
-    country: "UK"
-    url: "https://www.ons.gov.uk/releasecalendar/data?view=upcoming&size=50"
-    parser: "ons_json_api"
-    priority: "High"
+  - name: "ONS Upcoming Releases"
+    group: "UK"
+    source_type: "Official"
+    url: "https://www.ons.gov.uk/releasecalendar?release-type=type-upcoming"
+    parser: "ons_release_calendar"
+    keywords_any:
+      - population
+      - census
+      - migration
+      - fertility
+      - birth
+      - death
+      - mortality
+      - household
+      - life expectancy
+      - demographic
+      - asylum
+      - refugee
+      - labour
+      - workless
+      - family
+      - divorce
+      - marriage
+      - admin-based population
+    exclude_keywords:
+      - producer price
+      - business investment
+      - retail sales
+      - gdp
+      - trade
+    track_missing_as_deleted: true
+    priority_weight: 15
 
-  - name: "Eurostat Release Calendar"
-    country: "EU"
-    url: "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml"
-    parser: "eurostat_xml"
-    priority: "High"
+  - name: "ONS Cancelled Releases"
+    group: "UK"
+    source_type: "Official"
+    url: "https://www.ons.gov.uk/releasecalendar?release-type=type-cancelled"
+    parser: "ons_release_calendar"
+    keywords_any:
+      - population
+      - census
+      - migration
+      - fertility
+      - birth
+      - death
+      - mortality
+      - household
+      - life expectancy
+      - demographic
+      - asylum
+      - refugee
+      - labour
+      - family
+    priority_weight: 30
 
-  # --- REGISTRIES (HTML Table Scanners) ---
-  - name: "CBS Netherlands"
-    country: "Netherlands"
-    url: "https://www.cbs.nl/en-gb/publication-calendar"
-    parser: "html_table_scan"
-    keywords: ["population", "migration", "death", "birth", "labour"]
-    priority: "Medium"
-
-  - name: "Statistics Denmark"
-    country: "Denmark"
-    url: "https://www.dst.dk/en/Statistik/planlagte"
-    parser: "html_table_scan"
-    keywords: ["population", "immigrant", "fertility"]
-    priority: "Medium"
-
-  - name: "Statistics Norway"
-    country: "Norway"
-    url: "https://www.ssb.no/en/kommende-publiseringer"
-    parser: "html_table_scan"
-    keywords: ["population", "name statistics", "death"]
-    priority: "Medium"
-
-  - name: "Statistics Sweden"
-    country: "Sweden"
-    url: "https://www.scb.se/en/finding-statistics/publishing-calendar/"
-    parser: "html_table_scan"
-    keywords: ["population", "citizen", "asylum"]
-    priority: "Medium"
-
-  # --- DEEP SCANS (Regex Hunters) ---
-  - name: "US Census Upcoming"
-    country: "USA"
+  - name: "US Census Upcoming Releases"
+    group: "USA"
+    source_type: "Official"
     url: "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
-    parser: "html_deep_scan"
-    priority: "Medium"
+    parser: "census_upcoming"
+    keywords_any:
+      - population
+      - migration
+      - census
+      - current population survey
+      - acs
+      - births
+      - deaths
+      - household
+      - microdata
+    priority_weight: 12
 
-  - name: "Human Mortality Database"
-    country: "Global"
-    url: "https://www.mortality.org/News/Events"
-    parser: "html_deep_scan"
-    priority: "High"
+  - name: "CBS Netherlands Publication Calendar"
+    group: "Netherlands"
+    source_type: "Official"
+    url: "https://www.cbs.nl/en-gb/publication-calendar"
+    parser: "cbs_calendar"
+    keywords_any:
+      - population
+      - migration
+      - asylum
+      - births
+      - death
+      - mortality
+      - household
+      - labour market
+      - demographics
+    priority_weight: 10
 
-  # --- NEWS (Filtered) ---
+  - name: "Eurostat News Releases"
+    group: "EU"
+    source_type: "Official"
+    url: "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml"
+    parser: "xml_release"
+    keywords_any:
+      - population
+      - demography
+      - migration
+      - asylum
+      - fertility
+      - mortality
+      - household
+      - labour
+      - census
+    priority_weight: 14
+
+  - name: "Statistics Denmark Planned Releases"
+    group: "Denmark"
+    source_type: "Official"
+    url: "https://www.dst.dk/en/Statistik/planlagte"
+    parser: "generic_calendar"
+    keywords_any:
+      - population
+      - migration
+      - immigrants
+      - fertility
+      - death
+      - mortality
+      - household
+      - labour
+    priority_weight: 8
+
+  - name: "Statistics Norway Upcoming Releases"
+    group: "Norway"
+    source_type: "Official"
+    url: "https://www.ssb.no/en/kommende-publiseringer"
+    parser: "generic_calendar"
+    keywords_any:
+      - population
+      - migration
+      - births
+      - deaths
+      - fertility
+      - household
+      - asylum
+    priority_weight: 8
+
+  - name: "Statistics Sweden Publishing Calendar"
+    group: "Sweden"
+    source_type: "Official"
+    url: "https://www.scb.se/en/finding-statistics/publishing-calendar/"
+    parser: "generic_calendar"
+    keywords_any:
+      - population
+      - migration
+      - asylum
+      - births
+      - deaths
+      - fertility
+      - household
+    priority_weight: 8
+
+  - name: "UN Population Division News"
+    group: "UN"
+    source_type: "Signal"
+    url: "https://www.un.org/development/desa/pd/feed"
+    parser: "rss"
+    keywords_any:
+      - population
+      - demographic
+      - migration
+      - fertility
+      - mortality
+      - census
+      - ageing
+    priority_weight: 10
+
   - name: "DHS Program News"
-    country: "Global"
+    group: "Global"
+    source_type: "Signal"
     url: "https://dhsprogram.com/rss/news.cfm"
-    parser: "rss_feed"
-    priority: "Medium"
+    parser: "rss"
+    keywords_any:
+      - survey
+      - demographic
+      - population
+      - health
+      - mortality
+      - fertility
+      - household
+    priority_weight: 7
+
+  - name: "Human Mortality Database Events"
+    group: "Global"
+    source_type: "Signal"
+    url: "https://www.mortality.org/News/Events"
+    parser: "generic_calendar"
+    keywords_any:
+      - mortality
+      - death
+      - life expectancy
+      - demographic
+      - population
+    priority_weight: 12
+
+  - name: "Registry and Infrastructure Signals"
+    group: "Europe Registries"
+    source_type: "Monitor"
+    url: "https://www.finngen.fi/en/news"
+    parser: "generic_calendar"
+    keywords_any:
+      - registry
+      - population
+      - cohort
+      - data release
+      - archive
+      - decommission
+      - discontinued
+      - migration
+      - mortality
+    priority_weight: 12
