@@ -1,17 +1,9 @@
 dataset_title,source,action_date,status,url,priority
-ONS: Long-Term Migration,ONS (UK),2026-05-21 00:00:00.000000,📅 Scheduled,https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/longterminternationalmigrationprovisional/latest,High
-Statistics Norway: Population,Norway,2026-05-20 00:00:00.000000,📅 Scheduled,https://www.ssb.no/en/befolkning/folketall/statistikk/befolkning,Medium
-Eurostat: Population Projections,EU,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://ec.europa.eu/eurostat/web/population-demography/population-projections,Low
-US Census: Projections,USA,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://www.census.gov/data/tables/2023/demo/popproj/2023-summary-tables.html,Low
-CDC Wonder: Provisional Deaths,USA,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://wonder.cdc.gov/mcd-icd10-provisional.html,Low
-UN World Population Prospects,Global,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://population.un.org/wpp/,Low
-DHS Available Datasets,Global,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://dhsprogram.com/data/available-datasets.cfm,Low
-Human Mortality Database (HMD),Global,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://www.mortality.org/News/Events,Low
-Human Fertility Database (HFD),Global,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://www.humanfertility.org/Home/News,Low
-PopulationPyramid.net,Global,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://www.populationpyramid.net/,Low
-Statistics Sweden: Population,Sweden,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://www.scb.se/en/finding-statistics/statistics-by-subject-area/population-and-living-conditions/population-composition-and-development/population-statistics/,Low
-Statistics Finland: Population,Finland,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://stat.fi/en/statistics/vamuu,Low
-Statistics Denmark: Scheduled,Denmark,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://www.dst.dk/en/Statistik/planlagte,Low
-Statice: Overview,Iceland,2026-03-09 22:06:34.795378,⚠️ Date Not Found,https://www.statice.is/statistics/population/inhabitants/overview/,Low
-Eurostat: Excess Mortality,EU,2026-03-09 00:00:00.000000,📅 Scheduled,https://ec.europa.eu/eurostat/statistics-explained/index.php?title=Excess_mortality_statistics,Medium
-ONS: Births in England & Wales,ONS (UK),2023-08-17 00:00:00.000000,✅ Published,https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/bulletins/birthsummarytablesenglandandwales/2022,High
+Statistics Norway,Norway,2026-03-09 22:14:33.079538,⚠️ Monitoring,https://www.ssb.no/en/kommende-publiseringer,Low
+US Census Upcoming,USA,2026-03-09 22:14:33.079538,⚠️ Monitoring,https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html,Low
+Human Mortality Database,Global,2026-03-09 22:14:33.079538,⚠️ Monitoring,https://www.mortality.org/News/Events,Low
+Statistics Sweden,Sweden,2026-03-09 22:14:33.079538,⚠️ Monitoring,https://www.scb.se/en/finding-statistics/publishing-calendar/,Low
+Amendments to the Act on Secondary Use regarding clinical research on 1 January 2026 – see instructions for transferring data,FinData News,2025-12-30 13:08:36.000000,📢 Announcement,https://findata.fi/en/news/amendments-to-the-act-on-secondary-use-regarding-clinical-research-on-1-january-2026-see-instructions-for-transferring-data/,Medium
+Findata’s service and permit fees will change in 2026,FinData News,2025-12-17 10:21:59.000000,📢 Announcement,https://findata.fi/en/news/findatas-service-and-permit-fees-will-change-in-2026/,Medium
+Share your views on Findata’s services,FinData News,2025-11-13 07:18:11.000000,📢 Announcement,https://findata.fi/en/news/share-your-views-on-findatas-services/,Medium
+Nordic Health Data Summit showcased Nordic leadership in health data collaboration,FinData News,2025-10-31 10:29:48.000000,📢 Announcement,https://findata.fi/en/news/nordic-health-data-summit-showcased-nordic-leadership-in-health-data-collaboration/,Medium
