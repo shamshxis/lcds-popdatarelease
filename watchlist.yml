@@ -1,164 +1,7 @@
 settings:
   history_days: 365
-  lookback_days: 180
-  lookahead_days: 180
-  request_timeout_seconds: 15
-  user_agent: "Mozilla/5.0 (compatible; GlobalPopWatch/2.3; +https://github.com/)"
-  discovery_max_links_per_source: 30
-  discovery_keywords:
-    - population
-    - migration
-    - demographic
-    - fertility
-    - mortality
-    - census
-    - labour
-    - household
-    - births
-    - deaths
-    - asylum
-    - projections
-    - estimates
-    - pyramid
-    - age
-  trusted_domains:
-    - ons.gov.uk
-    - ec.europa.eu
-    - census.gov
-    - dhsprogram.com
-    - population.un.org
-    - populationpyramid.net
-    - scb.se
-    - ssb.no
-    - dst.dk
-    - stat.fi
-
-sources:
-  - id: ons_migration_calendar
-    name: ONS Migration Releases
-    region: UK
-    country: United Kingdom
-    source_type: release_calendar
-    parser: ons_release_calendar
-    url: https://www.ons.gov.uk/releasecalendar
-    keywords: migration
-    themes: [migration, population]
-    priority: 10
-
-  - id: ons_population_calendar
-    name: ONS Population Releases
-    region: UK
-    country: United Kingdom
-    source_type: release_calendar
-    parser: ons_release_calendar
-    url: https://www.ons.gov.uk/releasecalendar
-    keywords: population
-    themes: [population, births, deaths]
-    priority: 10
-
-  - id: eurostat_release_calendar
-    name: Eurostat Release Calendar
-    region: Europe
-    country: European Union
-    source_type: release_calendar
-    parser: eurostat_release_calendar
-    url: https://ec.europa.eu/eurostat/news/release-calendar
-    themes: [population, migration, labour, household, asylum]
-    priority: 10
-
-  - id: us_census_upcoming
-    name: US Census Upcoming Releases
-    region: North America
-    country: United States
-    source_type: release_calendar
-    parser: census_upcoming_releases
-    url: https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html
-    themes: [population, census, migration, household, labour]
-    priority: 10
-
-  - id: dhs_data_portal
-    name: DHS Data Portal
-    region: Global
-    country: Multi-country
-    source_type: dataset_access
-    parser: simple_page
-    url: https://dhsprogram.com/data/
-    themes: [fertility, mortality, health, population, survey]
-    priority: 9
-
-  - id: dhs_available_datasets
-    name: DHS Available Datasets
-    region: Global
-    country: Multi-country
-    source_type: dataset_access
-    parser: dhs_available_datasets
-    url: https://dhsprogram.com/data/available-datasets.cfm
-    themes: [fertility, mortality, health, population, survey]
-    priority: 9
-
-  - id: un_wpp
-    name: UN World Population Prospects
-    region: Global
-    country: Global
-    source_type: dataset_page
-    parser: simple_page
-    url: https://population.un.org/wpp/
-    themes: [population, projections, pyramid]
-    priority: 9
-
-  - id: population_pyramid
-    name: PopulationPyramid.net
-    region: Global
-    country: Global
-    source_type: dataset_page
-    parser: simple_page
-    url: https://www.populationpyramid.net/
-    themes: [population, pyramid]
-    priority: 7
-
-  - id: scb_population_statistics
-    name: Statistics Sweden Population Statistics
-    region: Scandinavia
-    country: Sweden
-    source_type: dataset_page
-    parser: simple_page
-    url: https://www.scb.se/en/finding-statistics/statistics-by-subject-area/population-and-living-conditions/population-composition-and-development/population-statistics/
-    themes: [population, fertility, migration]
-    priority: 8
-
-  - id: ssb_population
-    name: Statistics Norway Population
-    region: Scandinavia
-    country: Norway
-    source_type: dataset_page
-    parser: simple_page
-    url: https://www.ssb.no/en/befolkning/folketall/statistikk/befolkning
-    themes: [population, births, deaths, migration]
-    priority: 8
-
-  - id: dst_scheduled_releases
-    name: Statistics Denmark Scheduled Releases
-    region: Scandinavia
-    country: Denmark
-    source_type: release_calendar
-    parser: simple_page
-    url: https://www.dst.dk/en/Statistik/planlagte
-    themes: [population, labour, migration, household]
-    priority: 8
-
-  - id: statfi_population
-    name: Statistics Finland Population
-    region: Scandinavia
-    country: Finland
-    source_type: dataset_page
-    parser: simple_page
-    url: https://stat.fi/en/statistics/vamuu
-    themes: [population, births, deaths, migration]
-    priority: 8
-
-    settings:
-  history_days: 365
   lookahead_days: 365
+  request_timeout_seconds: 15
   user_agent: "Mozilla/5.0 (ResearchBot/LCDS-3.0)"
 
 sources:
@@ -185,7 +28,7 @@ sources:
   - name: "Eurostat: Excess Mortality"
     country: "EU"
     url: "https://ec.europa.eu/eurostat/statistics-explained/index.php?title=Excess_mortality_statistics"
-    parser: "eurostat_html"
+    parser: "generic_date"
     priority: "Medium"
 
   - name: "Eurostat: Population Projections"
@@ -207,7 +50,19 @@ sources:
     parser: "generic_date"
     priority: "Medium"
 
-  # --- GLOBAL ACADEMIC (LCDS Core) ---
+  # --- GLOBAL / UN ---
+  - name: "UN World Population Prospects"
+    country: "Global"
+    url: "https://population.un.org/wpp/"
+    parser: "generic_date"
+    priority: "High"
+
+  - name: "DHS Available Datasets"
+    country: "Global"
+    url: "https://dhsprogram.com/data/available-datasets.cfm"
+    parser: "generic_date"
+    priority: "Medium"
+
   - name: "Human Mortality Database (HMD)"
     country: "Global"
     url: "https://www.mortality.org/News/Events"
@@ -220,12 +75,36 @@ sources:
     parser: "generic_date"
     priority: "High"
 
+  - name: "PopulationPyramid.net"
+    country: "Global"
+    url: "https://www.populationpyramid.net/"
+    parser: "generic_date"
+    priority: "Low"
+
   # --- SCANDINAVIA (High Quality Registers) ---
   - name: "Statistics Sweden: Population"
     country: "Sweden"
     url: "https://www.scb.se/en/finding-statistics/statistics-by-subject-area/population-and-living-conditions/population-composition-and-development/population-statistics/"
     parser: "generic_date"
-    priority: "Low"
+    priority: "Medium"
+
+  - name: "Statistics Norway: Population"
+    country: "Norway"
+    url: "https://www.ssb.no/en/befolkning/folketall/statistikk/befolkning"
+    parser: "generic_date"
+    priority: "Medium"
+
+  - name: "Statistics Finland: Population"
+    country: "Finland"
+    url: "https://stat.fi/en/statistics/vamuu"
+    parser: "generic_date"
+    priority: "Medium"
+
+  - name: "Statistics Denmark: Scheduled"
+    country: "Denmark"
+    url: "https://www.dst.dk/en/Statistik/planlagte"
+    parser: "generic_date"
+    priority: "Medium"
 
   - name: "Statice: Overview"
     country: "Iceland"
