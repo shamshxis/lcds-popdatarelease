@@ -1,53 +1,66 @@
 settings:
-  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  user_agent: "Mozilla/5.0 (ResearchBot/LCDS-Enterprise)"
   timeout: 20
 
 sources:
-  # --- HIGH VALUE: UK & EU ---
-  - name: "ONS Population Releases"
+  # --- API / STRUCTURED (High Reliability) ---
+  - name: "ONS Release Calendar"
+    country: "UK"
     url: "https://www.ons.gov.uk/releasecalendar/data?view=upcoming&size=50"
-    parser: "ons_json_api" # Hidden API
-    fallback: "ons_html_fallback"
-    
+    parser: "ons_json_api"
+    priority: "High"
+
   - name: "Eurostat Release Calendar"
+    country: "EU"
     url: "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml"
     parser: "eurostat_xml"
+    priority: "High"
 
-  # --- REGISTRIES (The Hard Ones) ---
+  # --- REGISTRIES (HTML Table Scanners) ---
   - name: "CBS Netherlands"
+    country: "Netherlands"
     url: "https://www.cbs.nl/en-gb/publication-calendar"
-    parser: "html_table_scan" # Scans <tr> tags
-    
+    parser: "html_table_scan"
+    keywords: ["population", "migration", "death", "birth", "labour"]
+    priority: "Medium"
+
   - name: "Statistics Denmark"
+    country: "Denmark"
     url: "https://www.dst.dk/en/Statistik/planlagte"
     parser: "html_table_scan"
+    keywords: ["population", "immigrant", "fertility"]
+    priority: "Medium"
 
   - name: "Statistics Norway"
+    country: "Norway"
     url: "https://www.ssb.no/en/kommende-publiseringer"
     parser: "html_table_scan"
+    keywords: ["population", "name statistics", "death"]
+    priority: "Medium"
 
   - name: "Statistics Sweden"
+    country: "Sweden"
     url: "https://www.scb.se/en/finding-statistics/publishing-calendar/"
     parser: "html_table_scan"
+    keywords: ["population", "citizen", "asylum"]
+    priority: "Medium"
 
-  # --- GLOBAL INTELLIGENCE ---
+  # --- DEEP SCANS (Regex Hunters) ---
   - name: "US Census Upcoming"
+    country: "USA"
     url: "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
-    parser: "html_deep_scan" # Regex Hunter
-
-  - name: "DHS Available Datasets"
-    url: "https://dhsprogram.com/data/available-datasets.cfm"
     parser: "html_deep_scan"
+    priority: "Medium"
 
   - name: "Human Mortality Database"
+    country: "Global"
     url: "https://www.mortality.org/News/Events"
     parser: "html_deep_scan"
+    priority: "High"
 
-  # --- NEWS FEEDS ---
-  - name: "FinData News"
-    url: "https://findata.fi/en/feed/"
+  # --- NEWS (Filtered) ---
+  - name: "DHS Program News"
+    country: "Global"
+    url: "https://dhsprogram.com/rss/news.cfm"
     parser: "rss_feed"
-
-  - name: "Retraction Watch"
-    url: "https://retractionwatch.com/feed/"
-    parser: "rss_feed"
+    priority: "Medium"
