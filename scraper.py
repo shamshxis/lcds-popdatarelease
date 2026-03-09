@@ -1,180 +1,128 @@
-import json
-import re
-import time
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from urllib.parse import urlparse
-
-import pandas as pd
-import requests
 import yaml
+import json
+import os
+import requests
+import re
+import pandas as pd
+import feedparser
 from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
 from dateutil import parser as date_parser
-from sentence_transformers import SentenceTransformer, util
 
-# --- CONSTANTS ---
-DATA_DIR = Path("data")
-CURRENT_CSV = DATA_DIR / "dataset_tracker.csv"
-META_JSON = DATA_DIR / "last_run_meta.json"
+# --- CONFIG ---
+DATA_DIR = "data"
+os.makedirs(DATA_DIR, exist_ok=True)
+WATCHLIST_FILE = "watchlist.yml"
+OUTPUT_FILE = os.path.join(DATA_DIR, "dataset_tracker.csv")
 
-DEFAULT_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; GlobalPopWatch/Management-1.0; +https://github.com/)"
-}
+class LCDSScraper:
+    def __init__(self):
+        self.headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+        self.today = datetime.now()
+        self.data = []
 
-NOW = datetime.now(timezone.utc)
-TODAY = NOW.date()
+    def normalize_date(self, date_str):
+        if not date_str: return None
+        try:
+            return date_parser.parse(str(date_str), fuzzy=True, dayfirst=True)
+        except: return None
 
-# --- AI & CONFIG ---
-print("🧠 Loading AI Model...")
-ai_model = SentenceTransformer('all-MiniLM-L6-v2')
-RELEVANCE_TARGETS = [
-    "population estimates", "migration statistics", "census results",
-    "births deaths fertility", "labour market", "demographic trends"
-]
-target_embeddings = ai_model.encode(RELEVANCE_TARGETS, convert_to_tensor=True)
-SIMILARITY_THRESHOLD = 0.35
+    # --- PRONG 1: WATCHLIST (Future Scanning) ---
+    def process_watchlist(self):
+        print("🔍 Scanning Watchlist Targets...")
+        with open(WATCHLIST_FILE, 'r') as f:
+            config = yaml.safe_load(f)
 
-def ensure_dirs() -> None:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-
-def load_watchlist():
-    with open("watchlist.yml", "r", encoding="utf-8") as f:
-        raw = yaml.safe_load(f) or {}
-    return raw.get("settings", {}), raw.get("sources", [])
-
-def fetch_html(url: str) -> str:
-    time.sleep(1.0)
-    try:
-        response = requests.get(url, headers=DEFAULT_HEADERS, timeout=25)
-        response.raise_for_status()
-        return response.text
-    except Exception:
-        return ""
-
-def clean_whitespace(text: str) -> str:
-    if not text: return ""
-    return re.sub(r"\s+", " ", str(text).replace("\xa0", " ")).strip()
-
-def extract_date(text: str):
-    if not text: return None
-    patterns = [
-        r"\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b", 
-        r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b",           
-        r"\b\d{4}-\d{2}-\d{2}\b"
-    ]
-    for pattern in patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
+        for item in config.get('sources', []):
             try:
-                dt = date_parser.parse(match.group(0), fuzzy=True, dayfirst=True).date()
-                if (TODAY - timedelta(days=60)) <= dt <= (TODAY + timedelta(days=730)):
-                    return dt.isoformat()
-            except: continue
-    return None
+                print(f"   👉 Visiting: {item['name']}...")
+                resp = requests.get(item['url'], headers=self.headers, timeout=15)
+                soup = BeautifulSoup(resp.content, 'html.parser')
+                text = soup.get_text()
 
-def detect_status(text: str, date_str: str) -> str:
-    """
-    Decides if the item is 'Released' or 'Scheduled'.
-    """
-    lower = text.lower()
-    
-    # 1. Explicit keywords
-    if "removed" in lower or "withdrawn" in lower or "cancelled" in lower:
-        return "⚠️ Withdrawn"
-    if "published" in lower or "available now" in lower or "released on" in lower:
-        return "✅ Published"
-    
-    # 2. Date Logic: If date is in the past, assume Released
-    if date_str:
-        try:
-            dt = datetime.strptime(date_str, "%Y-%m-%d").date()
-            if dt <= TODAY:
-                return "✅ Published"
-        except: pass
+                # STRATEGY: Look for "Next Release" or "Last Updated"
+                next_date = None
+                status = "⚠️ Monitoring"
+                
+                # Regex 1: "Next release: 15 May 2026"
+                match_next = re.search(r'(?:Next release|Next update|Upcoming release)[^0-9]*([0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4})', text, re.IGNORECASE)
+                
+                # Regex 2: "Release date: 15 May 2025" (Past/Current)
+                match_prev = re.search(r'(?:Release date|Published|Last updated)[^0-9]*([0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4})', text, re.IGNORECASE)
 
-    return "📅 Scheduled"
+                date_found = None
+                
+                if match_next:
+                    date_found = match_next.group(1)
+                    status = "📅 Scheduled"
+                elif match_prev:
+                    date_found = match_prev.group(1)
+                    # If date is very recent, mark as Published
+                    d_obj = self.normalize_date(date_found)
+                    if d_obj and (self.today - d_obj).days < 30:
+                        status = "✅ Published"
+                    else:
+                        status = "✅ Published (Older)"
 
-def ai_is_relevant(text: str) -> bool:
-    embedding = ai_model.encode(text, convert_to_tensor=True)
-    scores = util.cos_sim(embedding, target_embeddings)
-    return float(scores.max()) >= SIMILARITY_THRESHOLD
+                if date_found:
+                    self.data.append({
+                        "dataset_title": item['name'],
+                        "source": item.get('country', 'Global'),
+                        "action_date": self.normalize_date(date_found),
+                        "status": status,
+                        "url": item['url'],
+                        "priority": item.get('priority', 'Medium')
+                    })
+                    
+            except Exception as e:
+                print(f"   ❌ Failed {item['name']}: {e}")
 
-def parse_source(source: dict) -> list[dict]:
-    html = fetch_html(source["url"])
-    if not html: return []
-    
-    soup = BeautifulSoup(html, "lxml")
-    rows = []
-    seen = set()
+    # --- PRONG 2: NEWS / RSS (Media Capture) ---
+    def process_news(self):
+        print("📡 Capturing Media Updates...")
+        with open(WATCHLIST_FILE, 'r') as f:
+            config = yaml.safe_load(f)
 
-    targets = soup.find_all(["tr", "li", "article", "div", "h3", "h4"])
-    
-    for tag in targets:
-        raw_text = clean_whitespace(tag.get_text(" ", strip=True))
-        
-        # 1. Date Check
-        date_str = extract_date(raw_text)
-        if not date_str: continue
+        for feed_meta in config.get('feeds', []):
+            try:
+                feed = feedparser.parse(feed_meta['url'])
+                for entry in feed.entries[:5]: # Top 5 only
+                    # Filter for Demography Keywords
+                    if any(k in entry.title.lower() for k in ['birth', 'death', 'population', 'migration', 'census', 'life expect', 'fertility']):
+                        
+                        pub_date = self.normalize_date(entry.published)
+                        # Only keep last 60 days
+                        if pub_date and (self.today - pub_date).days < 60:
+                            self.data.append({
+                                "dataset_title": entry.title,
+                                "source": feed_meta['name'],
+                                "action_date": pub_date,
+                                "status": "📢 Announcement",
+                                "url": entry.link,
+                                "priority": "High"
+                            })
+            except: pass
 
-        # 2. AI Check
-        link = tag.find("a", href=True)
-        title = clean_whitespace(link.get_text()) if link else raw_text
-        if not ai_is_relevant(title + " " + source['name']):
-            continue
-
-        # 3. Build Row
-        url = link["href"] if link else source["url"]
-        if url.startswith("/"):
-            parsed = urlparse(source["url"])
-            url = f"{parsed.scheme}://{parsed.netloc}{url}"
-
-        # Clean Summary
-        brief = raw_text.replace(date_str, "").replace(title, "").strip(" -:.")
-        brief = re.sub(r"\s+", " ", brief)
-        if len(brief) < 5: brief = title
-
-        # Smart Status
-        status = detect_status(raw_text, date_str)
-
-        key = (title, date_str)
-        if key in seen: continue
-        seen.add(key)
-
-        rows.append({
-            "source": source["name"],
-            "dataset_title": title,
-            "summary": brief[:250],
-            "status": status,
-            "action_date": date_str,
-            "url": url
-        })
-
-    return rows
-
-def main():
-    ensure_dirs()
-    _, sources = load_watchlist()
-    all_rows = []
-    print("🚀 Starting Smart Status Scraper...")
-
-    for source in sources:
-        print(f"Scanning {source['name']}...")
-        try:
-            rows = parse_source(source)
-            print(f"  -> Found {len(rows)} items.")
-            all_rows.extend(rows)
-        except Exception as e:
-            print(f"  -> Error: {e}")
-
-    df = pd.DataFrame(all_rows)
-    if not df.empty:
-        df = df.drop_duplicates(subset=["source", "dataset_title", "action_date"])
-        df = df.sort_values(by="action_date")
-    
-    df.to_csv(CURRENT_CSV, index=False)
-    with open(META_JSON, "w") as f:
-        json.dump({"run_at": NOW.isoformat(), "count": len(df)}, f)
-    print("✅ Done.")
+    def save(self):
+        df = pd.DataFrame(self.data)
+        if not df.empty:
+            # Drop None dates
+            df = df.dropna(subset=['action_date'])
+            # Sort by Date
+            df = df.sort_values(by='action_date', ascending=False)
+            
+            # Filter: ±1 Year Logic
+            start_window = self.today - timedelta(days=365)
+            end_window = self.today + timedelta(days=365)
+            df = df[(df['action_date'] >= start_window) & (df['action_date'] <= end_window)]
+            
+            df.to_csv(OUTPUT_FILE, index=False)
+            print(f"💾 Saved {len(df)} LCDS Assets.")
+        else:
+            print("⚠️ No data found.")
 
 if __name__ == "__main__":
-    main()
+    s = LCDSScraper()
+    s.process_watchlist()
+    s.process_news()
+    s.save()
