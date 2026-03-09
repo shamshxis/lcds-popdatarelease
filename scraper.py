@@ -1,290 +1,196 @@
-import sys
-import subprocess
+import json
 import os
-
-# --- 1. BOOTSTRAP: AUTO-INSTALL DEPENDENCIES ---
-def install(package):
-    print(f"📦 Installing missing package: {package}...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-
-try: import feedparser
-except ImportError: install("feedparser"); import feedparser
-
-try: import yaml
-except ImportError: install("pyyaml"); import yaml
-
-try: from dateutil import parser as date_parser
-except ImportError: install("python-dateutil"); from dateutil import parser as date_parser
-
-try: from bs4 import BeautifulSoup
-except ImportError: install("beautifulsoup4"); from bs4 import BeautifulSoup
-
-import requests
-import re
-import pandas as pd
+import subprocess
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# --- CONFIG ---
-DATA_DIR = "data"
-os.makedirs(DATA_DIR, exist_ok=True)
-WATCHLIST_FILE = "watchlist.yml"
-OUTPUT_FILE = os.path.join(DATA_DIR, "dataset_tracker.csv")
+import pandas as pd
+import streamlit as st
 
-class LCDS_Data_Engine:
-    def __init__(self):
-        self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
-        }
-        self.today = datetime.now().replace(tzinfo=None)
-        self.memory_df = self.load_memory()
+st.set_page_config(page_title="LCDS Executive Data Watch", page_icon="📡", layout="wide")
 
-    def load_memory(self):
-        """Loads existing memory and ensures dates are type-safe."""
-        if os.path.exists(OUTPUT_FILE):
-            try:
-                df = pd.read_csv(OUTPUT_FILE)
-                df['action_date'] = pd.to_datetime(df['action_date'], errors='coerce')
-                return df.dropna(subset=['action_date'])
-            except: pass
+DATA_FILE = "data/dataset_tracker.csv"
+RUNLOG_FILE = "data/run_log.json"
+
+
+def run_scan():
+    proc = subprocess.run(["python", "scraper.py"], capture_output=True, text=True)
+    if proc.returncode != 0:
+        st.error("Scan failed")
+        st.code(proc.stderr or proc.stdout)
+    else:
+        st.success("Scan complete")
+        if proc.stdout:
+            with st.expander("Scanner log"):
+                st.code(proc.stdout)
+
+
+def load_data() -> pd.DataFrame:
+    if not os.path.exists(DATA_FILE):
         return pd.DataFrame()
+    df = pd.read_csv(DATA_FILE)
+    if "action_date" in df.columns:
+        df["action_date"] = pd.to_datetime(df["action_date"], errors="coerce")
+    if "last_checked" in df.columns:
+        df["last_checked"] = pd.to_datetime(df["last_checked"], errors="coerce")
+    return df
 
-    def normalize_date(self, date_str):
-        """Standardizes dates to YYYY-MM-DD (Naive)."""
-        if not date_str: return None
-        try:
-            dt = date_parser.parse(str(date_str), fuzzy=True, dayfirst=True)
-            return dt.replace(tzinfo=None)
-        except: return None
 
-    def is_relevant(self, text, keywords=None):
-        """Strict Noise Filter: Must match keywords."""
-        text = text.lower()
-        core_keys = ['population', 'census', 'migration', 'birth', 'death', 'fertility', 'mortality', 'demograph']
-        
-        # If specific keywords provided in YAML, use those + core
-        if keywords:
-            check_list = [k.lower() for k in keywords] + core_keys
-        else:
-            check_list = core_keys
-            
-        return any(k in text for k in check_list)
+def load_metrics() -> dict:
+    if not os.path.exists(RUNLOG_FILE):
+        return {}
+    try:
+        with open(RUNLOG_FILE, "r", encoding="utf-8") as f:
+            return json.load(f).get("metrics", {})
+    except Exception:
+        return {}
 
-    # ---------------------------------------------------------
-    # PARSERS
-    # ---------------------------------------------------------
 
-    def parser_ons_json_api(self, source):
-        results = []
-        try:
-            headers = self.headers.copy()
-            headers['X-Requested-With'] = 'XMLHttpRequest'
-            resp = requests.get(source['url'], headers=headers, timeout=15)
-            
-            # Fallback if blocked
-            if "json" not in resp.headers.get("Content-Type", "").lower():
-                print(f"   ⚠️ ONS API Blocked. Switching to Deep Scan...")
-                source['url'] = "https://www.ons.gov.uk/releasecalendar?view=upcoming"
-                return self.parser_html_deep_scan(source)
+def style_status(v: str) -> str:
+    if v == "Deleted":
+        return "background-color: #7f1d1d; color: white; font-weight: 700"
+    if v == "Cancelled":
+        return "background-color: #991b1b; color: white; font-weight: 700"
+    if v == "Upcoming":
+        return "background-color: #1d4ed8; color: white"
+    if v == "Published":
+        return "background-color: #065f46; color: white"
+    return ""
 
-            data = resp.json()
-            for item in data.get('result', {}).get('results', []):
-                title = item.get('description', {}).get('title', 'Unknown')
-                if self.is_relevant(title):
-                    d_obj = self.normalize_date(item.get('description', {}).get('releaseDate', ''))
-                    if d_obj:
-                        results.append({
-                            "dataset_title": title,
-                            "source": "ONS (UK)",
-                            "action_date": d_obj,
-                            "status": "📅 Scheduled" if d_obj > self.today else "✅ Published",
-                            "url": "https://www.ons.gov.uk" + item.get('uri', ''),
-                            "last_checked": self.today.strftime("%Y-%m-%d")
-                        })
-        except Exception as e:
-            print(f"   ❌ ONS Error: {e}")
-        return results
 
-    def parser_html_table_scan(self, source):
-        """
-        Scans <tr> tags. Optimized for CBS, SCB, DST.
-        Looks for: [Date] [Title] ...
-        """
-        results = []
-        try:
-            resp = requests.get(source['url'], headers=self.headers, timeout=15)
-            soup = BeautifulSoup(resp.content, 'html.parser')
-            
-            keywords = source.get('keywords', [])
-            
-            for row in soup.find_all('tr'):
-                text = row.get_text(" ", strip=True)
-                
-                # Regex for Date (DD MMM YYYY or YYYY-MM-DD)
-                date_match = re.search(r'([0-9]{4}-[0-9]{2}-[0-9]{2}|[0-9]{1,2}\s+[A-Za-z]{3,}\s+[0-9]{4})', text)
-                
-                if date_match:
-                    clean_title = text.replace(date_match.group(1), "").strip()
-                    # Filter by relevance
-                    if self.is_relevant(clean_title, keywords):
-                        d_obj = self.normalize_date(date_match.group(1))
-                        if d_obj:
-                            results.append({
-                                "dataset_title": clean_title[:100], # Truncate long titles
-                                "source": source['country'],
-                                "action_date": d_obj,
-                                "status": "📅 Scheduled" if d_obj > self.today else "✅ Published",
-                                "url": source['url'],
-                                "last_checked": self.today.strftime("%Y-%m-%d")
-                            })
-        except Exception as e:
-            print(f"   ❌ Table Scan Error ({source['name']}): {e}")
-        return results
+def style_date(row):
+    if int(row.get("deleted_signal", 0)) == 1 or int(row.get("red_flag", 0)) == 1:
+        return ["color: #b91c1c; font-weight: 700" if c == "display_date" else "" for c in row.index]
+    return ["" for _ in row.index]
 
-    def parser_html_deep_scan(self, source):
-        """Regex Hunter for non-standard sites"""
-        results = []
-        try:
-            resp = requests.get(source['url'], headers=self.headers, timeout=15)
-            text = BeautifulSoup(resp.content, 'html.parser').get_text(" ", strip=True)
-            
-            # Look for "Next release: [Date]"
-            match = re.search(r'(?:Next|Upcoming|Expected|Schedule)[^0-9]{1,30}?([0-9]{1,2}\s+[A-Za-z]{3,}\s+[0-9]{4})', text, re.IGNORECASE)
-            
-            if match:
-                d_obj = self.normalize_date(match.group(1))
-                if d_obj:
-                    results.append({
-                        "dataset_title": source['name'],
-                        "source": source['country'],
-                        "action_date": d_obj,
-                        "status": "📅 Scheduled",
-                        "url": source['url'],
-                        "last_checked": self.today.strftime("%Y-%m-%d")
-                    })
-        except: pass
-        return results
 
-    def parser_eurostat_xml(self, source):
-        results = []
-        try:
-            resp = requests.get(source['url'], headers=self.headers, timeout=15)
-            soup = BeautifulSoup(resp.content, 'xml')
-            for item in soup.find_all('release'):
-                title = item.find('title').text
-                if self.is_relevant(title):
-                    d_obj = self.normalize_date(item.find('release_date').text)
-                    if d_obj:
-                        results.append({
-                            "dataset_title": title,
-                            "source": "Eurostat",
-                            "action_date": d_obj,
-                            "status": "📅 Scheduled",
-                            "url": "https://ec.europa.eu/eurostat/news/release-calendar",
-                            "last_checked": self.today.strftime("%Y-%m-%d")
-                        })
-        except: pass
-        return results
+st.title("📡 LCDS Executive Data Watch")
+st.caption("Executive watchlist for demography, population, registry, and statistical release signals")
 
-    def parser_rss(self, source):
-        results = []
-        try:
-            feed = feedparser.parse(source['url'])
-            for entry in feed.entries[:10]: # Check last 10 items
-                if self.is_relevant(entry.title):
-                    d_obj = self.normalize_date(entry.published)
-                    if d_obj:
-                        results.append({
-                            "dataset_title": entry.title,
-                            "source": source['name'],
-                            "action_date": d_obj,
-                            "status": "📢 Announcement",
-                            "url": entry.link,
-                            "last_checked": self.today.strftime("%Y-%m-%d")
-                        })
-        except: pass
-        return results
+left, right = st.columns([1, 4])
+with left:
+    if st.button("Run scan", use_container_width=True):
+        run_scan()
+        st.rerun()
+with right:
+    metrics = load_metrics()
+    generated = metrics.get("generated_at")
+    st.write(f"Last engine update: {generated if generated else 'Not available'}")
 
-    # --- INTELLIGENCE LAYER: GDELT ---
-    def fetch_gdelt(self):
-        results = []
-        try:
-            # Query: (population OR migration) AND (release OR data)
-            query = "(population%20OR%20migration)%20AND%20(release%20OR%20data)"
-            url = f"https://api.gdeltproject.org/api/v2/doc/doc?query={query}&mode=artlist&maxrecords=10&format=json"
-            resp = requests.get(url, timeout=10)
-            data = resp.json()
-            for art in data.get('articles', []):
-                title = art.get('title', '')
-                if self.is_relevant(title):
-                    d_obj = self.normalize_date(art.get('seendate', '')[:8])
-                    if d_obj:
-                        results.append({
-                            "dataset_title": title,
-                            "source": "GDELT Intelligence",
-                            "action_date": d_obj,
-                            "status": "🔵 News Signal",
-                            "url": art.get('url'),
-                            "last_checked": self.today.strftime("%Y-%m-%d")
-                        })
-        except: pass
-        return results
+if not os.path.exists(DATA_FILE):
+    st.info("No dataset file found yet. Run a scan to initialize the dashboard.")
+    st.stop()
 
-    # --- RUNNER ---
-    def process(self, source):
-        method = source.get('parser', 'html_deep_scan')
-        print(f"   👉 Checking {source['name']} ({method})...")
-        if method == 'ons_json_api': return self.parser_ons_json_api(source)
-        elif method == 'html_table_scan': return self.parser_html_table_scan(source)
-        elif method == 'eurostat_xml': return self.parser_eurostat_xml(source)
-        elif method == 'rss_feed': return self.parser_rss(source)
-        else: return self.parser_html_deep_scan(source)
+df = load_data()
+if df.empty:
+    st.warning("Dataset file exists but contains no records.")
+    st.stop()
 
-    def run(self):
-        print("🚀 Starting LCDS Data Engine...")
-        with open(WATCHLIST_FILE, 'r') as f:
-            config = yaml.safe_load(f)
+now = pd.Timestamp.now().normalize()
+if "days_to_event" not in df.columns:
+    df["days_to_event"] = (df["action_date"].dt.normalize() - now).dt.days
+if "display_date" not in df.columns:
+    df["display_date"] = df["action_date"].dt.strftime("%d %b %Y")
+    df.loc[df["action_date"].isna(), "display_date"] = "Date TBC"
+if "executive_flag" not in df.columns:
+    df["executive_flag"] = ((df.get("priority_score", 0) >= 80) | (df.get("red_flag", 0) == 1)).astype(int)
 
-        new_data = []
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            # 1. Sources
-            futures = {executor.submit(self.process, s): s for s in config['sources']}
-            
-            # 2. GDELT
-            future_gdelt = executor.submit(self.fetch_gdelt)
+m1, m2, m3, m4, m5 = st.columns(5)
+m1.metric("Total records", int(metrics.get("records", len(df))))
+m2.metric("Upcoming", int(metrics.get("upcoming", ((df["status"] == "Upcoming") & (df["days_to_event"] >= 0)).sum())))
+m3.metric("Next 14 days", int(metrics.get("next_14_days", ((df["days_to_event"] >= 0) & (df["days_to_event"] <= 14)).sum())))
+m4.metric("Red flags", int(metrics.get("red_flags", df.get("red_flag", pd.Series(dtype=int)).sum())))
+m5.metric("Deletion signals", int(metrics.get("deletions", df.get("deleted_signal", pd.Series(dtype=int)).sum())))
 
-            for future in as_completed(futures):
-                try: new_data.extend(future.result())
-                except Exception as e: print(f"   ❌ Error: {e}")
-            
-            try: new_data.extend(future_gdelt.result())
-            except: pass
+with st.sidebar:
+    st.header("Filters")
+    sources = sorted(df["source"].dropna().unique().tolist())
+    groups = sorted(df["source_group"].dropna().unique().tolist()) if "source_group" in df.columns else []
+    themes = sorted(df["theme_primary"].dropna().unique().tolist()) if "theme_primary" in df.columns else []
+    statuses = sorted(df["status"].dropna().unique().tolist())
 
-        # --- MEMORY MERGE ---
-        if not new_data:
-            print("⚠️ No new data. Retaining memory.")
-            if not self.memory_df.empty: self.memory_df.to_csv(OUTPUT_FILE, index=False)
-            return
+    selected_groups = st.multiselect("Source group", groups, default=groups)
+    selected_sources = st.multiselect("Source", sources, default=sources)
+    selected_themes = st.multiselect("Theme", themes, default=themes)
+    selected_statuses = st.multiselect("Status", statuses, default=statuses)
+    executive_only = st.checkbox("Executive issues only", value=True)
+    text_filter = st.text_input("Search title or summary")
 
-        df_new = pd.DataFrame(new_data)
-        if 'action_date' in df_new.columns:
-            df_new['action_date'] = pd.to_datetime(df_new['action_date'])
+view = df.copy()
+if selected_groups and "source_group" in view.columns:
+    view = view[view["source_group"].isin(selected_groups)]
+if selected_sources:
+    view = view[view["source"].isin(selected_sources)]
+if selected_themes and "theme_primary" in view.columns:
+    view = view[view["theme_primary"].isin(selected_themes)]
+if selected_statuses:
+    view = view[view["status"].isin(selected_statuses)]
+if executive_only:
+    view = view[view["executive_flag"] == 1]
+if text_filter:
+    q = text_filter.lower()
+    view = view[
+        view["dataset_title"].fillna("").str.lower().str.contains(q)
+        | view.get("summary", pd.Series(dtype=str)).fillna("").str.lower().str.contains(q)
+    ]
 
-        # Combine
-        if not self.memory_df.empty:
-            scraped_sources = df_new['source'].unique()
-            df_old_kept = self.memory_df[~self.memory_df['source'].isin(scraped_sources)]
-            df_final = pd.concat([df_new, df_old_kept])
-        else:
-            df_final = df_new
+briefing = view.sort_values(
+    ["deleted_signal", "red_flag", "priority_score", "action_date"],
+    ascending=[False, False, False, True]
+).head(15)
 
-        # Sort & Save
-        df_final = df_final.sort_values(by='action_date', ascending=False)
-        df_final = df_final.drop_duplicates(subset=['dataset_title', 'action_date'])
-        
-        df_final.to_csv(OUTPUT_FILE, index=False)
-        print(f"💾 Database updated: {len(df_final)} assets.")
+st.subheader("Executive briefing")
+for _, row in briefing.iterrows():
+    icon = "🟥" if int(row.get("deleted_signal", 0)) == 1 else "🟧" if int(row.get("red_flag", 0)) == 1 else "🟦"
+    with st.container(border=True):
+        st.markdown(f"{icon} **{row['dataset_title']}**")
+        cols = st.columns([1.2, 1.2, 1.4, 1, 1])
+        cols[0].write(f"**Source**  \n{row.get('source', '')}")
+        cols[1].write(f"**Date**  \n{row.get('display_date', 'Date TBC')}")
+        cols[2].write(f"**Theme**  \n{row.get('theme_primary', 'General')}")
+        cols[3].write(f"**Status**  \n{row.get('status', '')}")
+        cols[4].write(f"**Priority**  \n{int(row.get('priority_score', 0))}")
+        if row.get("summary"):
+            st.write(row.get("summary"))
+        if row.get("url"):
+            st.link_button("Open source", row.get("url"), use_container_width=False)
 
-if __name__ == "__main__":
-    LCDS_Data_Engine().run()
+st.subheader("Release and signal table")
+show_cols = [
+    c for c in [
+        "status", "display_date", "days_to_event", "source_group", "source", "theme_primary",
+        "dataset_title", "summary", "priority_score", "red_flag", "deleted_signal", "url", "last_checked"
+    ] if c in view.columns
+]
+
+styled = (
+    view[show_cols]
+    .sort_values(["deleted_signal", "red_flag", "priority_score", "action_date"], ascending=[False, False, False, True])
+    .style
+    .map(style_status, subset=[c for c in ["status"] if c in show_cols])
+    .apply(style_date, axis=1)
+)
+
+st.dataframe(
+    styled,
+    column_config={
+        "url": st.column_config.LinkColumn("Link"),
+        "days_to_event": st.column_config.NumberColumn("Days", format="%d"),
+        "priority_score": st.column_config.NumberColumn("Priority", format="%d"),
+        "red_flag": st.column_config.CheckboxColumn("Red flag"),
+        "deleted_signal": st.column_config.CheckboxColumn("Deleted"),
+    },
+    hide_index=True,
+    use_container_width=True,
+)
+
+left, right = st.columns(2)
+with left:
+    st.subheader("By theme")
+    theme_counts = view["theme_primary"].value_counts().reset_index()
+    theme_counts.columns = ["Theme", "Count"]
+    st.bar_chart(theme_counts.set_index("Theme"))
+with right:
+    st.subheader("By source")
+    source_counts = view["source"].value_counts().head(15).reset_index()
+    source_counts.columns = ["Source", "Count"]
+    st.bar_chart(source_counts.set_index("Source"))
