@@ -1,21 +1,25 @@
 {
-  "generated_at": "2026-03-10T04:46:41.495735",
+  "generated_at": "2026-03-10T04:59:54.550585",
   "logs": [
     {
       "source": "UN Population Division News",
       "items": 1
     },
     {
-      "source": "US Census Releases",
-      "items": 107
+      "source": "GDELT Demography Media Signals",
+      "items": 1
+    },
+    {
+      "source": "ONS Upcoming Releases",
+      "items": 0
     },
     {
       "source": "Statistics Sweden Publishing Calendar",
       "items": 2
     },
     {
-      "source": "ONS Upcoming Releases",
-      "items": 0
+      "source": "Eurostat Release Calendar",
+      "items": 2
     },
     {
       "source": "GDELT Registry and Data Access Signals",
@@ -26,45 +30,41 @@
       "items": 1
     },
     {
-      "source": "Statistics Finland Signals",
-      "items": 10
+      "source": "Statistics Norway Upcoming Releases",
+      "items": 0
     },
     {
-      "source": "Finngen Signals",
-      "items": 21
+      "source": "Statistics Finland Signals",
+      "items": 1
     },
     {
       "source": "CBS Netherlands Publication Calendar",
       "items": 0
     },
     {
-      "source": "Statistics Norway Upcoming Releases",
-      "items": 0
+      "source": "Finngen Signals",
+      "items": 1
+    },
+    {
+      "source": "US Census Releases",
+      "items": 98
+    },
+    {
+      "source": "Eurostat Dataset Update RSS",
+      "items": 17
     },
     {
       "source": "DHS Program News",
       "items": 1
-    },
-    {
-      "source": "Eurostat Release Calendar",
-      "items": 2
-    },
-    {
-      "source": "GDELT Demography Media Signals",
-      "items": 0
-    },
-    {
-      "source": "Eurostat Dataset Update RSS",
-      "items": 100
     }
   ],
   "metrics": {
-    "records": 230,
-    "upcoming": 106,
+    "records": 123,
+    "upcoming": 97,
     "red_flags": 0,
     "deletions": 0,
     "next_14_days": 1,
-    "fallback_hits": 17,
-    "generated_at": "2026-03-10T04:46:41.496415"
+    "fallback_hits": 0,
+    "generated_at": "2026-03-10T04:59:54.551145"
   }
 }

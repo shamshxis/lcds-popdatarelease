@@ -2,247 +2,247 @@
   "UN Population Division News": {
     "pages": {
       "https://www.un.org/development/desa/pd/feed": {
-        "attempts": 2,
+        "attempts": 3,
         "successes": 0,
-        "failures": 2,
+        "failures": 3,
         "items": 0
       }
     },
     "last_success": "",
-    "last_failure": "2026-03-10T04:46:35.958855"
+    "last_failure": "2026-03-10T04:59:29.327662"
   },
   "ONS Upcoming Releases": {
     "pages": {
       "https://www.ons.gov.uk/releasecalendar?release-type=type-cancelled": {
-        "attempts": 2,
-        "successes": 2,
+        "attempts": 3,
+        "successes": 3,
         "failures": 0,
         "items": 0
       },
       "https://www.ons.gov.uk/releasecalendar": {
-        "attempts": 2,
-        "successes": 2,
+        "attempts": 3,
+        "successes": 3,
         "failures": 0,
         "items": 0
       },
       "https://www.ons.gov.uk/releasecalendar?release-type=type-upcoming": {
-        "attempts": 2,
-        "successes": 2,
+        "attempts": 3,
+        "successes": 3,
         "failures": 0,
         "items": 0
       }
     },
-    "last_success": "2026-03-10T04:46:36.428682",
+    "last_success": "2026-03-10T04:59:29.634472",
     "last_failure": ""
   },
   "Statistics Norway Upcoming Releases": {
     "pages": {
       "https://www.ssb.no/en/statbank": {
-        "attempts": 2,
-        "successes": 2,
+        "attempts": 3,
+        "successes": 3,
         "failures": 0,
         "items": 0
       },
       "https://www.ssb.no/en/kommende-publiseringer": {
-        "attempts": 2,
-        "successes": 2,
+        "attempts": 3,
+        "successes": 3,
         "failures": 0,
         "items": 0
       },
       "https://www.ssb.no/en/kommende-publiseringer/": {
-        "attempts": 2,
-        "successes": 2,
+        "attempts": 3,
+        "successes": 3,
         "failures": 0,
         "items": 0
       }
     },
-    "last_success": "2026-03-10T04:46:37.225657",
+    "last_success": "2026-03-10T04:59:30.943911",
     "last_failure": ""
   },
   "US Census Releases": {
     "pages": {
       "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html": {
-        "attempts": 2,
-        "successes": 2,
+        "attempts": 3,
+        "successes": 3,
         "failures": 0,
-        "items": 214
+        "items": 312
       },
       "https://www.census.gov/newsroom.html": {
-        "attempts": 2,
-        "successes": 2,
+        "attempts": 3,
+        "successes": 3,
         "failures": 0,
         "items": 0
       },
       "https://www.census.gov/about/contact-us/feeds.html": {
-        "attempts": 2,
-        "successes": 2,
+        "attempts": 3,
+        "successes": 3,
         "failures": 0,
         "items": 0
       }
     },
-    "last_success": "2026-03-10T04:46:36.369789",
+    "last_success": "2026-03-10T04:59:33.253856",
     "last_failure": ""
   },
   "Finngen Signals": {
     "pages": {
       "https://www.finngen.fi/en/access_results": {
-        "attempts": 2,
-        "successes": 2,
+        "attempts": 3,
+        "successes": 3,
         "failures": 0,
         "items": 41
       },
       "https://www.finngen.fi/en/news": {
-        "attempts": 2,
+        "attempts": 3,
         "successes": 0,
-        "failures": 2,
+        "failures": 3,
         "items": 0
       }
     },
-    "last_success": "2026-03-10T04:46:36.377071",
-    "last_failure": "2026-03-10T04:46:36.955603"
+    "last_success": "2026-03-10T04:59:31.894564",
+    "last_failure": "2026-03-10T04:59:29.689003"
   },
   "Eurostat Release Calendar": {
     "pages": {
       "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_EN.ics": {
-        "attempts": 2,
+        "attempts": 3,
         "successes": 0,
-        "failures": 2,
+        "failures": 3,
         "items": 0
       },
       "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml": {
-        "attempts": 2,
+        "attempts": 3,
         "successes": 0,
-        "failures": 2,
+        "failures": 3,
         "items": 0
       },
       "https://ec.europa.eu/eurostat/news/release-calendar": {
-        "attempts": 2,
-        "successes": 2,
+        "attempts": 3,
+        "successes": 3,
         "failures": 0,
         "items": 0
       }
     },
-    "last_success": "2026-03-10T04:46:37.610226",
-    "last_failure": "2026-03-10T04:46:36.322633"
+    "last_success": "2026-03-10T04:59:29.880295",
+    "last_failure": "2026-03-10T04:59:29.644104"
   },
   "Statistics Sweden Publishing Calendar": {
     "pages": {
       "https://www.scb.se/en/finding-statistics/publishing-calendar/": {
-        "attempts": 2,
+        "attempts": 3,
         "successes": 0,
-        "failures": 2,
+        "failures": 3,
         "items": 0
       },
       "https://www.scb.se/en/About-us/news-and-press-releases/": {
-        "attempts": 2,
+        "attempts": 3,
         "successes": 0,
-        "failures": 2,
+        "failures": 3,
         "items": 0
       }
     },
     "last_success": "",
-    "last_failure": "2026-03-10T04:46:36.413382"
+    "last_failure": "2026-03-10T04:59:29.735214"
   },
   "GDELT Demography Media Signals": {
     "pages": {
       "https://api.gdeltproject.org/api/v2/doc/doc": {
-        "attempts": 2,
+        "attempts": 3,
         "successes": 1,
-        "failures": 1,
+        "failures": 2,
         "items": 0
       }
     },
     "last_success": "2026-03-10T04:46:37.899318",
-    "last_failure": "2026-03-10T04:38:24.859269"
+    "last_failure": "2026-03-10T04:59:29.575345"
   },
   "CBS Netherlands Publication Calendar": {
     "pages": {
       "https://www.cbs.nl/en-gb/about-us/we-produce-and-disseminate-statistics/publication-policy": {
-        "attempts": 2,
-        "successes": 2,
+        "attempts": 3,
+        "successes": 3,
         "failures": 0,
         "items": 0
       },
       "https://www.cbs.nl/en-gb/publication-calendar": {
-        "attempts": 2,
-        "successes": 2,
+        "attempts": 3,
+        "successes": 3,
         "failures": 0,
         "items": 0
       }
     },
-    "last_success": "2026-03-10T04:46:37.225526",
+    "last_success": "2026-03-10T04:59:31.728522",
     "last_failure": ""
   },
   "Statistics Finland Signals": {
     "pages": {
       "https://stat.fi/en/statistics": {
-        "attempts": 2,
+        "attempts": 3,
         "successes": 0,
-        "failures": 2,
+        "failures": 3,
         "items": 0
       },
       "https://stat.fi/en/news/Schedule-for-statistical-releases-in-2026-has-been-published": {
-        "attempts": 2,
-        "successes": 2,
+        "attempts": 3,
+        "successes": 3,
         "failures": 0,
         "items": 12
       },
       "https://stat.fi/org/periaatteet/index_en.html/publication-principles-for-statistics": {
-        "attempts": 2,
-        "successes": 2,
+        "attempts": 3,
+        "successes": 3,
         "failures": 0,
         "items": 8
       }
     },
-    "last_success": "2026-03-10T04:46:36.840905",
-    "last_failure": "2026-03-10T04:46:36.701587"
+    "last_success": "2026-03-10T04:59:31.009997",
+    "last_failure": "2026-03-10T04:59:30.113003"
   },
   "GDELT Registry and Data Access Signals": {
     "pages": {
       "https://api.gdeltproject.org/api/v2/doc/doc": {
-        "attempts": 2,
+        "attempts": 3,
         "successes": 0,
-        "failures": 2,
+        "failures": 3,
         "items": 0
       }
     },
     "last_success": "",
-    "last_failure": "2026-03-10T04:46:36.633030"
+    "last_failure": "2026-03-10T04:59:30.025602"
   },
   "Human Mortality Database Events": {
     "pages": {
       "https://www.mortality.org/News/Events": {
-        "attempts": 2,
+        "attempts": 3,
         "successes": 0,
-        "failures": 2,
+        "failures": 3,
         "items": 0
       }
     },
     "last_success": "",
-    "last_failure": "2026-03-10T04:46:36.841526"
+    "last_failure": "2026-03-10T04:59:30.119610"
   },
   "DHS Program News": {
     "pages": {
       "https://dhsprogram.com/rss/news.cfm": {
-        "attempts": 2,
+        "attempts": 3,
         "successes": 0,
-        "failures": 2,
+        "failures": 3,
         "items": 0
       }
     },
     "last_success": "",
-    "last_failure": "2026-03-10T04:46:37.378553"
+    "last_failure": "2026-03-10T04:59:54.404900"
   },
   "Eurostat Dataset Update RSS": {
     "pages": {
       "https://ec.europa.eu/eurostat/api/dissemination/catalogue/rss/en/statistics-update.rss": {
-        "attempts": 2,
-        "successes": 2,
+        "attempts": 3,
+        "successes": 3,
         "failures": 0,
-        "items": 200
+        "items": 217
       }
     },
-    "last_success": "2026-03-10T04:46:41.183414",
+    "last_success": "2026-03-10T04:59:33.610054",
     "last_failure": ""
   }
 }
