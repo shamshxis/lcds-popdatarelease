@@ -1,8 +1,5 @@
 {
   "NRS Scotland": {},
-  "Statistics Japan (e-Stat)": {
-    "0f427f625bdb298bf00c722ef0379e10": true
-  },
   "ONS Upcoming Releases": {
     "996a18cabde123acc3afee4142fcd3a2": true,
     "1c0f3c5a3076814dc7476a4b3662c601": true,
@@ -35,6 +32,7 @@
     "6e80d9ac94f194d0fe305495a8394241": true,
     "b9a5268ecfe64e0de57367f67e838194": true
   },
+  "UN Population Division": {},
   "KOSTAT South Korea": {
     "243e58ba2a56fc59941c11471912bdc3": true,
     "72ec5898cf17fdfbee3c763b33e024ef": true,
@@ -78,9 +76,11 @@
     "ebeca3a887e6f5a5a17b325bcb95a95a": true,
     "a96c07dab3d2f6e3aca388c9e0a2762f": true
   },
-  "UN Population Division": {},
   "DHS Program News": {
     "2ea1c0ea94744b91636e1b2c1c37b26e": true
+  },
+  "Statistics Japan (e-Stat)": {
+    "0f427f625bdb298bf00c722ef0379e10": true
   },
   "US Census Releases": {
     "2a4e08014935420351200fe18aded82a": true,

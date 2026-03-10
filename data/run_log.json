@@ -1,12 +1,8 @@
 {
-  "generated_at": "2026-03-10T07:05:05.988079",
+  "generated_at": "2026-03-10T07:14:02.750734",
   "logs": [
     {
       "source": "NRS Scotland",
-      "items": 0
-    },
-    {
-      "source": "Statistics Japan (e-Stat)",
       "items": 0
     },
     {
@@ -14,15 +10,19 @@
       "items": 0
     },
     {
-      "source": "KOSTAT South Korea",
-      "items": 0
-    },
-    {
       "source": "UN Population Division",
       "items": 0
     },
     {
+      "source": "KOSTAT South Korea",
+      "items": 0
+    },
+    {
       "source": "DHS Program News",
+      "items": 0
+    },
+    {
+      "source": "Statistics Japan (e-Stat)",
       "items": 0
     },
     {
@@ -58,6 +58,6 @@
     "academic_matches": 0,
     "next_14_days": 0,
     "fallback_hits": 0,
-    "generated_at": "2026-03-10T07:05:05.988101"
+    "generated_at": "2026-03-10T07:14:02.750753"
   }
 }
