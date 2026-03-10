@@ -1,6 +1,7 @@
 import json
 import pandas as pd
 import streamlit as st
+import plotly.express as px
 from pathlib import Path
 from datetime import datetime
 
@@ -12,14 +13,15 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS stripped down to respect Streamlit's native Light/Dark Mode
 st.markdown("""
 <style>
     .main { padding: 1rem 2rem; }
     h1, h2, h3, h4, h5, h6 { font-family: 'Inter', 'Helvetica Neue', sans-serif; }
     .stDataFrame { border: none !important; }
-    /* Enhance metric text slightly for readability in both modes */
-    div[data-testid="stMetricValue"] { font-weight: 700; }
+    div[data-testid="stMetricValue"] { font-weight: 700; color: #0f172a; }
+    .stTabs [data-baseweb="tab-list"] { gap: 2rem; }
+    .stTabs [data-baseweb="tab"] { height: 50px; white-space: pre-wrap; background-color: transparent; border-radius: 4px 4px 0 0; gap: 1px; padding-top: 10px; padding-bottom: 10px; }
+    .stTabs [aria-selected="true"] { background-color: #f8fafc; border-bottom: 2px solid #3b82f6; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -55,22 +57,13 @@ def load_data():
     }
     df["Status_Badge"] = df["status"].map(status_icons).fillna(df["status"])
     
-    # Process Title: Add Academic Match Badge
     df["Title"] = df["dataset_title"].apply(lambda x: str(x).strip())
     df["Title"] = df.apply(lambda r: f"🧬 {r['Title']}" if r.get("academic_match", 0) == 1 else r['Title'], axis=1)
     
-    # Process Abstract: Clean up redundancies and provide context
     def refine_abstract(row):
-        title = str(row['dataset_title']).strip()
-        summary = str(row.get('summary', '')).strip()
-        
-        # If the summary is just repeating the title, strip it out for cleaner reading
-        if summary.lower().startswith(title.lower()):
-            summary = summary[len(title):].strip(" -:|")
-            
-        if not summary or len(summary) < 5:
-            return "No additional abstract provided."
-        return summary
+        t, s = str(row['dataset_title']).strip(), str(row.get('summary', '')).strip()
+        if s.lower().startswith(t.lower()): s = s[len(t):].strip(" -:|")
+        return s if s and len(s) >= 5 else "No additional abstract provided."
 
     df["Abstract"] = df.apply(refine_abstract, axis=1)
     df["Date"] = df["display_date"]
@@ -129,15 +122,58 @@ if search_q:
     )
     view = view[mask]
 
+# --- VISUALIZATIONS ---
+if not view.empty:
+    with st.expander("📊 View Intelligence Plots", expanded=True):
+        c1, c2, c3 = st.columns([2, 1, 1])
+        
+        with c1:
+            # Scatter Timeline of upcoming releases
+            time_df = view.dropna(subset=["dt"]).copy()
+            # Filter to show only dates within the next 90 days for clarity
+            time_df = time_df[(time_df['dt'] >= pd.Timestamp.now()) & (time_df['dt'] <= pd.Timestamp.now() + pd.Timedelta(days=90))]
+            if not time_df.empty:
+                fig_timeline = px.scatter(
+                    time_df, x="dt", y="source_group", color="theme_primary", 
+                    hover_data=["Title", "Date"],
+                    title="Release Horizon (Next 90 Days)",
+                    labels={"dt": "Release Date", "source_group": "Region"}
+                )
+                fig_timeline.update_traces(marker=dict(size=12, opacity=0.8, line=dict(width=1, color='DarkSlateGrey')))
+                fig_timeline.update_layout(margin=dict(l=20, r=20, t=40, b=20), showlegend=False)
+                st.plotly_chart(fig_timeline, use_container_width=True)
+            else:
+                st.info("No upcoming dates in the next 90 days for current filter.")
+
+        with c2:
+            # Thematic Distribution Donut
+            theme_counts = view["theme_primary"].value_counts().reset_index()
+            theme_counts.columns = ["Theme", "Count"]
+            fig_donut = px.pie(
+                theme_counts, values='Count', names='Theme', hole=0.6,
+                title="Thematic Focus"
+            )
+            fig_donut.update_traces(textposition='inside', textinfo='percent')
+            fig_donut.update_layout(margin=dict(l=20, r=20, t=40, b=20), showlegend=False)
+            st.plotly_chart(fig_donut, use_container_width=True)
+
+        with c3:
+            # Top Sources Bar Chart
+            source_counts = view["source"].value_counts().head(5).reset_index()
+            source_counts.columns = ["Source", "Count"]
+            fig_bar = px.bar(
+                source_counts, x="Count", y="Source", orientation='h',
+                title="Top Publishing Sources"
+            )
+            fig_bar.update_layout(yaxis={'categoryorder': 'total ascending'}, margin=dict(l=20, r=20, t=40, b=20))
+            st.plotly_chart(fig_bar, use_container_width=True)
+
 # --- RENDER TABS ---
 def render_table(data_view):
     display_months = sorted(data_view["Month"].unique(), key=lambda m: datetime.max if m == "Unscheduled / TBC" else datetime.strptime(m, "%B %Y"))
-    
     for month in display_months:
         st.subheader(f"🗓️ {month}")
         month_data = data_view[data_view["Month"] == month]
-        
-        # Explicitly order the refined columns
         table_data = month_data[["source", "Status_Badge", "Date", "theme_primary", "Title", "Abstract", "url"]].copy()
         
         st.dataframe(
@@ -163,22 +199,16 @@ else:
         st.caption("Urgent updates, red flags, and releases scheduled in the next 14 days.")
         view["executive_flag"] = pd.to_numeric(view["executive_flag"], errors="coerce").fillna(0)
         view["days_to_event"] = pd.to_numeric(view["days_to_event"], errors="coerce").fillna(999)
-        
         exec_view = view[(view["executive_flag"] == 1) | ((view["days_to_event"] >= 0) & (view["days_to_event"] <= 14))]
-        if exec_view.empty: 
-            st.info("No immediate executive alerts.")
-        else: 
-            render_table(exec_view)
+        if exec_view.empty: st.info("No immediate executive alerts.")
+        else: render_table(exec_view)
             
     with tab2:
         st.caption("Datasets automatically matched to your team via ORCID Publication History (marked with 🧬).")
         view["academic_match"] = pd.to_numeric(view.get("academic_match", pd.Series([0])), errors="coerce").fillna(0)
-        
         acad_view = view[view["academic_match"] == 1]
-        if acad_view.empty: 
-            st.info("No specific matches found against the ORCID academic profile.")
-        else: 
-            render_table(acad_view)
+        if acad_view.empty: st.info("No specific matches found against the ORCID academic profile.")
+        else: render_table(acad_view)
 
     with tab3:
         st.caption("Comprehensive view of all holistic data sources across all dates.")
