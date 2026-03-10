@@ -1,12 +1,10 @@
 settings:
-  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
   timeout: 30
-  max_workers: 16
-  page_workers: 4
+  max_workers: 12
+  page_workers: 3
   max_abs_days: 730
 
 sources:
-  # --- UK & SCOTLAND ---
   - name: "ONS Upcoming Releases"
     group: "UK Official"
     source_type: "Official"
@@ -24,7 +22,6 @@ sources:
     keywords_any: ["population", "birth", "death", "migration", "household", "names", "surnames", "demographic"]
     priority_weight: 20
 
-  # --- USA ---
   - name: "US Census Releases"
     group: "US Official"
     source_type: "Official"
@@ -33,7 +30,6 @@ sources:
     keywords_any: ["population", "census", "migration", "household", "microdata", "demographic", "survey"]
     priority_weight: 18
 
-  # --- ASIA ---
   - name: "Statistics Japan (e-Stat)"
     group: "Japan Official"
     source_type: "Official"
@@ -59,7 +55,6 @@ sources:
     keywords_any: ["population", "demographic", "birth", "death", "migration", "household", "yearbook"]
     priority_weight: 20
 
-  # --- EUROSTAT ---
   - name: "Eurostat Dataset Updates"
     group: "EU Official"
     source_type: "Official"
@@ -78,7 +73,6 @@ sources:
     keywords_any: ["population", "demography", "migration", "asylum", "fertility", "mortality", "health", "census", "marriages", "divorces", "life expectancy", "EUROPOP"]
     priority_weight: 25
 
-  # --- GLOBAL & UN ---
   - name: "UN Population Division"
     group: "Global / UN"
     source_type: "Signal"
@@ -95,7 +89,7 @@ sources:
     max_items: 50
     keywords_any: ["survey", "demographic", "population", "health", "mortality", "dataset", "available"]
     priority_weight: 15
-    
+
   - name: "CBS Netherlands"
     group: "EU Official"
     source_type: "Official"
@@ -111,3 +105,19 @@ sources:
     parser: "generic_calendar"
     keywords_any: ["population", "migration", "birth", "death", "fertility", "health", "asylum"]
     priority_weight: 12
+
+  - name: "UK Biobank News"
+    group: "Biobanks"
+    source_type: "Registry"
+    url: "https://www.ukbiobank.ac.uk/explore-your-participation/news-and-events"
+    parser: "generic_calendar"
+    keywords_any: ["data release", "cohort", "genomic", "health data", "update", "researchers", "dataset"]
+    priority_weight: 25
+
+  - name: "Our Future Health UK"
+    group: "Biobanks"
+    source_type: "Registry"
+    url: "https://ourfuturehealth.org.uk/news/"
+    parser: "generic_calendar"
+    keywords_any: ["data", "release", "research", "cohort", "blood", "health"]
+    priority_weight: 20
