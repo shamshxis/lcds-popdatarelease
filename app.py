@@ -13,15 +13,57 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Custom CSS for Dark/Light Mode Adaptability & Floating Footer
 st.markdown("""
 <style>
-    .main { padding: 1rem 2rem; }
+    /* Typography & General Layout */
+    .main { padding: 1rem 2rem 5rem 2rem; } /* Extra padding at bottom for footer */
     h1, h2, h3, h4, h5, h6 { font-family: 'Inter', 'Helvetica Neue', sans-serif; }
+    
+    /* Table Styling */
     .stDataFrame { border: none !important; }
-    div[data-testid="stMetricValue"] { font-weight: 700; color: #0f172a; }
+    
+    /* Metrics Optimization for both modes */
+    div[data-testid="stMetricValue"] { font-weight: 700; }
+    
+    /* Tab Styling - Transparent to adapt to Light/Dark Mode automatically */
     .stTabs [data-baseweb="tab-list"] { gap: 2rem; }
-    .stTabs [data-baseweb="tab"] { height: 50px; white-space: pre-wrap; background-color: transparent; border-radius: 4px 4px 0 0; gap: 1px; padding-top: 10px; padding-bottom: 10px; }
-    .stTabs [aria-selected="true"] { background-color: #f8fafc; border-bottom: 2px solid #3b82f6; }
+    .stTabs [data-baseweb="tab"] { 
+        height: 50px; 
+        white-space: pre-wrap; 
+        background-color: transparent; 
+        border-radius: 4px 4px 0 0; 
+        gap: 1px; 
+        padding-top: 10px; 
+        padding-bottom: 10px; 
+    }
+    
+    /* Oxford Floating Footer */
+    .footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: #002147; /* Oxford Blue */
+        color: #FFFFFF; /* White Text */
+        text-align: center;
+        padding: 12px 0;
+        font-family: 'Inter', 'Helvetica Neue', sans-serif;
+        font-size: 14px;
+        z-index: 9999;
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+    }
+    .footer a {
+        color: #FFD700; /* Yellow Hyperlink */
+        text-decoration: none;
+        font-weight: 600;
+    }
+    .footer a:hover {
+        text-decoration: underline;
+    }
+    
+    /* Hide default Streamlit footer */
+    footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -60,9 +102,12 @@ def load_data():
     df["Title"] = df["dataset_title"].apply(lambda x: str(x).strip())
     df["Title"] = df.apply(lambda r: f"🧬 {r['Title']}" if r.get("academic_match", 0) == 1 else r['Title'], axis=1)
     
+    # Abstract refinement process
     def refine_abstract(row):
         t, s = str(row['dataset_title']).strip(), str(row.get('summary', '')).strip()
-        if s.lower().startswith(t.lower()): s = s[len(t):].strip(" -:|")
+        # Remove title repetition from abstract
+        if s.lower().startswith(t.lower()): 
+            s = s[len(t):].strip(" -:|")
         return s if s and len(s) >= 5 else "No additional abstract provided."
 
     df["Abstract"] = df.apply(refine_abstract, axis=1)
@@ -128,9 +173,7 @@ if not view.empty:
         c1, c2, c3 = st.columns([2, 1, 1])
         
         with c1:
-            # Scatter Timeline of upcoming releases
             time_df = view.dropna(subset=["dt"]).copy()
-            # Filter to show only dates within the next 90 days for clarity
             time_df = time_df[(time_df['dt'] >= pd.Timestamp.now()) & (time_df['dt'] <= pd.Timestamp.now() + pd.Timedelta(days=90))]
             if not time_df.empty:
                 fig_timeline = px.scatter(
@@ -146,7 +189,6 @@ if not view.empty:
                 st.info("No upcoming dates in the next 90 days for current filter.")
 
         with c2:
-            # Thematic Distribution Donut
             theme_counts = view["theme_primary"].value_counts().reset_index()
             theme_counts.columns = ["Theme", "Count"]
             fig_donut = px.pie(
@@ -158,7 +200,6 @@ if not view.empty:
             st.plotly_chart(fig_donut, use_container_width=True)
 
         with c3:
-            # Top Sources Bar Chart
             source_counts = view["source"].value_counts().head(5).reset_index()
             source_counts.columns = ["Source", "Count"]
             fig_bar = px.bar(
@@ -222,3 +263,11 @@ st.download_button(
     f"lcds_executive_watch_{datetime.now().strftime('%Y%m%d')}.csv",
     "text/csv"
 )
+
+# --- FOOTER ---
+st.markdown("""
+    <div class="footer">
+        © Leverhulme Centre for Demographic Science 2026 | University of Oxford <br>
+        <a href="https://demography.ox.ac.uk" target="_blank">demography.ox.ac.uk</a>
+    </div>
+""", unsafe_allow_html=True)
