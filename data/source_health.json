@@ -26,13 +26,13 @@
         "items": 11
       },
       "https://www.ons.gov.uk/releasecalendar?release-type=type-upcoming": {
-        "attempts": 6,
-        "successes": 6,
+        "attempts": 7,
+        "successes": 7,
         "failures": 0,
-        "items": 29
+        "items": 48
       }
     },
-    "last_success": "2026-03-10T06:43:59.736296",
+    "last_success": "2026-03-10T06:54:47.925232",
     "last_failure": ""
   },
   "Statistics Norway Upcoming Releases": {
@@ -62,10 +62,10 @@
   "US Census Releases": {
     "pages": {
       "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html": {
-        "attempts": 6,
-        "successes": 6,
+        "attempts": 7,
+        "successes": 7,
         "failures": 0,
-        "items": 641
+        "items": 737
       },
       "https://www.census.gov/newsroom.html": {
         "attempts": 5,
@@ -80,7 +80,7 @@
         "items": 0
       }
     },
-    "last_success": "2026-03-10T06:43:59.664221",
+    "last_success": "2026-03-10T06:54:52.680854",
     "last_failure": ""
   },
   "Finngen Signals": {
@@ -104,9 +104,9 @@
   "Eurostat Release Calendar": {
     "pages": {
       "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_EN.ics": {
-        "attempts": 5,
+        "attempts": 6,
         "successes": 0,
-        "failures": 5,
+        "failures": 6,
         "items": 0
       },
       "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml": {
@@ -123,7 +123,7 @@
       }
     },
     "last_success": "2026-03-10T06:29:36.528878",
-    "last_failure": "2026-03-10T06:29:35.766969"
+    "last_failure": "2026-03-10T06:54:46.204440"
   },
   "Statistics Sweden Publishing Calendar": {
     "pages": {
@@ -224,14 +224,14 @@
   "DHS Program News": {
     "pages": {
       "https://dhsprogram.com/rss/news.cfm": {
-        "attempts": 6,
+        "attempts": 7,
         "successes": 0,
-        "failures": 6,
+        "failures": 7,
         "items": 0
       }
     },
     "last_success": "",
-    "last_failure": "2026-03-10T06:43:59.857035"
+    "last_failure": "2026-03-10T06:54:46.614664"
   },
   "Eurostat Dataset Update RSS": {
     "pages": {
@@ -248,38 +248,38 @@
   "NCHS / CDC Health Data": {
     "pages": {
       "https://www.cdc.gov/nchs/rss/nchs.xml": {
-        "attempts": 1,
+        "attempts": 2,
         "successes": 0,
-        "failures": 1,
+        "failures": 2,
         "items": 0
       }
     },
     "last_success": "",
-    "last_failure": "2026-03-10T06:43:59.442509"
+    "last_failure": "2026-03-10T06:54:45.798825"
   },
   "UN Population Division": {
     "pages": {
       "https://www.un.org/development/desa/pd/feed": {
-        "attempts": 1,
+        "attempts": 2,
         "successes": 0,
-        "failures": 1,
+        "failures": 2,
         "items": 0
       }
     },
     "last_success": "",
-    "last_failure": "2026-03-10T06:43:59.484207"
+    "last_failure": "2026-03-10T06:54:46.476834"
   },
   "All of Us Research Program": {
     "pages": {
       "https://allofus.nih.gov/news-events-and-media/announcements": {
-        "attempts": 1,
+        "attempts": 2,
         "successes": 0,
-        "failures": 1,
+        "failures": 2,
         "items": 0
       }
     },
     "last_success": "",
-    "last_failure": "2026-03-10T06:43:59.613171"
+    "last_failure": "2026-03-10T06:54:46.161866"
   },
   "NFHS India (IIPS)": {
     "pages": {
@@ -308,90 +308,138 @@
   "Census of India": {
     "pages": {
       "https://censusindia.gov.in/census.website/": {
-        "attempts": 1,
+        "attempts": 2,
         "successes": 0,
-        "failures": 1,
+        "failures": 2,
         "items": 0
       }
     },
     "last_success": "",
-    "last_failure": "2026-03-10T06:44:00.250760"
+    "last_failure": "2026-03-10T06:54:46.591167"
   },
   "Statistics Norway": {
     "pages": {
       "https://www.ssb.no/en/rss": {
-        "attempts": 1,
-        "successes": 1,
+        "attempts": 2,
+        "successes": 2,
         "failures": 0,
         "items": 0
       }
     },
-    "last_success": "2026-03-10T06:44:00.286575",
+    "last_success": "2026-03-10T06:54:46.935950",
     "last_failure": ""
   },
   "FinData News": {
     "pages": {
       "https://findata.fi/en/feed/": {
-        "attempts": 1,
-        "successes": 1,
+        "attempts": 2,
+        "successes": 2,
         "failures": 0,
         "items": 0
       }
     },
-    "last_success": "2026-03-10T06:44:00.548212",
+    "last_success": "2026-03-10T06:54:48.045993",
     "last_failure": ""
   },
   "MOSPI India": {
     "pages": {
       "https://mospi.gov.in/": {
-        "attempts": 1,
-        "successes": 1,
+        "attempts": 2,
+        "successes": 2,
         "failures": 0,
         "items": 0
       }
     },
-    "last_success": "2026-03-10T06:44:00.679911",
+    "last_success": "2026-03-10T06:54:46.768061",
     "last_failure": ""
   },
   "Human Mortality Database": {
     "pages": {
       "https://www.mortality.org/News/Events": {
-        "attempts": 1,
+        "attempts": 2,
         "successes": 0,
-        "failures": 1,
+        "failures": 2,
         "items": 0
       }
     },
     "last_success": "",
-    "last_failure": "2026-03-10T06:44:00.914145"
+    "last_failure": "2026-03-10T06:54:47.742392"
   },
   "UK Biobank News": {
     "pages": {
       "https://www.ukbiobank.ac.uk/explore-your-participation/news-and-events": {
-        "attempts": 1,
+        "attempts": 2,
         "successes": 0,
-        "failures": 1,
+        "failures": 2,
         "items": 0
       }
     },
     "last_success": "",
-    "last_failure": "2026-03-10T06:44:01.145328"
+    "last_failure": "2026-03-10T06:54:46.482953"
   },
   "Our Future Health UK": {
     "pages": {
       "https://ourfuturehealth.org.uk/news/": {
-        "attempts": 1,
-        "successes": 1,
+        "attempts": 2,
+        "successes": 2,
         "failures": 0,
-        "items": 44
+        "items": 83
       }
     },
-    "last_success": "2026-03-10T06:44:01.656728",
+    "last_success": "2026-03-10T06:54:52.322001",
     "last_failure": ""
   },
   "GDELT Demography & Cohorts": {
     "pages": {
       "https://api.gdeltproject.org/api/v2/doc/doc": {
+        "attempts": 2,
+        "successes": 0,
+        "failures": 2,
+        "items": 0
+      }
+    },
+    "last_success": "",
+    "last_failure": "2026-03-10T06:54:46.881112"
+  },
+  "Statistics Sweden": {
+    "pages": {
+      "https://www.scb.se/en/finding-statistics/publishing-calendar/": {
+        "attempts": 2,
+        "successes": 2,
+        "failures": 0,
+        "items": 17
+      }
+    },
+    "last_success": "2026-03-10T06:54:51.442029",
+    "last_failure": ""
+  },
+  "CBS Netherlands": {
+    "pages": {
+      "https://www.cbs.nl/en-gb/publication-calendar": {
+        "attempts": 2,
+        "successes": 2,
+        "failures": 0,
+        "items": 65
+      }
+    },
+    "last_success": "2026-03-10T06:54:54.083329",
+    "last_failure": ""
+  },
+  "Eurostat Dataset Updates": {
+    "pages": {
+      "https://ec.europa.eu/eurostat/api/dissemination/catalogue/rss/en/statistics-update.rss": {
+        "attempts": 2,
+        "successes": 2,
+        "failures": 0,
+        "items": 34
+      }
+    },
+    "last_success": "2026-03-10T06:54:53.397007",
+    "last_failure": ""
+  },
+  "NRS Scotland": {
+    "pages": {
+      "https://www.nrscotland.gov.uk/statistics-and-data/statistics/forthcoming-publications": {
         "attempts": 1,
         "successes": 0,
         "failures": 1,
@@ -399,42 +447,48 @@
       }
     },
     "last_success": "",
-    "last_failure": "2026-03-10T06:44:02.800258"
+    "last_failure": "2026-03-10T06:54:46.196100"
   },
-  "Statistics Sweden": {
+  "Statistics Japan (e-Stat)": {
     "pages": {
-      "https://www.scb.se/en/finding-statistics/publishing-calendar/": {
+      "https://www.stat.go.jp/english/info/calendar/index.html": {
+        "attempts": 1,
+        "successes": 0,
+        "failures": 1,
+        "items": 0
+      },
+      "https://www.stat.go.jp/english/info/news/": {
         "attempts": 1,
         "successes": 1,
         "failures": 0,
-        "items": 11
+        "items": 3
       }
     },
-    "last_success": "2026-03-10T06:44:02.816060",
+    "last_success": "2026-03-10T06:54:47.000366",
+    "last_failure": "2026-03-10T06:54:46.973608"
+  },
+  "KOSTAT South Korea": {
+    "pages": {
+      "https://kostat.go.kr/anse/": {
+        "attempts": 1,
+        "successes": 1,
+        "failures": 0,
+        "items": 123
+      }
+    },
+    "last_success": "2026-03-10T06:54:56.491481",
     "last_failure": ""
   },
-  "CBS Netherlands": {
+  "NBS China": {
     "pages": {
-      "https://www.cbs.nl/en-gb/publication-calendar": {
+      "http://www.stats.gov.cn/english/PressRelease/": {
         "attempts": 1,
         "successes": 1,
         "failures": 0,
-        "items": 37
+        "items": 1
       }
     },
-    "last_success": "2026-03-10T06:44:03.159949",
-    "last_failure": ""
-  },
-  "Eurostat Dataset Updates": {
-    "pages": {
-      "https://ec.europa.eu/eurostat/api/dissemination/catalogue/rss/en/statistics-update.rss": {
-        "attempts": 1,
-        "successes": 1,
-        "failures": 0,
-        "items": 18
-      }
-    },
-    "last_success": "2026-03-10T06:44:07.926594",
+    "last_success": "2026-03-10T06:54:58.377762",
     "last_failure": ""
   }
 }

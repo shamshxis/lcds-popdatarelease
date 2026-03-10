@@ -1,12 +1,8 @@
 {
-  "generated_at": "2026-03-10T06:44:07.954378",
+  "generated_at": "2026-03-10T06:54:58.403566",
   "logs": [
     {
       "source": "NCHS / CDC Health Data",
-      "items": 0
-    },
-    {
-      "source": "UN Population Division",
       "items": 0
     },
     {
@@ -14,43 +10,15 @@
       "items": 0
     },
     {
-      "source": "US Census Releases",
-      "items": 124
-    },
-    {
-      "source": "NFHS India (IIPS)",
+      "source": "NRS Scotland",
       "items": 0
     },
     {
-      "source": "ONS Upcoming Releases",
-      "items": 10
-    },
-    {
-      "source": "DHS Program News",
+      "source": "Eurostat Release Calendar",
       "items": 0
     },
     {
-      "source": "Statistics Finland",
-      "items": 0
-    },
-    {
-      "source": "Census of India",
-      "items": 0
-    },
-    {
-      "source": "Statistics Norway",
-      "items": 0
-    },
-    {
-      "source": "FinData News",
-      "items": 0
-    },
-    {
-      "source": "MOSPI India",
-      "items": 0
-    },
-    {
-      "source": "Human Mortality Database",
+      "source": "UN Population Division",
       "items": 0
     },
     {
@@ -58,34 +26,78 @@
       "items": 0
     },
     {
-      "source": "Our Future Health UK",
-      "items": 44
+      "source": "Census of India",
+      "items": 0
+    },
+    {
+      "source": "DHS Program News",
+      "items": 0
+    },
+    {
+      "source": "MOSPI India",
+      "items": 0
     },
     {
       "source": "GDELT Demography & Cohorts",
       "items": 0
     },
     {
-      "source": "Statistics Sweden",
-      "items": 11
+      "source": "Statistics Norway",
+      "items": 0
     },
     {
-      "source": "CBS Netherlands",
-      "items": 37
+      "source": "Statistics Japan (e-Stat)",
+      "items": 3
+    },
+    {
+      "source": "Human Mortality Database",
+      "items": 0
+    },
+    {
+      "source": "ONS Upcoming Releases",
+      "items": 19
+    },
+    {
+      "source": "FinData News",
+      "items": 0
+    },
+    {
+      "source": "Statistics Sweden",
+      "items": 6
+    },
+    {
+      "source": "Our Future Health UK",
+      "items": 39
+    },
+    {
+      "source": "US Census Releases",
+      "items": 96
     },
     {
       "source": "Eurostat Dataset Updates",
-      "items": 18
+      "items": 16
+    },
+    {
+      "source": "CBS Netherlands",
+      "items": 28
+    },
+    {
+      "source": "KOSTAT South Korea",
+      "items": 123
+    },
+    {
+      "source": "NBS China",
+      "items": 1
     }
   ],
   "metrics": {
-    "records": 226,
-    "upcoming": 154,
-    "red_flags": 0,
+    "records": 232,
+    "upcoming": 131,
+    "red_flags": 1,
     "deletions": 0,
-    "academic_matches": 26,
-    "next_14_days": 14,
-    "fallback_hits": 0,
-    "generated_at": "2026-03-10T06:44:07.955243"
+    "academic_matches": 24,
+    "next_14_days": 9,
+    "fallback_hits": 1,
+    "generated_at": "2026-03-10T06:54:58.404252"
   }
 }
