@@ -71,6 +71,7 @@ class DummyResponse:
         self.text = text
         self.status_code = status_code
     def raise_for_status(self): pass
+    def json(self): return json.loads(self.text)
 
 @dataclass
 class ParsedItem:
@@ -149,32 +150,43 @@ class LCDSDataEngine:
     def fetch(self, url: str, source: dict) -> requests.Response:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Connection": "keep-alive",
-            "Upgrade-Insecure-Requests": "1"
         }
         headers.update(source.get("headers", {}))
         
         try:
-            resp = self.session.get(url, headers=headers, timeout=self.timeout)
-            if "Just a moment..." in resp.text or "cloudflare" in resp.text.lower():
-                resp.status_code = 403 
+            resp = self.session.get(url, headers=headers, timeout=self.timeout, verify=False)
+            if resp.status_code in [403, 404, 406] or "cloudflare" in resp.text.lower() or "Just a moment..." in resp.text:
+                raise requests.exceptions.HTTPError(response=resp)
             resp.raise_for_status()
             return resp
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code in [403, 404, 406]:
-                try:
-                    req = urllib.request.Request(url, headers={"User-Agent": headers["User-Agent"]})
-                    with urllib.request.urlopen(req, timeout=self.timeout) as response:
-                        return DummyResponse(response.read().decode('utf-8', errors='ignore'))
-                except Exception as ex:
-                    print(f"❌ [PERMA-BLOCKED/DEAD] {url}")
+        except requests.exceptions.RequestException as e:
+            print(f"⚠️ [WAF BLOCKED] Rerouting {url} through public proxy...")
+            try:
+                proxy_url = f"https://api.allorigins.win/get?url={quote_plus(url)}"
+                proxy_resp = self.session.get(proxy_url, timeout=self.timeout)
+                if proxy_resp.status_code == 200:
+                    data = proxy_resp.json()
+                    if data and data.get("contents"):
+                        return DummyResponse(data["contents"])
+            except Exception as proxy_e:
+                pass
+            print(f"❌ [PERMA-BLOCKED/DEAD] {url}")
             raise e
 
     def strip_html_noise(self, soup: BeautifulSoup) -> BeautifulSoup:
-        for tag in soup(["nav", "footer", "header", "aside", "style", "script", "button"]):
+        """Aggressive pruning of headers, footers, and mega-menus to prevent scraping 'Jobs' and 'Privacy' links."""
+        for tag in soup(["nav", "footer", "header", "aside", "style", "script", "button", "svg", "form"]):
+            tag.decompose()
+            
+        def is_junk_class(classes):
+            if isinstance(classes, list): classes = " ".join(classes)
+            if not classes: return False
+            c = classes.lower()
+            return any(w in c for w in ["menu", "footer", "header", "sidebar", "cookie", "banner", "widget", "pagination", "breadcrumbs", "nav-container"])
+
+        for tag in soup.find_all(["div", "section", "ul"], class_=is_junk_class):
             tag.decompose()
         return soup
 
@@ -242,7 +254,8 @@ class LCDSDataEngine:
             "contact us", "privacy", "cookie", "main contents start here", 
             "top of section", "skip to", "clear all", "search results", 
             "data.census.gov", "incremental developmental", "---", "about us",
-            "news and press releases", "finding statistics", "menu"
+            "news and press releases", "finding statistics", "menu", "read more",
+            "view article", "click here", "find out more", "share this", "home"
         }
         
         if t in exact_matches: return True
@@ -254,10 +267,28 @@ class LCDSDataEngine:
         exclude_kw = [x.lower() for x in (source.get("exclude_keywords") or [])]
         if exclude_kw and any(x in combined for x in exclude_kw): return False
         
-        hard_rejects = ["economic census", "turnover", "producer price", "consumer price", "cpi", "inflation", "gdp", "gross domestic product", "trade in goods", "export", "import", "retail sales", "crop", "livestock", "agriculture", "fishery", "forestry", "manufacturing", "industrial production", "financial market", "stock exchange", "interest rate", "business insights", "company mergers", "acquisitions", "energy consumption", "electricity", "emissions", "weather", "precipitation", "labour cost index", "wage index", "price index", "construction index", "services index", "balance of payments", "bovine", "cattle", "animal", "pig ", "poultry", "economic growth", "ict usage", "enterprises", "spending", "consumer confidence", "producer confidence"]
+        hard_rejects = [
+            "economic census", "turnover", "producer price", "consumer price", "cpi", "inflation", 
+            "gdp", "gross domestic product", "trade in goods", "export", "import", "retail sales", 
+            "crop", "livestock", "agriculture", "fishery", "forestry", "manufacturing", 
+            "industrial production", "financial market", "stock exchange", "interest rate", 
+            "business insights", "company mergers", "acquisitions", "energy consumption", 
+            "electricity", "emissions", "weather", "precipitation", "labour cost index", 
+            "wage index", "price index", "construction index", "services index", "balance of payments", 
+            "bovine", "cattle", "animal", "pig ", "poultry", "economic growth", "ict usage", "enterprises", 
+            "spending", "consumer confidence", "producer confidence", "board of trustees", "governance", 
+            "vacancies", "careers", "fundraising", "the access board", "the trading board"
+        ]
         if any(x in combined for x in hard_rejects): return False
 
-        strong_demographic = ["population estimates", "birth statistics", "fertility", "mortality", "life expectancy", "census results", "international migration", "demographic trends", "eu population", "babies' first names", "surnames in birth", "population projections", "death registrations", "annual births data", "baby names", "europop"]
+        strong_demographic = [
+            "population estimates", "birth statistics", "fertility", "mortality", "life expectancy", 
+            "census results", "international migration", "demographic trends", "eu population", 
+            "babies' first names", "surnames in birth", "population projections", "death registrations", 
+            "annual births data", "baby names", "europop", "data release", "new data available", 
+            "cohort data", "researcher workbench", "whole genome sequencing", "genomic data", 
+            "health records", "biobank data"
+        ]
         if any(x in title.lower() for x in strong_demographic): return True
 
         context = f"{title} {summary} {source['name']}"
@@ -338,7 +369,6 @@ class LCDSDataEngine:
             url_parts[4] = urlencode(query, doseq=True)
             try: 
                 resp = self.fetch(urlunparse(url_parts), source)
-                if getattr(resp, 'status_code', 0) != 200: continue
             except: continue
             
             soup = self.strip_html_noise(BeautifulSoup(resp.text, "html.parser"))
@@ -404,9 +434,7 @@ class LCDSDataEngine:
             root = ET.fromstring(resp.text)
             items = root.findall(".//item") + root.findall(".//{http://www.w3.org/2005/Atom}entry")
         except ET.ParseError:
-            # Fallback to BeautifulSoup if WAF block page is passed as XML
             soup = BeautifulSoup(resp.text, "xml")
-            if "Cloudflare" in soup.get_text(): return []
             items = soup.find_all(["item", "entry"])
             
         for entry in items[:int(source.get("max_items", 50))]:
