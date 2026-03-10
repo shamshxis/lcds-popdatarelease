@@ -3,6 +3,7 @@ import re
 import json
 import hashlib
 import time
+import random
 import traceback
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -11,8 +12,6 @@ from html import unescape
 from urllib.parse import urljoin, quote_plus, urlparse, parse_qs, urlencode, urlunparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import Counter
-from email.utils import parsedate_to_datetime
-import random
 
 import pandas as pd
 import urllib3
@@ -20,13 +19,14 @@ import yaml
 from bs4 import BeautifulSoup
 from dateutil import parser as date_parser
 from sentence_transformers import SentenceTransformer, util
-from curl_cffi import requests as cffi_requests
+import requests
 
-# Suppress annoying SSL warnings
+# Suppress SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # --- ETHICAL BOT CONFIGURATION ---
 CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL", "research@demography.ox.ac.uk")
+POLITE_USER_AGENT = f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 (LCDS-Demography-Research-Bot; +https://demography.ox.ac.uk; {CONTACT_EMAIL})"
 
 # --- CONSTANTS ---
 DATA_DIR = "data"
@@ -89,16 +89,6 @@ SIMILARITY_THRESHOLD = 0.35
 
 def utcnow_naive() -> datetime: return datetime.now(timezone.utc).replace(tzinfo=None)
 
-class DummyResponse:
-    def __init__(self, text, status_code=200):
-        self.text = text
-        self.status_code = status_code
-    def raise_for_status(self): 
-        if self.status_code >= 400: raise Exception(f"HTTP {self.status_code}")
-    def json(self): 
-        try: return json.loads(self.text)
-        except: return {}
-
 @dataclass
 class ParsedItem:
     dataset_title: str; source: str; source_group: str; source_type: str; event_type: str; action_date: datetime | None; status: str; url: str
@@ -124,8 +114,8 @@ class LCDSDataEngine:
         self.max_abs_days = int(settings.get("max_abs_days", MAX_ABS_DAYS))
         self.today = utcnow_naive().replace(hour=0, minute=0, second=0, microsecond=0)
         
-        # Human-like persistent session mimicking Chrome 110 exactly
-        self.session = cffi_requests.Session(impersonate="chrome110")
+        # Standard, ethical requests session.
+        self.session = requests.Session()
         
         self.snapshot = self.load_json(SNAPSHOT_FILE)
         self.source_health = self.load_json(SOURCE_HEALTH_FILE)
@@ -143,7 +133,7 @@ class LCDSDataEngine:
             all_words = []
             def fetch_orcid(orcid):
                 try:
-                    resp = self.session.get(f"https://api.crossref.org/works?filter=orcid:{orcid}&select=title,subject&rows=12", timeout=10)
+                    resp = self.session.get(f"https://api.crossref.org/works?filter=orcid:{orcid}&select=title,subject&rows=12", headers={"User-Agent": POLITE_USER_AGENT}, timeout=10)
                     if resp.status_code == 200: return resp.json().get("message", {}).get("items", [])
                 except: pass
                 return []
@@ -182,31 +172,30 @@ class LCDSDataEngine:
 
     def fetch(self, url: str, source: dict):
         """
-        Slow-paced, ethical fetcher.
-        We do NOT alter the User-Agent, so the Chrome 110 TLS fingerprint matches perfectly.
-        We declare our identity in the HTTP 'From' header and X-Headers instead.
+        Clean, ethical fetcher.
+        Acts completely naturally. 
+        If GitHub's Azure IP is blocked by a WAF, it accepts the block gracefully.
         """
-        custom_headers = {
-            "From": CONTACT_EMAIL,
-            "X-Bot-Name": "LCDS-Demography-Research-Bot",
-            "X-Institution": "University of Oxford (demography.ox.ac.uk)",
-            "X-Purpose": "Academic Research Tracking",
+        headers = {
+            "User-Agent": POLITE_USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
             "Referer": "https://www.google.com/"
         }
-        custom_headers.update(source.get("headers", {}))
+        headers.update(source.get("headers", {}))
         
-        # HUMAN PAUSE: Random delay between 3 to 6 seconds before EVERY click
+        # HUMAN PAUSE: Wait 3 to 6 seconds before every click to never burden servers
         time.sleep(random.uniform(3.0, 6.0))
         
         try:
-            # Persistent session natively handles cookies and TLS mirroring.
-            resp = self.session.get(url, headers=custom_headers, timeout=self.timeout)
+            resp = self.session.get(url, headers=headers, timeout=self.timeout, verify=False)
             
-            if resp.status_code in [403, 404, 406, 429] or "cloudflare" in resp.text.lower() or "Just a moment..." in resp.text:
-                print(f"🛑 [BLOCKED] {url} rejected the session.")
-                raise Exception(f"HTTP {resp.status_code} Blocked by WAF")
+            # If the firewall asks for a JS Captcha or explicitly denies us, we bow out.
+            if resp.status_code >= 400 or "<title>Just a moment...</title>" in resp.text:
+                print(f"🛑 [BLOCKED] {url} explicitly blocked this IP address (Status {resp.status_code}).")
+                raise Exception("Blocked by Firewall or CAPTCHA")
                 
-            return DummyResponse(resp.text, resp.status_code)
+            return resp
         except Exception as e:
             raise e
 
@@ -218,7 +207,7 @@ class LCDSDataEngine:
             if isinstance(classes, list): classes = " ".join(classes)
             if not classes: return False
             c = classes.lower()
-            return any(w in c for w in ["menu", "footer", "header", "sidebar", "cookie", "banner", "widget", "pagination", "breadcrumbs", "nav-container"])
+            return any(w in c for w in ["menu", "footer", "header", "sidebar", "cookie", "banner", "widget", "pagination", "breadcrumbs", "nav-container", "social", "share"])
 
         for tag in soup.find_all(["div", "section", "ul"], class_=is_junk_class):
             tag.decompose()
@@ -314,7 +303,8 @@ class LCDSDataEngine:
             "wage index", "price index", "construction index", "services index", "balance of payments", 
             "bovine", "cattle", "animal", "pig ", "poultry", "economic growth", "ict usage", "enterprises", 
             "spending", "consumer confidence", "producer confidence", "board of trustees", "governance", 
-            "vacancies", "careers", "fundraising", "the access board", "the trading board"
+            "vacancies", "careers", "fundraising", "the access board", "the trading board", "foi release",
+            "freedom of information"
         ]
         if any(x in combined for x in hard_rejects): return False
 
@@ -625,7 +615,7 @@ class LCDSDataEngine:
     def run(self) -> pd.DataFrame:
         sources, snapshots_out, all_rows, logs = self.config.get("sources", []), {}, [], []
         
-        # Outer threading across different websites, but sequentially within each website
+        # Thread out across domains, but sequence inside them.
         with ThreadPoolExecutor(max_workers=self.max_workers) as ex:
             futures = {ex.submit(self.parse_source, source): source for source in sources}
             for future in as_completed(futures):
