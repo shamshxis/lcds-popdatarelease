@@ -258,6 +258,7 @@ class LCDSDataEngine:
         return "Announcement", "Announcement", STATUS_PRIORITY["Announcement"], 0, 0
 
     def is_relevant(self, text: str, source: dict) -> bool:
+        """Improved relevance checking to reduce false positives."""
         text_l = (text or "").lower()
         keywords_any = [x.lower() for x in source.get("keywords_any", source.get("keywords", []))]
         keywords_all = [x.lower() for x in source.get("keywords_all", [])]
@@ -268,9 +269,16 @@ class LCDSDataEngine:
             return False
         if keywords_all and not all(x in text_l for x in keywords_all):
             return False
-        if keywords_any:
-            return any(x in text_l for x in keywords_any)
-        return any(x in text_l for x in theme_words)
+            
+        # Contextual density check: If no specific 'any' keywords, ensure it has at least some theme words
+        if not keywords_any:
+            match_count = sum(1 for w in theme_words if w in text_l)
+            if match_count > 0:
+                 return True
+            return False
+
+        # If keywords_any exists, at least one must hit
+        return any(x in text_l for x in keywords_any)
 
     def get_source_quality(self, source_name: str, page_url: str) -> float:
         page_state = self.source_health.get(source_name, {}).get("pages", {}).get(page_url, {})
@@ -315,8 +323,10 @@ class LCDSDataEngine:
             delta = (action_date.date() - self.today.date()).days
             bits.append(f"Timing: {delta} day(s) from now." if delta >= 0 else f"Timing: {-delta} day(s) ago.")
 
-        if summary:
-            bits.append(summary[:220].rstrip(".") + ".")
+        # Ensure summary is clean and not just a repetition of the title
+        clean_summ = summary.replace(title, "").strip()
+        if clean_summ:
+            bits.append(clean_summ[:220].rstrip(".") + ".")
 
         return " ".join(bits)
 
@@ -340,7 +350,9 @@ class LCDSDataEngine:
     def record_from_fields(self, source: dict, title: str, summary: str, date_value, url: str, extra_text: str = "", source_page: str = "", fallback_hit: int = 0) -> dict | None:
         title = self.normalize_whitespace(re.sub(r"^\d+\.\s*", "", title or "").strip())
         summary = self.normalize_whitespace(summary)
-        if not title:
+        
+        # Guard against extremely short titles which are usually UI noise
+        if not title or len(title) < 5:
             return None
 
         combined = " ".join([x for x in [title, summary, extra_text] if x])
@@ -410,33 +422,62 @@ class LCDSDataEngine:
         return item.to_record()
 
     def parser_ons_release_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
+        """Improved ONS Parser resilient to layout changes."""
         resp = self.fetch(page_url, source)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
-        text = soup.get_text("\n", strip=True)
-        chunks = re.split(r"\n\s*\d+\.\s+", text)
         results = []
 
-        for chunk in chunks:
-            if "Release date:" not in chunk:
-                continue
-            lines = [self.normalize_whitespace(x) for x in chunk.split("\n") if self.normalize_whitespace(x)]
-            if not lines:
-                continue
-            title = re.sub(r"^\d+\.\s*", "", lines[0]).strip()
-            m = re.search(r"Release date:\s*([^|]+)\|\s*([A-Za-z]+)", chunk)
-            if not m:
-                continue
-            date_text, label = m.groups()
+        # Try to find specific release items first (more structured)
+        items = soup.find_all(["li", "div"], class_=re.compile(r"search-results__item|release__item"))
+        
+        if items:
+            for item in items:
+                link = item.find("a", href=True)
+                title = self.normalize_whitespace(link.get_text()) if link else ""
+                url = urljoin(page_url, link["href"]) if link else page_url
+                
+                text = self.normalize_whitespace(item.get_text(" ", strip=True))
+                
+                # Extract date specific to ONS format
+                m = re.search(r"Release date:\s*([^|]+)\|\s*([A-Za-z]+)", text)
+                date_text = m.group(1).strip() if m else None
+                label = m.group(2).strip() if m else "Published"
 
-            rec = self.record_from_fields(source, title, label, date_text, page_url, extra_text=chunk, source_page=page_url, fallback_hit=fallback_hit)
-            if rec:
-                rec["status"] = {"Published": "Published", "Confirmed": "Upcoming", "Cancelled": "Cancelled"}.get(label, rec["status"])
-                if rec["status"] == "Cancelled":
-                    rec["event_type"] = "Cancellation"
-                    rec["priority_score"] = max(rec["priority_score"], STATUS_PRIORITY["Cancelled"])
-                    rec["red_flag"] = 1
-                results.append(rec)
+                if title and date_text:
+                    rec = self.record_from_fields(source, title, text, date_text, url, extra_text=text, source_page=page_url, fallback_hit=fallback_hit)
+                    if rec:
+                        rec["status"] = {"Published": "Published", "Confirmed": "Upcoming", "Cancelled": "Cancelled"}.get(label, rec["status"])
+                        if rec["status"] == "Cancelled":
+                            rec["event_type"] = "Cancellation"
+                            rec["priority_score"] = max(rec["priority_score"], STATUS_PRIORITY["Cancelled"])
+                            rec["red_flag"] = 1
+                        results.append(rec)
+        else:
+            # Fallback to chunking if classes are missing
+            text = soup.get_text("\n", strip=True)
+            chunks = re.split(r"\n\s*\d+\.\s+", text)
+
+            for chunk in chunks:
+                if "Release date:" not in chunk:
+                    continue
+                lines = [self.normalize_whitespace(x) for x in chunk.split("\n") if self.normalize_whitespace(x)]
+                if not lines:
+                    continue
+                title = re.sub(r"^\d+\.\s*", "", lines[0]).strip()
+                m = re.search(r"Release date:\s*([^|]+)\|\s*([A-Za-z]+)", chunk)
+                if not m:
+                    continue
+                date_text, label = m.groups()
+
+                rec = self.record_from_fields(source, title, label, date_text, page_url, extra_text=chunk, source_page=page_url, fallback_hit=fallback_hit)
+                if rec:
+                    rec["status"] = {"Published": "Published", "Confirmed": "Upcoming", "Cancelled": "Cancelled"}.get(label, rec["status"])
+                    if rec["status"] == "Cancelled":
+                        rec["event_type"] = "Cancellation"
+                        rec["priority_score"] = max(rec["priority_score"], STATUS_PRIORITY["Cancelled"])
+                        rec["red_flag"] = 1
+                    results.append(rec)
 
         return results
 
@@ -502,12 +543,23 @@ class LCDSDataEngine:
         return results
 
     def parser_generic_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
+        """Improved Generic parser that actively hunts for Titles via structural tags."""
         resp = self.fetch(page_url, source)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
         results = []
 
         for row in soup.find_all(["tr", "li", "article", "section", "div"]):
+            # 1. Smarter Title Extraction
+            title = ""
+            link_node = row.find("a", href=True)
+            head_node = row.find(["h2", "h3", "h4", "strong"])
+            
+            if head_node:
+                 title = self.normalize_whitespace(head_node.get_text())
+            elif link_node:
+                 title = self.normalize_whitespace(link_node.get_text())
+
             text = self.normalize_whitespace(row.get_text(" ", strip=True))
             if len(text) < 20:
                 continue
@@ -522,12 +574,14 @@ class LCDSDataEngine:
             if not date_text:
                 continue
 
-            title = text.replace(date_text, "").strip(" |-:")
-            link = row.find("a", href=True)
-            url = urljoin(page_url, link["href"]) if link else page_url
+            # Fallback title if structural tags didn't find one
+            if not title:
+                title = text.replace(date_text, "").strip(" |-:")[:150]
+
+            url = urljoin(page_url, link_node["href"]) if link_node else page_url
 
             rec = self.record_from_fields(
-                source, title[:250], text[:450], date_text, url,
+                source, title, text[:450], date_text, url,
                 extra_text=text, source_page=page_url, fallback_hit=fallback_hit
             )
             if rec:
@@ -640,6 +694,7 @@ class LCDSDataEngine:
         return results
 
     def parser_html_signal_scan(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
+        """Improved structural parsing for HTML scans."""
         resp = self.fetch(page_url, source)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
@@ -662,7 +717,15 @@ class LCDSDataEngine:
 
             link = node.find("a", href=True)
             url = urljoin(page_url, link["href"]) if link else page_url
-            title = text[:180]
+            
+            # Prefer structural titles
+            head_node = node.find(["h2", "h3", "h4", "strong"])
+            if head_node:
+                 title = self.normalize_whitespace(head_node.get_text())
+            elif link:
+                 title = self.normalize_whitespace(link.get_text())
+            else:
+                 title = text[:180]
 
             rec = self.record_from_fields(
                 source, title, text[:350], date_text, url,
@@ -683,18 +746,39 @@ class LCDSDataEngine:
         )
 
     def parser_gdelt_jsonfeed(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
+        """Stricter GDELT parser to avoid generic news noise."""
         gdelt_url = self.build_gdelt_url(source)
         resp = self.fetch(gdelt_url, source)
         resp.raise_for_status()
         payload = resp.json()
         items = payload.get("items", []) if isinstance(payload, dict) else []
         results = []
+        
+        target_keywords = [k.lower() for k in source.get("keywords_any", [])]
 
         for item in items:
             title = self.normalize_whitespace(item.get("title", ""))
             summary = self.normalize_whitespace(item.get("summary", item.get("content_text", "")))
             date_val = item.get("date_published") or item.get("date_modified")
             url = item.get("url") or item.get("external_url") or gdelt_url
+
+            # Strict Filter: The target keyword must be in the title, 
+            # OR mentioned multiple times in the summary.
+            title_l = title.lower()
+            summary_l = summary.lower()
+            is_strong_hit = False
+            
+            for k in target_keywords:
+                if k in title_l:
+                    is_strong_hit = True
+                    break
+                # If it's only in the summary, ensure it's not a passing mention
+                if summary_l.count(k) >= 2:
+                    is_strong_hit = True
+                    break
+                    
+            if not is_strong_hit:
+                 continue # Skip noisy news articles
 
             rec = self.record_from_fields(
                 source, title, summary, date_val, url,
