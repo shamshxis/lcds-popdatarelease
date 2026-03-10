@@ -1,70 +1,70 @@
 {
-  "generated_at": "2026-03-10T04:59:54.550585",
+  "generated_at": "2026-03-10T05:13:09.947308",
   "logs": [
     {
-      "source": "UN Population Division News",
-      "items": 1
-    },
-    {
-      "source": "GDELT Demography Media Signals",
-      "items": 1
-    },
-    {
-      "source": "ONS Upcoming Releases",
+      "source": "DHS Program News",
       "items": 0
     },
     {
+      "source": "UN Population Division News",
+      "items": 0
+    },
+    {
+      "source": "Finngen Signals",
+      "items": 0
+    },
+    {
+      "source": "ONS Upcoming Releases",
+      "items": 13
+    },
+    {
       "source": "Statistics Sweden Publishing Calendar",
-      "items": 2
+      "items": 0
     },
     {
       "source": "Eurostat Release Calendar",
-      "items": 2
-    },
-    {
-      "source": "GDELT Registry and Data Access Signals",
-      "items": 1
-    },
-    {
-      "source": "Human Mortality Database Events",
-      "items": 1
-    },
-    {
-      "source": "Statistics Norway Upcoming Releases",
       "items": 0
     },
     {
       "source": "Statistics Finland Signals",
-      "items": 1
+      "items": 0
     },
     {
       "source": "CBS Netherlands Publication Calendar",
       "items": 0
     },
     {
-      "source": "Finngen Signals",
-      "items": 1
+      "source": "Statistics Norway Upcoming Releases",
+      "items": 0
     },
     {
-      "source": "US Census Releases",
-      "items": 98
+      "source": "Human Mortality Database Events",
+      "items": 0
     },
     {
       "source": "Eurostat Dataset Update RSS",
-      "items": 17
+      "items": 96
     },
     {
-      "source": "DHS Program News",
-      "items": 1
+      "source": "GDELT Registry and Data Access Signals",
+      "items": 2
+    },
+    {
+      "source": "US Census Releases",
+      "items": 90
+    },
+    {
+      "source": "GDELT Demography Media Signals",
+      "items": 0
     }
   ],
   "metrics": {
-    "records": 123,
-    "upcoming": 97,
+    "records": 200,
+    "upcoming": 95,
     "red_flags": 0,
     "deletions": 0,
-    "next_14_days": 1,
-    "fallback_hits": 0,
-    "generated_at": "2026-03-10T04:59:54.551145"
+    "next_14_days": 0,
+    "fallback_hits": 4,
+    "generated_at": "2026-03-10T05:13:09.947872"
   }
 }
