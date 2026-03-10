@@ -19,10 +19,9 @@ import yaml
 from bs4 import BeautifulSoup
 from dateutil import parser as date_parser
 from sentence_transformers import SentenceTransformer, util
-import requests
 from curl_cffi import requests as cffi_requests
 
-# Suppress annoying SSL warnings
+# Suppress SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # --- ETHICAL BOT CONFIGURATION ---
@@ -39,7 +38,7 @@ SNAPSHOT_FILE = os.path.join(DATA_DIR, "dataset_snapshot.json")
 RUNLOG_FILE = os.path.join(DATA_DIR, "run_log.json")
 SOURCE_HEALTH_FILE = os.path.join(DATA_DIR, "source_health.json")
 
-DEFAULT_TIMEOUT = 30
+DEFAULT_TIMEOUT = 25
 MAX_ABS_DAYS = 730
 
 THEME_KEYWORDS = {
@@ -77,7 +76,8 @@ class DummyResponse:
     def __init__(self, text, status_code=200):
         self.text = text
         self.status_code = status_code
-    def raise_for_status(self): pass
+    def raise_for_status(self): 
+        if self.status_code >= 400: raise Exception(f"HTTP {self.status_code}")
     def json(self): 
         try: return json.loads(self.text)
         except: return {}
@@ -101,12 +101,11 @@ class LCDSDataEngine:
         self.target_embeddings = ai_model.encode(active_targets, convert_to_tensor=True)
 
         settings = self.config.get("settings", {})
-        self.timeout = int(settings.get("timeout", 30))
-        self.max_workers = int(settings.get("max_workers", 16))
-        self.page_workers = int(settings.get("page_workers", 4))
+        self.timeout = int(settings.get("timeout", 25))
+        self.max_workers = int(settings.get("max_workers", 12))
+        self.page_workers = int(settings.get("page_workers", 3))
         self.max_abs_days = int(settings.get("max_abs_days", MAX_ABS_DAYS))
         self.today = utcnow_naive().replace(hour=0, minute=0, second=0, microsecond=0)
-        self.session = requests.Session()
         self.snapshot = self.load_json(SNAPSHOT_FILE)
         self.source_health = self.load_json(SOURCE_HEALTH_FILE)
         self.previous_df = self.load_previous_df()
@@ -161,7 +160,7 @@ class LCDSDataEngine:
         except: return pd.DataFrame()
 
     def fetch(self, url: str, source: dict):
-        """Built-in Free Proxy & Cache Engine."""
+        """Ethical fetcher using curl_cffi for standard browser TLS fingerprinting."""
         headers = {
             "User-Agent": POLITE_USER_AGENT,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -169,53 +168,22 @@ class LCDSDataEngine:
         }
         headers.update(source.get("headers", {}))
         
-        def is_blocked(r_text, r_status):
-            if r_status in [403, 404, 406, 429]: return True
-            t = r_text.lower()
-            if "cloudflare" in t and "just a moment" in t: return True
-            if "imperva" in t or "incapsula" in t: return True
-            return False
-
-        # Polite delay to avoid hammering target servers
+        # Respectful delay so we don't bombard servers
         time.sleep(1.5)
         
-        # STRIKE 1: Ethical fetch with Chrome TLS Fingerprinting
         try:
             resp = cffi_requests.get(url, headers=headers, impersonate="chrome110", timeout=self.timeout, verify=False)
-            if not is_blocked(resp.text, resp.status_code):
-                return DummyResponse(resp.text, resp.status_code)
-        except Exception:
-            pass
-
-        print(f"⚠️ [IP BANNED] {url}. Routing through Free Proxy & Google Cache network...")
-
-        # STRIKE 2: Built-In Public Proxy Fallbacks (Great for RSS feeds that Google doesn't cache)
-        for proxy_url in [
-            f"https://api.codetabs.com/v1/proxy?quest={quote_plus(url)}",
-            f"https://api.allorigins.win/raw?url={quote_plus(url)}"
-        ]:
-            try:
-                p_resp = self.session.get(proxy_url, timeout=15)
-                if p_resp.status_code == 200 and not is_blocked(p_resp.text, 200):
-                    return DummyResponse(p_resp.text, 200)
-            except Exception:
-                continue
-
-        # STRIKE 3: Google Web Cache (Ultimate fallback for HTML Webpages)
-        try:
-            cache_url = f"https://webcache.googleusercontent.com/search?q=cache:{quote_plus(url)}&strip=1&vwsrc=0"
-            c_resp = cffi_requests.get(cache_url, impersonate="chrome110", timeout=15)
-            if c_resp.status_code == 200:
-                # Remove Google's cache banner so BeautifulSoup can parse it properly
-                clean_html = re.sub(r'<div id="bN015htcoyT__google-cache-hdr">.*?</div>', '', c_resp.text, flags=re.DOTALL)
-                return DummyResponse(clean_html, 200)
-        except Exception:
-            pass
-
-        print(f"❌ [PERMA-BLOCKED] All free proxies and caches failed for {url}")
-        raise Exception(f"Blocked by WAF: {url}")
+            
+            if resp.status_code in [403, 404, 406, 429] or "cloudflare" in resp.text.lower() or "Just a moment..." in resp.text:
+                print(f"🛑 [BLOCKED] {url} rejected the request. Accepting block cleanly.")
+                raise Exception(f"HTTP {resp.status_code} Blocked by WAF")
+                
+            return DummyResponse(resp.text, resp.status_code)
+        except Exception as e:
+            raise e
 
     def strip_html_noise(self, soup: BeautifulSoup) -> BeautifulSoup:
+        """Prunes navigation, footers, and widgets so we don't scrape 'Privacy Policy'."""
         for tag in soup(["nav", "footer", "header", "aside", "style", "script", "button", "svg", "form"]):
             tag.decompose()
             
@@ -286,6 +254,9 @@ class LCDSDataEngine:
         if re.fullmatch(r"^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}$", t): return True
         if re.fullmatch(r"^\d{1,3}(,\d{3})*\s+results$", t): return True
         
+        # Hard kill URLs and Email addresses masquerading as titles
+        if "@" in t or t.startswith("http") or "facebook.com" in t or "twitter.com" in t: return True
+        
         exact_matches = {
             "information", "news bulletin", "jobs and vacancies", "registration", 
             "records and archives", "statistics and data", "database tables", 
@@ -295,7 +266,8 @@ class LCDSDataEngine:
             "data.census.gov", "incremental developmental", "---", "about us",
             "news and press releases", "finding statistics", "menu", "read more",
             "view article", "click here", "find out more", "share this", "home",
-            "rss feeds", "email alerts"
+            "rss feeds", "email alerts", "sorry, we can't find that!", "sorry, we can’t find that!",
+            "search function", "taking part", "use our data", "featured news and stories"
         }
         
         if t in exact_matches: return True
@@ -475,6 +447,7 @@ class LCDSDataEngine:
             items = root.findall(".//item") + root.findall(".//{http://www.w3.org/2005/Atom}entry")
         except ET.ParseError:
             soup = BeautifulSoup(resp.text, "xml")
+            if "Cloudflare" in soup.get_text() or "Just a moment" in soup.get_text(): return []
             items = soup.find_all(["item", "entry"])
             
         for entry in items[:int(source.get("max_items", 50))]:
