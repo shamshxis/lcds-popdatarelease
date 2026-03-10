@@ -20,17 +20,13 @@ import yaml
 from bs4 import BeautifulSoup
 from dateutil import parser as date_parser
 from sentence_transformers import SentenceTransformer, util
-
-# curl_cffi perfectly mimics Google Chrome's network stack to bypass WAFs naturally
 from curl_cffi import requests as cffi_requests
 
 # Suppress annoying SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# --- POLITE BOT CONFIGURATION ---
+# --- ETHICAL BOT CONFIGURATION ---
 CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL", "research@demography.ox.ac.uk")
-# We append our identity cleanly to a standard Chrome header
-POLITE_USER_AGENT = f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 (LCDS-Demography-Bot; {CONTACT_EMAIL})"
 
 # --- CONSTANTS ---
 DATA_DIR = "data"
@@ -123,12 +119,12 @@ class LCDSDataEngine:
 
         settings = self.config.get("settings", {})
         self.timeout = int(settings.get("timeout", 30))
-        # Keep max_workers high for parallel domain processing, but sequential inside domains.
         self.max_workers = int(settings.get("max_workers", 8)) 
+        self.page_workers = int(settings.get("page_workers", 2))
         self.max_abs_days = int(settings.get("max_abs_days", MAX_ABS_DAYS))
         self.today = utcnow_naive().replace(hour=0, minute=0, second=0, microsecond=0)
         
-        # Human-like persistent session (Maintains cookies and TLS connections)
+        # Human-like persistent session mimicking Chrome 110 exactly
         self.session = cffi_requests.Session(impersonate="chrome110")
         
         self.snapshot = self.load_json(SNAPSHOT_FILE)
@@ -147,7 +143,7 @@ class LCDSDataEngine:
             all_words = []
             def fetch_orcid(orcid):
                 try:
-                    resp = cffi_requests.get(f"https://api.crossref.org/works?filter=orcid:{orcid}&select=title,subject&rows=12", headers={"User-Agent": POLITE_USER_AGENT}, impersonate="chrome110", timeout=10)
+                    resp = self.session.get(f"https://api.crossref.org/works?filter=orcid:{orcid}&select=title,subject&rows=12", timeout=10)
                     if resp.status_code == 200: return resp.json().get("message", {}).get("items", [])
                 except: pass
                 return []
@@ -185,24 +181,29 @@ class LCDSDataEngine:
         except: return pd.DataFrame()
 
     def fetch(self, url: str, source: dict):
-        """Slow-paced, human-like browser simulator using persistent sessions."""
-        headers = {
-            "User-Agent": POLITE_USER_AGENT,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-            "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+        """
+        Slow-paced, ethical fetcher.
+        We do NOT alter the User-Agent, so the Chrome 110 TLS fingerprint matches perfectly.
+        We declare our identity in the HTTP 'From' header and X-Headers instead.
+        """
+        custom_headers = {
+            "From": CONTACT_EMAIL,
+            "X-Bot-Name": "LCDS-Demography-Research-Bot",
+            "X-Institution": "University of Oxford (demography.ox.ac.uk)",
+            "X-Purpose": "Academic Research Tracking",
             "Referer": "https://www.google.com/"
         }
-        headers.update(source.get("headers", {}))
+        custom_headers.update(source.get("headers", {}))
         
         # HUMAN PAUSE: Random delay between 3 to 6 seconds before EVERY click
         time.sleep(random.uniform(3.0, 6.0))
         
         try:
-            # We use the persistent self.session rather than isolated requests
-            resp = self.session.get(url, headers=headers, timeout=self.timeout)
+            # Persistent session natively handles cookies and TLS mirroring.
+            resp = self.session.get(url, headers=custom_headers, timeout=self.timeout)
             
             if resp.status_code in [403, 404, 406, 429] or "cloudflare" in resp.text.lower() or "Just a moment..." in resp.text:
-                print(f"🛑 [BLOCKED] {url} rejected the human-mimic session.")
+                print(f"🛑 [BLOCKED] {url} rejected the session.")
                 raise Exception(f"HTTP {resp.status_code} Blocked by WAF")
                 
             return DummyResponse(resp.text, resp.status_code)
@@ -552,8 +553,6 @@ class LCDSDataEngine:
         pages, all_items = self.source_page_list(source), []
         
         # SLOW-PACED SEQUENTIAL BROWSING
-        # We no longer thread pages *inside* a source. 
-        # The bot clicks one page, waits, then clicks the next, just like a human.
         for pu, fh in pages:
             try:
                 items = self.parse_page(source, pu, fh)
@@ -626,7 +625,7 @@ class LCDSDataEngine:
     def run(self) -> pd.DataFrame:
         sources, snapshots_out, all_rows, logs = self.config.get("sources", []), {}, [], []
         
-        # We only thread across DIFFERENT websites. We do not thread within a single website.
+        # Outer threading across different websites, but sequentially within each website
         with ThreadPoolExecutor(max_workers=self.max_workers) as ex:
             futures = {ex.submit(self.parse_source, source): source for source in sources}
             for future in as_completed(futures):
