@@ -13,6 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import Counter
 from email.utils import parsedate_to_datetime
 import random
+import urllib.request
 
 import pandas as pd
 import requests
@@ -34,13 +35,6 @@ SOURCE_HEALTH_FILE = os.path.join(DATA_DIR, "source_health.json")
 DEFAULT_TIMEOUT = 25
 MAX_ABS_DAYS = 730
 
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Safari/605.1.15",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
-]
-
 THEME_KEYWORDS = {
     "Population": ["population", "demograph", "census", "resident", "ageing", "aging", "household", "people", "names", "surnames"],
     "Migration": ["migration", "migrant", "immigration", "emigration", "asylum", "refugee", "mobility", "visa"],
@@ -57,12 +51,10 @@ RED_FLAG_TERMS = ["discontinued", "deleted", "closure", "decommission", "retired
 STOPWORDS = {"about","above","across","after","against","along","among","around","before","behind","below","beneath","beside","between","during","except","from","inside","into","like","near","outside","over","past","since","through","throughout","toward","under","underneath","until","upon","with","within","without","although","because","since","unless","these","those","were","have","does","could","should","would","might","must","using","based","analysis","study","data","effects","impact","changes","patterns","trends","evidence","review","between","their","there","which","where","when","what","who","whom","whose","why","some","many","much","most","other","such","only","also","very","more","than","then","this","that","using","approach","method","methods","model","models","results","effect","among","associated","association","factors"}
 
 DATE_PATTERNS = [
-    r"\b\d{4}-\d{2}-\d{2}\b", 
-    r"\b\d{1,2}/\d{1,2}/\d{4}\b", 
+    r"\b\d{4}-\d{2}-\d{2}\b", r"\b\d{1,2}/\d{1,2}/\d{4}\b", 
     r"\b\d{1,2}(?:st|nd|rd|th)?\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[A-Za-z]*\s+\d{4}\b", 
     r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[A-Za-z]*\s+\d{1,2}(?:st|nd|rd|th)?(?:,)?\s*\d{4}\b", 
-    r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[A-Za-z]*\s+\d{4}\b",
-    r"\b(?:Q[1-4]|Spring|Summer|Autumn|Winter)\s+\d{4}\b"
+    r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[A-Za-z]*\s+\d{4}\b", r"\b(?:Q[1-4]|Spring|Summer|Autumn|Winter)\s+\d{4}\b"
 ]
 
 print("🧠 Loading AI Semantic Model...")
@@ -73,6 +65,12 @@ anti_embeddings = ai_model.encode(ANTI_TARGETS, convert_to_tensor=True)
 SIMILARITY_THRESHOLD = 0.35 
 
 def utcnow_naive() -> datetime: return datetime.now(timezone.utc).replace(tzinfo=None)
+
+class DummyResponse:
+    def __init__(self, text, status_code=200):
+        self.text = text
+        self.status_code = status_code
+    def raise_for_status(self): pass
 
 @dataclass
 class ParsedItem:
@@ -149,28 +147,36 @@ class LCDSDataEngine:
         except: return pd.DataFrame()
 
     def fetch(self, url: str, source: dict) -> requests.Response:
-        base_headers = {
-            "User-Agent": random.choice(USER_AGENTS),
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept-Encoding": "gzip, deflate, br",
             "Connection": "keep-alive",
             "Upgrade-Insecure-Requests": "1"
         }
-        base_headers.update(source.get("headers", {}))
+        headers.update(source.get("headers", {}))
         
         try:
-            resp = self.session.get(url, headers=base_headers, timeout=self.timeout)
+            resp = self.session.get(url, headers=headers, timeout=self.timeout)
+            if "Just a moment..." in resp.text or "cloudflare" in resp.text.lower():
+                resp.status_code = 403 
             resp.raise_for_status()
             return resp
         except requests.exceptions.HTTPError as e:
             if e.response.status_code in [403, 404, 406]:
-                print(f"⚠️ [BLOCKED] {e.response.status_code} for {url}. Retrying as Bot...")
-                base_headers["User-Agent"] = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
-                time.sleep(1.5) 
-                resp = self.session.get(url, headers=base_headers, timeout=self.timeout)
-                if resp.status_code != 200: print(f"❌ [PERMA-BLOCKED] {url}")
-                return resp
+                try:
+                    req = urllib.request.Request(url, headers={"User-Agent": headers["User-Agent"]})
+                    with urllib.request.urlopen(req, timeout=self.timeout) as response:
+                        return DummyResponse(response.read().decode('utf-8', errors='ignore'))
+                except Exception as ex:
+                    print(f"❌ [PERMA-BLOCKED/DEAD] {url}")
             raise e
+
+    def strip_html_noise(self, soup: BeautifulSoup) -> BeautifulSoup:
+        for tag in soup(["nav", "footer", "header", "aside", "style", "script", "button"]):
+            tag.decompose()
+        return soup
 
     def normalize_whitespace(self, text: str) -> str: return re.sub(r"\s+", " ", unescape(text or "")).strip()
 
@@ -262,8 +268,6 @@ class LCDSDataEngine:
         if float(util.cos_sim(embedding, anti_embeddings).max()) > target_score: return False
         if target_score >= SIMILARITY_THRESHOLD: return True
 
-        # STRICT OVERRIDE: Keywords MUST be in the Title. 
-        # This stops the word "population" in a footer from dragging in "ICT Usage"
         keywords_any = [x.lower() for x in (source.get("keywords_any") or [])]
         if keywords_any and any(x in title.lower() for x in keywords_any): return True
         if self.dynamic_terms and any(t in title.lower() for t in self.dynamic_terms[:10]): return True
@@ -322,12 +326,6 @@ class LCDSDataEngine:
 
     # --- PARSERS ---
     
-    def strip_html_noise(self, soup: BeautifulSoup) -> BeautifulSoup:
-        """Destroys footers and navs so they cannot be accidentally scraped."""
-        for tag in soup(["nav", "footer", "header", "aside", "style", "script"]):
-            tag.decompose()
-        return soup
-
     def parser_ons_release_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
         url_parts = list(urlparse(page_url))
         query = parse_qs(url_parts[4])
@@ -340,7 +338,7 @@ class LCDSDataEngine:
             url_parts[4] = urlencode(query, doseq=True)
             try: 
                 resp = self.fetch(urlunparse(url_parts), source)
-                if resp.status_code != 200: continue
+                if getattr(resp, 'status_code', 0) != 200: continue
             except: continue
             
             soup = self.strip_html_noise(BeautifulSoup(resp.text, "html.parser"))
@@ -406,8 +404,9 @@ class LCDSDataEngine:
             root = ET.fromstring(resp.text)
             items = root.findall(".//item") + root.findall(".//{http://www.w3.org/2005/Atom}entry")
         except ET.ParseError:
-            print(f"⚠️ {source['name']} XML is malformed. Falling back to loose parser.")
+            # Fallback to BeautifulSoup if WAF block page is passed as XML
             soup = BeautifulSoup(resp.text, "xml")
+            if "Cloudflare" in soup.get_text(): return []
             items = soup.find_all(["item", "entry"])
             
         for entry in items[:int(source.get("max_items", 50))]:
@@ -459,8 +458,13 @@ class LCDSDataEngine:
     def parser_gdelt_jsonfeed(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
         try: resp = self.fetch(f"https://api.gdeltproject.org/api/v2/doc/doc?query={quote_plus(source.get('gdelt_query', ''))}&mode=artlist&maxrecords={int(source.get('max_items', 75))}&format=jsonfeed&sort=datedesc&timespan={source.get('gdelt_timespan', '7d')}", source)
         except: return []
+        if not hasattr(resp, 'json'): return []
+        
         results, target_keywords = [], [k.lower() for k in source.get("keywords_any", [])]
-        for item in (resp.json().get("items", []) if isinstance(resp.json(), dict) else []):
+        try: items = resp.json().get("items", [])
+        except: items = []
+        
+        for item in items:
             title, summary = self.normalize_whitespace(item.get("title", "")), self.normalize_whitespace(item.get("summary", item.get("content_text", "")))
             if not any(k in title.lower() or summary.lower().count(k) >= 2 for k in target_keywords): continue
             if rec := self.record_from_fields(source, title, summary, item.get("date_published") or item.get("date_modified"), item.get("url", page_url), extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit):
@@ -486,7 +490,6 @@ class LCDSDataEngine:
                         self.update_source_health(source["name"], pu, True, len(items))
                         all_items.extend(items)
                 except Exception as e:
-                    print(f"❌ ERROR parsing {source['name']} ({pu}): {e}")
                     self.update_source_health(source["name"], pu, False, 0)
         
         current_keys = [self.canonical_key(x.get("dataset_title", ""), x.get("source", source["name"]), x.get("action_date")) for x in all_items if x.get("dataset_title")]
