@@ -4,9 +4,9 @@ import json
 import hashlib
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone, timedelta
 from html import unescape
-from urllib.parse import urljoin, quote_plus, urlparse, urlencode, parse_qs, urlunparse
+from urllib.parse import urljoin, quote_plus, urlparse, parse_qs, urlencode, urlunparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
@@ -15,9 +15,7 @@ import yaml
 from bs4 import BeautifulSoup
 from dateutil import parser as date_parser
 from email.utils import parsedate_to_datetime
-from sentence_transformers import SentenceTransformer, util
 
-# --- CONSTANTS ---
 DATA_DIR = "data"
 WATCHLIST_FILE = "watchlist.yml"
 OUTPUT_FILE = os.path.join(DATA_DIR, "dataset_tracker.csv")
@@ -26,16 +24,17 @@ RUNLOG_FILE = os.path.join(DATA_DIR, "run_log.json")
 SOURCE_HEALTH_FILE = os.path.join(DATA_DIR, "source_health.json")
 
 DEFAULT_TIMEOUT = 25
-DEFAULT_USER_AGENT = "Mozilla/5.0 (LCDS-ExecutiveWatch/6.0)"
+# Changed User-Agent to standard Chrome to prevent ONS/Census from blocking the scraper
+DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 MAX_ABS_DAYS = 366
 
 THEME_KEYWORDS = {
     "Population": ["population", "demograph", "census", "resident", "ageing", "aging", "household", "people"],
-    "Migration": ["migration", "migrant", "immigration", "emigration", "asylum", "refugee", "mobility", "visa"],
-    "Fertility & Births": ["fertility", "birth", "newborn", "pregnan", "family formation", "maternity"],
-    "Mortality & Health": ["mortality", "death", "life expectancy", "health", "cause of death", "suicide", "disease"],
-    "Labour & Economy": ["labour", "labor", "employment", "earnings", "income", "poverty", "benefit", "workless", "workforce"],
-    "Housing & Families": ["housing", "rent", "home", "family", "marriage", "divorce", "living conditions"],
+    "Migration": ["migration", "migrant", "immigration", "emigration", "asylum", "refugee", "mobility"],
+    "Fertility & Births": ["fertility", "birth", "newborn", "pregnan", "family formation"],
+    "Mortality & Health": ["mortality", "death", "life expectancy", "health", "cause of death", "suicide"],
+    "Labour & Economy": ["labour", "labor", "employment", "earnings", "income", "poverty", "benefit", "workless"],
+    "Housing & Families": ["housing", "rent", "home", "family", "marriage", "divorce"],
     "Methods & Infrastructure": [
         "method", "revision", "quality", "metadata", "api", "microdata", "registry",
         "archive", "discontinued", "decommission", "withdrawn", "access", "deleted"
@@ -65,34 +64,6 @@ DATE_PATTERNS = [
     r"\b\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}\b",
     r"\b[A-Za-z]{3,9}\s+\d{1,2},\s*\d{4}\b",
 ]
-
-# --- AI CONFIGURATION ---
-print("🧠 Loading AI Semantic Model...")
-ai_model = SentenceTransformer('all-MiniLM-L6-v2')
-
-# Core topics we WANT
-RELEVANCE_TARGETS = [
-    "population estimates and demographic projections",
-    "international migration asylum and refugee statistics",
-    "national census results and household survey data",
-    "births deaths mortality life expectancy and fertility rates",
-    "employment labour market participation and workforce data",
-    "housing living conditions and family structure statistics"
-]
-target_embeddings = ai_model.encode(RELEVANCE_TARGETS, convert_to_tensor=True)
-
-# Topics we EXPLICITLY DO NOT WANT (Anti-Targets)
-ANTI_TARGETS = [
-    "agricultural crop production farming and livestock",
-    "financial market stock exchange banking and corporate bonds",
-    "weather climate change meteorology and environmental data",
-    "software updates IT infrastructure and network maintenance",
-    "sports results tournament schedules and athletic events",
-    "manufacturing output industrial production and trade in goods"
-]
-anti_embeddings = ai_model.encode(ANTI_TARGETS, convert_to_tensor=True)
-
-SIMILARITY_THRESHOLD = 0.38 # Tightened threshold
 
 def utcnow_naive() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
@@ -142,7 +113,7 @@ class LCDSDataEngine:
         self.today = utcnow_naive().replace(hour=0, minute=0, second=0, microsecond=0)
         self.headers = {
             "User-Agent": self.user_agent,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.9,text/calendar;q=0.9,*/*;q=0.8",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.9,*/*;q=0.8",
         }
         self.session = requests.Session()
         self.session.headers.update(self.headers)
@@ -155,29 +126,25 @@ class LCDSDataEngine:
             return yaml.safe_load(f) or {}
 
     def load_json(self, path: str) -> dict:
-        if not os.path.exists(path):
-            return {}
+        if not os.path.exists(path): return {}
         try:
             with open(path, "r", encoding="utf-8") as f:
                 obj = json.load(f)
                 return obj if isinstance(obj, dict) else {}
-        except Exception:
-            return {}
+        except: return {}
 
     def save_json(self, path: str, payload: dict) -> None:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2, ensure_ascii=False)
 
     def load_previous_df(self) -> pd.DataFrame:
-        if not os.path.exists(OUTPUT_FILE):
-            return pd.DataFrame()
+        if not os.path.exists(OUTPUT_FILE): return pd.DataFrame()
         try:
             df = pd.read_csv(OUTPUT_FILE)
             if "action_date" in df.columns:
                 df["action_date"] = pd.to_datetime(df["action_date"], errors="coerce")
             return df
-        except Exception:
-            return pd.DataFrame()
+        except: return pd.DataFrame()
 
     def fetch(self, url: str, source: dict) -> requests.Response:
         headers = dict(self.headers)
@@ -193,10 +160,8 @@ class LCDSDataEngine:
             if pd.isna(value): return None
         except: pass
 
-        if isinstance(value, pd.Timestamp):
-            return value.to_pydatetime().replace(tzinfo=None)
-        if isinstance(value, datetime):
-            return value.replace(tzinfo=None)
+        if isinstance(value, pd.Timestamp): return value.to_pydatetime().replace(tzinfo=None)
+        if isinstance(value, datetime): return value.replace(tzinfo=None)
 
         text = str(value).strip()
         if not text or text.lower() in {"nat", "nan", "none"}: return None
@@ -204,18 +169,15 @@ class LCDSDataEngine:
         for fmt in ("%Y%m%d", "%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
             try: return datetime.strptime(text, fmt)
             except: pass
-
         try: return parsedate_to_datetime(text).replace(tzinfo=None)
         except: pass
-
         try: return date_parser.parse(text, fuzzy=True, dayfirst=False).replace(tzinfo=None)
         except: return None
 
     def in_time_window(self, dt: datetime | None) -> bool:
         if dt is None: return True
         delta = (dt.date() - self.today.date()).days
-        # Prevent picking up 10-year old archived data
-        return -90 <= delta <= self.max_abs_days
+        return -60 <= delta <= self.max_abs_days
 
     def canonical_key(self, title: str, source: str, date_obj) -> str:
         base = re.sub(r"[^a-z0-9]+", " ", str(title or "").lower()).strip()
@@ -229,7 +191,6 @@ class LCDSDataEngine:
         if main_url: pages.append((main_url, 0))
         for url in source.get("fallback_urls", []):
             if url: pages.append((url, 1))
-        
         seen = set()
         out = []
         for url, hit in pages:
@@ -244,7 +205,6 @@ class LCDSDataEngine:
         for theme, words in THEME_KEYWORDS.items():
             score = sum(1 for w in words if w in text_l)
             if score: scores.append((theme, score))
-        
         scores.sort(key=lambda x: x[1], reverse=True)
         primary = scores[0][0] if scores else "General"
         secondary = scores[1][0] if len(scores) > 1 else ""
@@ -253,59 +213,61 @@ class LCDSDataEngine:
 
     def compute_status(self, text: str, date_obj: datetime | None) -> tuple[str, str, int, int, int]:
         t = (text or "").lower()
-        deleted_signal = int(any(term in t for term in ["deleted", "decommission", "discontinued", "withdrawn", "removed", "shutdown"]))
+        deleted_signal = int(any(term in t for term in ["deleted", "decommission", "discontinued", "withdrawn", "removed"]))
 
-        if deleted_signal:
-            return "Deleted", "Deletion", STATUS_PRIORITY["Deleted"], 1, 1
-        if "cancelled" in t or "canceled" in t:
-            return "Cancelled", "Cancellation", STATUS_PRIORITY["Cancelled"], 1, 0
-        if "rescheduled" in t or "postponed" in t or "delayed" in t:
-            return "Rescheduled", "Schedule Change", STATUS_PRIORITY["Rescheduled"], 1, 0
-        if "restricted" in t or "access change" in t or "deprecation" in t or "deprecated" in t:
-            return "Restricted", "Access Change", STATUS_PRIORITY["Restricted"], 1, 0
-        
+        if deleted_signal: return "Deleted", "Deletion", STATUS_PRIORITY["Deleted"], 1, 1
+        if "cancelled" in t or "canceled" in t: return "Cancelled", "Cancellation", STATUS_PRIORITY["Cancelled"], 1, 0
+        if "rescheduled" in t or "postponed" in t: return "Rescheduled", "Schedule Change", STATUS_PRIORITY["Rescheduled"], 1, 0
+        if "restricted" in t or "access change" in t: return "Restricted", "Access Change", STATUS_PRIORITY["Restricted"], 1, 0
         if date_obj is not None:
-            if date_obj.date() > self.today.date():
-                return "Upcoming", "Release", STATUS_PRIORITY["Upcoming"], 0, 0
-            else:
-                return "Published", "Release", STATUS_PRIORITY["Published"], 0, 0
-                
+            return ("Upcoming" if date_obj.date() >= self.today.date() else "Published", "Release",
+                STATUS_PRIORITY["Upcoming"] if date_obj.date() >= self.today.date() else STATUS_PRIORITY["Published"], 0, 0)
         return "Announcement", "Announcement", STATUS_PRIORITY["Announcement"], 0, 0
 
-    def ai_semantic_filter(self, text: str) -> bool:
-        """Evaluates if the text is genuinely about population/demographics."""
-        if not text or len(text) < 10: return False
+    def is_junk_title(self, title: str) -> bool:
+        """Kills navigation menus, specific HTML structure bloat, and pure dates."""
+        t = title.lower().strip()
+        if len(t) < 5: return True
+        if re.fullmatch(r"^[0-9\/\-\. ]+$", t): return True
+        if re.fullmatch(r"^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}$", t): return True
         
-        embedding = ai_model.encode(text, convert_to_tensor=True)
-        
-        # Check against targets
-        target_scores = util.cos_sim(embedding, target_embeddings)
-        max_target_score = float(target_scores.max())
-        
-        # Check against anti-targets
-        anti_scores = util.cos_sim(embedding, anti_embeddings)
-        max_anti_score = float(anti_scores.max())
-        
-        # If it's more similar to crop production than demographics, reject it
-        if max_anti_score > max_target_score:
-            return False
-            
-        return max_target_score >= SIMILARITY_THRESHOLD
+        junk_starts = [
+            "clear all", "search results", "skip to", "contact us", "privacy policy",
+            "microdata access", "top of section", "upcoming releases", "release date",
+            "page not found", "next page", "previous page", "data.census.gov"
+        ]
+        for j in junk_starts:
+            if t.startswith(j) or t == j: return True
+        return False
 
     def is_relevant(self, title: str, summary: str, source: dict) -> bool:
-        # First pass: Basic exclusionary keywords
-        text_l = f"{title} {summary}".lower()
+        """Strict contextual filter relying ONLY on title and summary to prevent HTML bleed."""
+        title_l = (title or "").lower()
+        summary_l = (summary or "").lower()
+        combined = f"{title_l} {summary_l}"
+        
         exclude_keywords = [x.lower() for x in source.get("exclude_keywords", [])]
-        if exclude_keywords and any(x in text_l for x in exclude_keywords):
+        if exclude_keywords and any(x in combined for x in exclude_keywords): return False
+            
+        # CRITICAL: The Anti-Targets list stops Crop Production and Financial junk
+        anti_targets = [
+            "crop production", "livestock", "agriculture", "fishery", "forestry",
+            "financial market", "stock exchange", "manufacturing", "industrial production",
+            "producer price", "exchange rate", "interest rate", "inflation rate",
+            "economic census: finance", "economic census: accommodation", "economic census: utilities",
+            "economic census: management"
+        ]
+        if any(x in combined for x in anti_targets): return False
+
+        keywords_any = [x.lower() for x in source.get("keywords_any", source.get("keywords", []))]
+        if keywords_any:
+            # Verify the keyword is actually in the title, OR highly prevalent in the summary
+            if any(x in title_l for x in keywords_any): return True
+            if any(x in summary_l for x in keywords_any): return True
             return False
             
-        # UI Noise filter
-        if any(j in title.lower() for j in ["filter results", "clear all", "microdata access", "release date", "cookies"]):
-            return False
-
-        # Second Pass: Semantic AI Check
-        context = f"{title} {summary} {source['name']}"
-        return self.ai_semantic_filter(context)
+        theme_words = [w for words in THEME_KEYWORDS.values() for w in words]
+        return any(x in title_l for x in theme_words) or any(x in summary_l for x in theme_words)
 
     def get_source_quality(self, source_name: str, page_url: str) -> float:
         page_state = self.source_health.get(source_name, {}).get("pages", {}).get(page_url, {})
@@ -333,17 +295,14 @@ class LCDSDataEngine:
         elif status == "Rescheduled": bits.append("Schedule change detected.")
         elif status == "Upcoming": bits.append("Upcoming release.")
         elif status == "Published": bits.append("Recently published.")
+        else: bits.append("Signal identified.")
 
         if action_date is not None:
             delta = (action_date.date() - self.today.date()).days
-            if delta > 0: bits.append(f"Timing: {delta} day(s) from now.")
-            elif delta < 0: bits.append(f"Timing: {-delta} day(s) ago.")
-            else: bits.append("Timing: Today.")
+            bits.append(f"Timing: {delta} day(s) from now." if delta >= 0 else f"Timing: {-delta} day(s) ago.")
 
         clean_summ = summary.replace(title, "").strip(" -:|")
-        if clean_summ:
-            bits.append(clean_summ[:200].rstrip(".") + ".")
-
+        if clean_summ: bits.append(clean_summ[:220].rstrip(".") + ".")
         return " ".join(bits)
 
     def compute_media_relevance(self, theme_primary: str, status: str, days_to_event, source_type: str, red_flag: int, title: str) -> int:
@@ -353,20 +312,23 @@ class LCDSDataEngine:
         if days_to_event is not None and pd.notna(days_to_event) and 0 <= int(days_to_event) <= 14: score += 25
         if source_type == "Official": score += 15
         if int(red_flag) == 1: score += 10
+        title_l = (title or "").lower()
+        if any(x in title_l for x in ["population", "migration", "fertility", "death", "mortality", "census", "asylum"]): score += 10
         return int(score)
 
     def record_from_fields(self, source: dict, title: str, summary: str, date_value, url: str, extra_text: str = "", source_page: str = "", fallback_hit: int = 0) -> dict | None:
         title = self.normalize_whitespace(re.sub(r"^\d+\.\s*", "", title or "").strip())
         summary = self.normalize_whitespace(summary)
         
-        if not title or len(title) < 8 or re.match(r"^[0-9\/\-\. ]+$", title):
+        # Guard against structural noise
+        if not title or self.is_junk_title(title):
             return None
 
         if not self.is_relevant(title, summary, source):
             return None
 
         action_date = self.normalize_date(date_value)
-        if not self.in_time_window(action_date):
+        if action_date is not None and not self.in_time_window(action_date):
             return None
 
         combined = f"{title} {summary} {extra_text}"
@@ -377,12 +339,11 @@ class LCDSDataEngine:
         embargo = int("embargo" in combined.lower())
         source_quality = self.get_source_quality(source["name"], source_page or url or source.get("url", ""))
 
-        confidence = 0.50 + (0.15 if title else 0) + (0.15 if action_date else 0) + (0.10 if summary else 0)
+        confidence = 0.48 + (0.15 if title else 0) + (0.10 if summary else 0) + (0.15 if action_date else 0)
         
         exec_summary = self.build_exec_summary(title, summary, source, status, action_date)
         days_to_event = None if action_date is None else (action_date.date() - self.today.date()).days
         media_relevance = self.compute_media_relevance(theme_primary, status, days_to_event, source.get("source_type", "Official"), red_flag, title)
-        
         priority_score += int(source.get("priority_weight", 0))
         record_key = self.canonical_key(title, source["name"], action_date)
         executive_flag = int(priority_score >= 80 or red_flag == 1 or deleted_signal == 1)
@@ -400,60 +361,52 @@ class LCDSDataEngine:
         )
         return item.to_record()
 
-    # --- PARSERS ---
-
     def parser_ons_release_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
-        """Custom parser for ONS that correctly handles their search API layout."""
-        # 1. Rebuild URL with required params
-        params = {"highlight": "true", "release-type": "type-upcoming", "sort": "date-newest"}
-        if source.get("keywords_any"): params["keywords"] = " ".join(source["keywords_any"])
-        
+        """Injects keywords directly into the ONS Search to guarantee demographic data is found."""
         url_parts = list(urlparse(page_url))
         query = parse_qs(url_parts[4])
-        query.update(params)
+        
+        # ONS strictly requires keywords to filter out non-demographic data
+        if "keywords" not in query and source.get("keywords_any"):
+            query["keywords"] = " ".join(source["keywords_any"][:5])
+            
         url_parts[4] = urlencode(query, doseq=True)
-        full_url = urlunparse(url_parts)
+        search_url = urlunparse(url_parts)
 
-        resp = self.fetch(full_url, source)
+        resp = self.fetch(search_url, source)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
         results = []
 
-        # 2. Extract specific release cards
-        cards = soup.find_all(["li", "div"], class_=re.compile(r"search-results__item|release__item|col-12"))
-        
-        # Fallback if classes changed
-        if not cards: cards = soup.find_all("li")
+        # Find any logical container for ONS results
+        cards = soup.find_all(["li", "div", "article"])
+        seen_links = set()
 
         for card in cards:
+            text = card.get_text(" ", strip=True)
+            if "Release date:" not in text: continue
+
             link = card.find("a", href=True)
             if not link: continue
-
+                
+            url = urljoin(page_url, link["href"])
+            if url in seen_links: continue
+                
             title = self.normalize_whitespace(link.get_text())
-            url = link["href"]
-            if url.startswith("/"): url = f"https://www.ons.gov.uk{url}"
+            m = re.search(r"Release date:\s*([^|]+)\|\s*([A-Za-z]+)", text)
+            if not m: continue
+                
+            date_text, label = m.groups()
+            date_text = date_text.strip()
+            label = label.strip()
 
-            raw_text = self.normalize_whitespace(card.get_text(" ", strip=True))
+            summary = text.replace(title, "").replace(f"Release date: {date_text} | {label}", "").strip()
+            seen_links.add(url)
             
-            # ONS specific date extraction
-            m = re.search(r"Release date:\s*([^|]+)\|\s*([A-Za-z]+)", raw_text)
-            date_text = m.group(1).strip() if m else None
-            label = m.group(2).strip() if m else "Published"
-
-            if not date_text: 
-                # Fallback date extraction
-                for pat in DATE_PATTERNS:
-                    dm = re.search(pat, raw_text)
-                    if dm:
-                        date_text = dm.group(0)
-                        break
-
-            if title and date_text:
-                summary = raw_text.replace(title, "").replace(date_text, "").replace("Release date:", "").strip(" -:|")
-                rec = self.record_from_fields(source, title, summary, date_text, url, extra_text=raw_text, source_page=page_url, fallback_hit=fallback_hit)
-                if rec:
-                    rec["status"] = {"Published": "Published", "Confirmed": "Upcoming", "Cancelled": "Cancelled"}.get(label, rec["status"])
-                    results.append(rec)
+            rec = self.record_from_fields(source, title, summary, date_text, url, extra_text=text, source_page=page_url, fallback_hit=fallback_hit)
+            if rec:
+                rec["status"] = {"Published": "Published", "Confirmed": "Upcoming", "Cancelled": "Cancelled"}.get(label, rec["status"])
+                results.append(rec)
 
         return results
 
@@ -465,19 +418,18 @@ class LCDSDataEngine:
         results = []
         current_date = None
         current_channel = ""
-        skip = {"Upcoming Releases", "Share", "Top of Section", "Skip Navigation", "Newsroom", "Helpful Links"}
-
+        
         for line in lines:
             if re.fullmatch(r"\d{1,2}/\d{1,2}/\d{4}", line):
                 current_date = line
                 current_channel = ""
                 continue
-            if line in {"Microdata Access & API", "data.census.gov & API", "data.census.gov, Microdata Access, & API", "API", "News Releases"}:
+            if line in {"Microdata Access & API", "data.census.gov & API", "API", "News Releases"}:
                 current_channel = line
                 continue
 
             line = line.lstrip("*• ").strip()
-            if current_date and len(line) > 4 and line not in skip:
+            if current_date and len(line) > 4:
                 rec = self.record_from_fields(
                     source, line, current_channel, current_date, page_url,
                     extra_text=f"{current_channel} {line}", source_page=page_url, fallback_hit=fallback_hit
@@ -486,21 +438,13 @@ class LCDSDataEngine:
         return results
 
     def parser_generic_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
-        """Generic parser that explicitly looks for structural titles to avoid capturing UI noise."""
+        """Actively hunts for structural titles (h2, a) to avoid UI bloating."""
         resp = self.fetch(page_url, source)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
         results = []
 
         for row in soup.find_all(["tr", "li", "article", "section", "div"]):
-            # Target structural title tags first
-            head_node = row.find(["h2", "h3", "h4", "strong"])
-            link_node = row.find("a", href=True)
-            
-            title = ""
-            if head_node: title = self.normalize_whitespace(head_node.get_text())
-            elif link_node: title = self.normalize_whitespace(link_node.get_text())
-
             text = self.normalize_whitespace(row.get_text(" ", strip=True))
             if len(text) < 20: continue
 
@@ -513,17 +457,22 @@ class LCDSDataEngine:
 
             if not date_text: continue
 
-            # If no structural title found, attempt to build one from the text
+            title = ""
+            head_node = row.find(["h2", "h3", "h4", "strong"])
+            link_node = row.find("a", href=True)
+            
+            if head_node and len(head_node.get_text(strip=True)) > 5:
+                 title = self.normalize_whitespace(head_node.get_text(strip=True))
+            elif link_node and len(link_node.get_text(strip=True)) > 5:
+                 title = self.normalize_whitespace(link_node.get_text(strip=True))
+
             if not title:
-                title = text.replace(date_text, "").strip(" |-:")[:150]
+                 title = text.replace(date_text, "").strip(" |-:")[:150]
 
             url = urljoin(page_url, link_node["href"]) if link_node else page_url
-            summary = text.replace(title, "").replace(date_text, "").strip()
+            summary = text.replace(title, "").replace(date_text, "").strip(" -:|")
 
-            rec = self.record_from_fields(
-                source, title, summary, date_text, url,
-                extra_text=text, source_page=page_url, fallback_hit=fallback_hit
-            )
+            rec = self.record_from_fields(source, title, summary, date_text, url, extra_text=text, source_page=page_url, fallback_hit=fallback_hit)
             if rec: results.append(rec)
         return results
 
@@ -534,20 +483,12 @@ class LCDSDataEngine:
         results = []
 
         for node in soup.find_all(["release", "item", "entry"]):
-            title_node = node.find(["title", "headline"])
-            date_node = node.find(["release_date", "pubDate", "updated", "published", "date"])
-            summary_node = node.find(["description", "summary"])
-            link_node = node.find(["link", "id"])
+            title = node.find(["title", "headline"]).get_text(" ", strip=True) if node.find(["title", "headline"]) else ""
+            summary = node.find(["description", "summary"]).get_text(" ", strip=True) if node.find(["description", "summary"]) else ""
+            date_val = node.find(["release_date", "pubDate", "updated", "published", "date"]).get_text(" ", strip=True) if node.find(["release_date", "pubDate", "updated", "published", "date"]) else ""
+            url = node.find(["link", "id"]).get_text(" ", strip=True) if node.find(["link", "id"]) else page_url
 
-            title = title_node.get_text(" ", strip=True) if title_node else ""
-            summary = summary_node.get_text(" ", strip=True) if summary_node else ""
-            date_val = date_node.get_text(" ", strip=True) if date_node else ""
-            url = link_node.get_text(" ", strip=True) if link_node else page_url
-
-            rec = self.record_from_fields(
-                source, title, summary, date_val, url,
-                extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit
-            )
+            rec = self.record_from_fields(source, title, summary, date_val, url, extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit)
             if rec: results.append(rec)
         return results
 
@@ -557,82 +498,67 @@ class LCDSDataEngine:
         root = ET.fromstring(resp.text)
         items = root.findall(".//item") + root.findall(".//{http://www.w3.org/2005/Atom}entry")
         results = []
-        max_items = int(source.get("max_items", 50))
 
-        for entry in items[:max_items]:
-            def find_text(names: list[str]) -> str:
-                for name in names:
-                    node = entry.find(name)
-                    if node is not None and (node.text or "").strip(): return node.text.strip()
+        for entry in items[:int(source.get("max_items", 50))]:
+            def ft(names):
+                for n in names:
+                    x = entry.find(n)
+                    if x is not None and (x.text or "").strip(): return x.text.strip()
                 return ""
 
-            title = self.normalize_whitespace(find_text(["title", "{http://www.w3.org/2005/Atom}title"]))
-            summary = self.normalize_whitespace(find_text(["description", "summary", "{http://www.w3.org/2005/Atom}summary"]))
-            date_val = find_text(["pubDate", "published", "updated", "{http://www.w3.org/2005/Atom}updated"])
+            title = self.normalize_whitespace(ft(["title", "{http://www.w3.org/2005/Atom}title"]))
+            summary = self.normalize_whitespace(ft(["description", "summary", "{http://www.w3.org/2005/Atom}summary"]))
+            date_val = ft(["pubDate", "published", "updated", "{http://www.w3.org/2005/Atom}updated"])
+
+            # FIX: If Eurostat gives us an ugly DB code, swap it for the human-readable description
+            if "Dataset: updated data" in title or "Dataset: new data" in title:
+                if len(summary) > 10:
+                    code_match = title.split("-")[0].strip()
+                    title = f"{summary} ({code_match})"
+                    summary = "Data updated or added in Eurostat database."
 
             link = entry.find("link")
-            if link is not None and link.text: url = link.text.strip()
-            elif link is not None and link.attrib.get("href"): url = link.attrib["href"]
-            else: url = page_url
+            url = link.text.strip() if link is not None and link.text else (link.attrib.get("href") if link is not None else page_url)
 
-            rec = self.record_from_fields(
-                source, title, summary, date_val, url,
-                extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit
-            )
-            if rec:
-                if rec["action_date"] is None:
-                    rec["status"] = "Announcement"
-                    rec["event_type"] = "Announcement"
-                results.append(rec)
+            rec = self.record_from_fields(source, title, summary, date_val, url, extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit)
+            if rec: results.append(rec)
         return results
 
     def parser_ics_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
         resp = self.fetch(page_url, source)
         resp.raise_for_status()
-        text = resp.text
         results = []
 
-        for block in text.split("BEGIN:VEVENT")[1:]:
-            block = block.split("END:VEVENT")[0]
-            lines = [x.strip() for x in block.splitlines() if x.strip()]
-            unfolded = []
-            for line in lines:
-                if unfolded and line.startswith(" "): unfolded[-1] += line.strip()
-                else: unfolded.append(line)
+        for block in resp.text.split("BEGIN:VEVENT")[1:]:
+            lines = [x.strip() for x in block.split("END:VEVENT")[0].splitlines() if x.strip()]
+            unf = []
+            for l in lines:
+                if unf and l.startswith(" "): unf[-1] += l.strip()
+                else: unf.append(l)
 
-            def read_field(prefixes: list[str]) -> str:
-                for line in unfolded:
-                    for prefix in prefixes:
-                        if line.startswith(prefix): return line.split(":", 1)[-1].strip()
+            def rf(prefixes):
+                for u in unf:
+                    for p in prefixes:
+                        if u.startswith(p): return u.split(":", 1)[-1].strip()
                 return ""
 
-            title = read_field(["SUMMARY"])
-            description = read_field(["DESCRIPTION"])
-            dtstart = read_field(["DTSTART", "DTSTART;VALUE=DATE"])
-            url = read_field(["URL"]) or page_url
-
-            rec = self.record_from_fields(
-                source, title, description, dtstart, url,
-                extra_text=block, source_page=page_url, fallback_hit=fallback_hit
-            )
+            title = rf(["SUMMARY"])
+            rec = self.record_from_fields(source, title, rf(["DESCRIPTION"]), rf(["DTSTART", "DTSTART;VALUE=DATE"]), rf(["URL"]) or page_url, extra_text=block, source_page=page_url, fallback_hit=fallback_hit)
             if rec: results.append(rec)
         return results
 
-    def build_gdelt_url(self, source: dict) -> str:
-        q = source.get("gdelt_query", "")
-        timespan = source.get("gdelt_timespan", "7d")
-        maxrecords = int(source.get("max_items", 75))
-        return (
-            "https://api.gdeltproject.org/api/v2/doc/doc?query=" + quote_plus(q) +
-            f"&mode=artlist&maxrecords={maxrecords}&format=jsonfeed&sort=datedesc&timespan={timespan}"
-        )
+    def parser_html_signal_scan(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
+        return self.parser_generic_calendar(source, page_url, fallback_hit)
+
+    def parser_cbs_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
+        return self.parser_generic_calendar(source, page_url, fallback_hit)
 
     def parser_gdelt_jsonfeed(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
-        gdelt_url = self.build_gdelt_url(source)
+        q = quote_plus(source.get("gdelt_query", ""))
+        gdelt_url = f"https://api.gdeltproject.org/api/v2/doc/doc?query={q}&mode=artlist&maxrecords={int(source.get('max_items', 75))}&format=jsonfeed&sort=datedesc&timespan={source.get('gdelt_timespan', '7d')}"
         resp = self.fetch(gdelt_url, source)
         resp.raise_for_status()
-        payload = resp.json()
-        items = payload.get("items", []) if isinstance(payload, dict) else []
+        items = resp.json().get("items", []) if isinstance(resp.json(), dict) else []
         results = []
         target_keywords = [k.lower() for k in source.get("keywords_any", [])]
 
@@ -640,92 +566,41 @@ class LCDSDataEngine:
             title = self.normalize_whitespace(item.get("title", ""))
             summary = self.normalize_whitespace(item.get("summary", item.get("content_text", "")))
             date_val = item.get("date_published") or item.get("date_modified")
-            url = item.get("url") or item.get("external_url") or gdelt_url
+            
+            # GDELT Anti-Noise Logic
+            t_l, s_l = title.lower(), summary.lower()
+            if not any(k in t_l or s_l.count(k) >= 2 for k in target_keywords): continue
 
-            # GDELT Strict Filter
-            title_l = title.lower()
-            summary_l = summary.lower()
-            is_strong_hit = False
-            for k in target_keywords:
-                if k in title_l or summary_l.count(k) >= 2:
-                    is_strong_hit = True
-                    break
-            if not is_strong_hit: continue
-
-            rec = self.record_from_fields(
-                source, title, summary, date_val, url,
-                extra_text=f"{title} {summary}", source_page=gdelt_url, fallback_hit=fallback_hit
-            )
-            if rec:
-                if rec["status"] == "Published": rec["status"] = "Announcement"
-                rec["event_type"] = "Media Signal"
-                results.append(rec)
+            rec = self.record_from_fields(source, title, summary, date_val, item.get("url", gdelt_url), extra_text=f"{title} {summary}", source_page=gdelt_url, fallback_hit=fallback_hit)
+            if rec: results.append(rec)
         return results
 
     def parse_page(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
-        parser_name = source.get("parser", "generic_calendar")
-        parser_aliases = {
-            "ons_json_api": "ons_release_calendar",
-            "html_deep_scan": "generic_calendar",
-            "html_table_scan": "generic_calendar",
-            "eurostat_xml": "xml_release",
-            "rss_feed": "rss",
-            "ics": "ics_calendar",
-            "gdelt": "gdelt_jsonfeed",
-            "cbs_calendar": "generic_calendar", # CBS works well with generic now
-            "html_signal_scan": "generic_calendar" # Merged logic into generic
-        }
-        parser_name = parser_aliases.get(parser_name, parser_name)
-
+        name = source.get("parser", "generic_calendar")
+        aliases = {"ons_json_api": "ons_release_calendar", "html_deep_scan": "generic_calendar", "html_table_scan": "generic_calendar", "eurostat_xml": "xml_release", "rss_feed": "rss", "ics": "ics_calendar", "gdelt": "gdelt_jsonfeed"}
         parsers = {
-            "ons_release_calendar": self.parser_ons_release_calendar,
-            "census_upcoming": self.parser_census_upcoming,
-            "generic_calendar": self.parser_generic_calendar,
-            "xml_release": self.parser_xml_release,
-            "rss": self.parser_rss,
-            "ics_calendar": self.parser_ics_calendar,
-            "gdelt_jsonfeed": self.parser_gdelt_jsonfeed,
+            "ons_release_calendar": self.parser_ons_release_calendar, "census_upcoming": self.parser_census_upcoming,
+            "cbs_calendar": self.parser_cbs_calendar, "generic_calendar": self.parser_generic_calendar,
+            "xml_release": self.parser_xml_release, "rss": self.parser_rss, "ics_calendar": self.parser_ics_calendar,
+            "html_signal_scan": self.parser_html_signal_scan, "gdelt_jsonfeed": self.parser_gdelt_jsonfeed,
         }
-
-        parser = parsers.get(parser_name, self.parser_generic_calendar)
-        return parser(source, page_url, fallback_hit)
+        return parsers.get(aliases.get(name, name), self.parser_generic_calendar)(source, page_url, fallback_hit)
 
     def parse_source(self, source: dict) -> tuple[dict, list[dict], dict]:
         pages = self.source_page_list(source)
         all_items = []
-
         with ThreadPoolExecutor(max_workers=min(self.page_workers, max(1, len(pages)))) as ex:
-            futures = {ex.submit(self.parse_page, source, page_url, fallback_hit): (page_url, fallback_hit) for page_url, fallback_hit in pages}
-
+            futures = {ex.submit(self.parse_page, source, pu, fh): (pu, fh) for pu, fh in pages}
             for future in as_completed(futures):
-                page_url, fallback_hit = futures[future]
+                pu, fh = futures[future]
                 try:
                     items = future.result()
-                    self.update_source_health(source["name"], page_url, True, len(items))
+                    self.update_source_health(source["name"], pu, True, len(items))
                     all_items.extend(items)
                 except Exception as e:
-                    self.update_source_health(source["name"], page_url, False, 0)
-                    all_items.append({
-                        "dataset_title": f"Source check failed: {source['name']}",
-                        "source": source["name"],
-                        "source_group": source.get("group", "Other"),
-                        "source_type": source.get("source_type", "Official"),
-                        "event_type": "Monitor",
-                        "action_date": None,
-                        "status": "Monitor",
-                        "url": page_url,
-                        "summary": f"Page could not be parsed on this run. Error: {str(e)[:220]}",
-                        "theme_primary": "Methods & Infrastructure",
-                        "priority_score": 30,
-                        "confidence": 0.25,
-                        "executive_flag": 0,
-                        "record_key": self.canonical_key(f"Source check failed: {source['name']}", source["name"], None),
-                    })
-
-        current_keys = [
-            self.canonical_key(x.get("dataset_title", ""), x.get("source", source["name"]), x.get("action_date"))
-            for x in all_items if x.get("dataset_title")
-        ]
+                    self.update_source_health(source["name"], pu, False, 0)
+        
+        current_keys = [self.canonical_key(x.get("dataset_title", ""), x.get("source", source["name"]), x.get("action_date")) for x in all_items if x.get("dataset_title")]
         current_snapshot = {k: True for k in current_keys}
         previous_snapshot = self.snapshot.get(source["name"], {})
 
@@ -735,16 +610,14 @@ class LCDSDataEngine:
                 missing_keys = set(previous_snapshot.keys()) - set(current_snapshot.keys())
                 for key in missing_keys:
                     row = prev_lookup[prev_lookup["record_key"] == key]
-                    if row.empty: continue
-                    r = row.iloc[0].to_dict()
-                    r["status"] = "Deleted"
-                    r["event_type"] = "Deletion"
-                    r["priority_score"] = STATUS_PRIORITY["Deleted"]
-                    r["red_flag"] = 1
-                    r["deleted_signal"] = 1
-                    r["last_checked"] = utcnow_naive().strftime("%Y-%m-%d %H:%M:%S")
-                    all_items.append(r)
-
+                    if not row.empty:
+                        r = row.iloc[0].to_dict()
+                        r["status"] = "Deleted"
+                        r["event_type"] = "Deletion"
+                        r["priority_score"] = STATUS_PRIORITY["Deleted"]
+                        r["red_flag"] = 1
+                        r["deleted_signal"] = 1
+                        all_items.append(r)
         return source, all_items, current_snapshot | previous_snapshot
 
     def postprocess(self, rows: list[dict]) -> pd.DataFrame:
@@ -755,7 +628,6 @@ class LCDSDataEngine:
             "last_checked", "source_page", "fallback_hit", "source_quality", "media_relevance",
             "executive_flag", "record_key"
         ]
-
         if not rows: return pd.DataFrame(columns=base_cols + ["days_to_event", "display_date", "sort_rank"])
 
         df = pd.DataFrame(rows)
@@ -777,84 +649,39 @@ class LCDSDataEngine:
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
 
         df["dataset_title_norm"] = df["dataset_title"].fillna("").str.lower().str.replace(r"[^a-z0-9]+", " ", regex=True).str.strip()
-
         missing_key = df["record_key"].fillna("") == ""
         if missing_key.any():
-            df.loc[missing_key, "record_key"] = df.loc[missing_key].apply(
-                lambda r: self.canonical_key(r.get("dataset_title", ""), r.get("source", ""), r.get("action_date")),
-                axis=1
-            )
+            df.loc[missing_key, "record_key"] = df.loc[missing_key].apply(lambda r: self.canonical_key(r.get("dataset_title", ""), r.get("source", ""), r.get("action_date")), axis=1)
 
-        df = df.sort_values(
-            ["deleted_signal", "red_flag", "priority_score", "confidence", "source_quality", "fallback_hit", "action_date"],
-            ascending=[False, False, False, False, False, True, True]
-        )
+        df = df.sort_values(["deleted_signal", "red_flag", "priority_score", "confidence", "source_quality", "fallback_hit", "action_date"], ascending=[False, False, False, False, False, True, True])
         df = df.drop_duplicates(subset=["record_key"], keep="first")
-
         date_key = df["action_date"].dt.strftime("%Y-%m-%d").fillna("nodate")
-        df = (
-            df.groupby([df["dataset_title_norm"], date_key], group_keys=False)
-            .apply(
-                lambda g: g.sort_values(
-                    ["deleted_signal", "red_flag", "priority_score", "confidence", "source_quality", "fallback_hit"],
-                    ascending=[False, False, False, False, False, True]
-                ).head(1)
-            )
-            .reset_index(drop=True)
-        )
+        df = df.groupby([df["dataset_title_norm"], date_key], group_keys=False).apply(lambda g: g.sort_values(["deleted_signal", "red_flag", "priority_score", "confidence", "source_quality", "fallback_hit"], ascending=[False, False, False, False, False, True]).head(1)).reset_index(drop=True)
 
         df["days_to_event"] = (df["action_date"].dt.normalize() - pd.Timestamp(self.today)).dt.days
         df["display_date"] = df["action_date"].dt.strftime("%d %b %Y")
         df.loc[df["action_date"].isna(), "display_date"] = "Date TBC"
-
         df["executive_flag"] = ((df["priority_score"] >= 80) | (df["red_flag"] == 1) | (df["deleted_signal"] == 1)).astype(int)
 
         missing_media = df["media_relevance"] <= 0
         if missing_media.any():
-            df.loc[missing_media, "media_relevance"] = df.loc[missing_media].apply(
-                lambda r: self.compute_media_relevance(
-                    r["theme_primary"], r["status"], r["days_to_event"], r["source_type"], r["red_flag"], r["dataset_title"]
-                ), axis=1
-            )
+            df.loc[missing_media, "media_relevance"] = df.loc[missing_media].apply(lambda r: self.compute_media_relevance(r["theme_primary"], r["status"], r["days_to_event"], r["source_type"], r["red_flag"], r["dataset_title"]), axis=1)
 
-        df = df[(df["action_date"].isna()) | (df["days_to_event"] >= -90) & (df["days_to_event"] <= self.max_abs_days)]
-
-        df["sort_rank"] = (
-            df["deleted_signal"] * 1000 +
-            df["red_flag"] * 500 +
-            df["priority_score"] +
-            df["media_relevance"] +
-            (df["source_quality"] * 20).round().astype(int) -
-            df["fallback_hit"] * 2 -
-            df["days_to_event"].fillna(9999).clip(lower=-365, upper=365)
-        )
+        df = df[(df["action_date"].isna()) | (df["days_to_event"].abs() <= self.max_abs_days)]
+        df["sort_rank"] = (df["deleted_signal"] * 1000 + df["red_flag"] * 500 + df["priority_score"] + df["media_relevance"] + (df["source_quality"] * 20).round().astype(int) - df["fallback_hit"] * 2 - df["days_to_event"].fillna(9999).clip(lower=-365, upper=365))
 
         keep_cols = base_cols + ["days_to_event", "display_date", "sort_rank"]
         return df[keep_cols].sort_values(["sort_rank", "action_date", "source"], ascending=[False, True, True]).reset_index(drop=True)
 
     def build_metrics(self, df: pd.DataFrame) -> dict:
-        if df.empty:
-            return {
-                "records": 0, "upcoming": 0, "red_flags": 0, "deletions": 0,
-                "next_14_days": 0, "fallback_hits": 0, "generated_at": utcnow_naive().isoformat(),
-            }
-
-        return {
-            "records": int(len(df)),
-            "upcoming": int(((df["status"] == "Upcoming") & (df["days_to_event"] >= 0)).sum()),
-            "red_flags": int(df["red_flag"].sum()),
-            "deletions": int(df["deleted_signal"].sum()),
-            "next_14_days": int(((df["days_to_event"] >= 0) & (df["days_to_event"] <= 14)).sum()),
-            "fallback_hits": int(df["fallback_hit"].sum()),
-            "generated_at": utcnow_naive().isoformat(),
-        }
+        if df.empty: return {"records": 0, "upcoming": 0, "red_flags": 0, "deletions": 0, "next_14_days": 0, "fallback_hits": 0, "generated_at": utcnow_naive().isoformat()}
+        return {"records": int(len(df)), "upcoming": int(((df["status"] == "Upcoming") & (df["days_to_event"] >= 0)).sum()), "red_flags": int(df["red_flag"].sum()), "deletions": int(df["deleted_signal"].sum()), "next_14_days": int(((df["days_to_event"] >= 0) & (df["days_to_event"] <= 14)).sum()), "fallback_hits": int(df["fallback_hit"].sum()), "generated_at": utcnow_naive().isoformat()}
 
     def run(self) -> pd.DataFrame:
         sources = self.config.get("sources", [])
         snapshots_out = {}
         all_rows = []
         logs = []
-
         with ThreadPoolExecutor(max_workers=self.max_workers) as ex:
             futures = {ex.submit(self.parse_source, source): source for source in sources}
             for future in as_completed(futures):
@@ -869,7 +696,6 @@ class LCDSDataEngine:
         self.save_json(SOURCE_HEALTH_FILE, self.source_health)
         self.save_json(RUNLOG_FILE, {"generated_at": utcnow_naive().isoformat(), "logs": logs, "metrics": self.build_metrics(df)})
         return df
-
 
 if __name__ == "__main__":
     engine = LCDSDataEngine()
