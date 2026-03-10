@@ -9,3 +9,4 @@ lxml
 sentence-transformers
 torch
 plotly
+curl_cffi
