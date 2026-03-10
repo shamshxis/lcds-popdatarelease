@@ -9,6 +9,7 @@ st.set_page_config(page_title="LCDS Executive Data Watch", page_icon="📡", lay
 
 DATA_FILE = "data/dataset_tracker.csv"
 RUNLOG_FILE = "data/run_log.json"
+SOURCE_HEALTH_FILE = "data/source_health.json"
 
 
 def run_scan():
@@ -24,6 +25,17 @@ def run_scan():
     return True
 
 
+def load_json(path: str) -> dict:
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
 def load_data() -> pd.DataFrame:
     if not os.path.exists(DATA_FILE):
         return pd.DataFrame()
@@ -33,16 +45,6 @@ def load_data() -> pd.DataFrame:
     if "last_checked" in df.columns:
         df["last_checked"] = pd.to_datetime(df["last_checked"], errors="coerce")
     return df
-
-
-def load_metrics() -> dict:
-    if not os.path.exists(RUNLOG_FILE):
-        return {}
-    try:
-        with open(RUNLOG_FILE, "r", encoding="utf-8") as f:
-            return json.load(f).get("metrics", {})
-    except Exception:
-        return {}
 
 
 def style_status(v: str) -> str:
@@ -76,7 +78,7 @@ def style_date(row):
 
 
 st.title("📡 LCDS Executive Data Watch")
-st.caption("Executive monitoring for releases, revisions, withdrawals, restrictions, and signals across demographic and population data sources")
+st.caption("Executive monitoring for releases, revisions, withdrawals, restrictions, and filtered media signals")
 
 top_left, top_right = st.columns([1, 4])
 with top_left:
@@ -85,7 +87,7 @@ with top_left:
         if ok:
             st.rerun()
 with top_right:
-    metrics = load_metrics()
+    metrics = load_json(RUNLOG_FILE).get("metrics", {})
     generated = metrics.get("generated_at")
     st.write(f"Last engine update: {generated if generated else 'Not available'}")
 
@@ -112,6 +114,9 @@ if "executive_flag" not in df.columns:
     deleted_signal = pd.to_numeric(df["deleted_signal"], errors="coerce").fillna(0)
     df["executive_flag"] = ((priority >= 80) | (red_flag == 1) | (deleted_signal == 1)).astype(int)
 
+metrics = load_json(RUNLOG_FILE).get("metrics", {})
+health = load_json(SOURCE_HEALTH_FILE)
+
 m1, m2, m3, m4, m5, m6 = st.columns(6)
 m1.metric("Total records", int(metrics.get("records", len(df))))
 m2.metric("Upcoming", int(metrics.get("upcoming", ((df["status"] == "Upcoming") & (df["days_to_event"] >= 0)).sum())))
@@ -127,13 +132,15 @@ with st.sidebar:
     sources = sorted(df["source"].dropna().unique().tolist()) if "source" in df.columns else []
     themes = sorted(df["theme_primary"].dropna().unique().tolist()) if "theme_primary" in df.columns else []
     statuses = sorted(df["status"].dropna().unique().tolist()) if "status" in df.columns else []
+    source_types = sorted(df["source_type"].dropna().unique().tolist()) if "source_type" in df.columns else []
 
     selected_groups = st.multiselect("Source group", groups, default=groups)
     selected_sources = st.multiselect("Source", sources, default=sources)
     selected_themes = st.multiselect("Theme", themes, default=themes)
     selected_statuses = st.multiselect("Status", statuses, default=statuses)
+    selected_source_types = st.multiselect("Source type", source_types, default=source_types)
     executive_only = st.checkbox("Executive issues only", value=True)
-    primary_only = st.checkbox("Primary sources only", value=False)
+    primary_only = st.checkbox("Primary pages only", value=False)
     text_filter = st.text_input("Search title or summary")
 
 view = df.copy()
@@ -145,6 +152,8 @@ if selected_themes and "theme_primary" in view.columns:
     view = view[view["theme_primary"].isin(selected_themes)]
 if selected_statuses and "status" in view.columns:
     view = view[view["status"].isin(selected_statuses)]
+if selected_source_types and "source_type" in view.columns:
+    view = view[view["source_type"].isin(selected_source_types)]
 if executive_only and "executive_flag" in view.columns:
     view = view[view["executive_flag"] == 1]
 if primary_only and "fallback_hit" in view.columns:
@@ -156,22 +165,23 @@ if text_filter:
     view = view[title_series.str.contains(q) | summary_series.str.contains(q)]
 
 briefing = view.sort_values(
-    ["deleted_signal", "red_flag", "media_relevance", "priority_score", "fallback_hit", "action_date"],
-    ascending=[False, False, False, False, True, True]
-).head(15)
+    ["deleted_signal", "red_flag", "media_relevance", "priority_score", "source_quality", "fallback_hit", "action_date"],
+    ascending=[False, False, False, False, False, True, True]
+).head(20)
 
 st.subheader("Executive briefing")
 for _, row in briefing.iterrows():
     icon = "🟥" if int(row.get("deleted_signal", 0)) == 1 else "🟧" if int(row.get("red_flag", 0)) == 1 else "🟦"
     with st.container(border=True):
         st.markdown(f"{icon} **{row.get('dataset_title', '')}**")
-        cols = st.columns([1.2, 1.1, 1.2, 1, 1, 1])
+        cols = st.columns([1.15, 1.0, 1.15, 0.9, 0.9, 0.9, 0.9])
         cols[0].write(f"**Source**  \n{row.get('source', '')}")
         cols[1].write(f"**Date**  \n{row.get('display_date', 'Date TBC')}")
         cols[2].write(f"**Theme**  \n{row.get('theme_primary', 'General')}")
         cols[3].write(f"**Status**  \n{row.get('status', '')}")
         cols[4].write(f"**Priority**  \n{int(row.get('priority_score', 0))}")
-        cols[5].write(f"**Fallback**  \n{'Yes' if int(row.get('fallback_hit', 0)) == 1 else 'No'}")
+        cols[5].write(f"**Media**  \n{int(row.get('media_relevance', 0))}")
+        cols[6].write(f"**Quality**  \n{float(row.get('source_quality', 0.0)):.2f}")
         if row.get("summary"):
             st.write(row.get("summary"))
         if row.get("url"):
@@ -180,15 +190,19 @@ for _, row in briefing.iterrows():
 st.subheader("Release and signal table")
 show_cols = [
     c for c in [
-        "status", "display_date", "days_to_event", "source_group", "source", "theme_primary",
-        "dataset_title", "summary", "priority_score", "media_relevance", "fallback_hit",
-        "red_flag", "deleted_signal", "embargo", "url", "source_page", "last_checked"
+        "status", "display_date", "days_to_event", "source_group", "source", "source_type",
+        "theme_primary", "dataset_title", "summary", "priority_score", "media_relevance",
+        "source_quality", "fallback_hit", "red_flag", "deleted_signal", "embargo",
+        "url", "source_page", "last_checked"
     ] if c in view.columns
 ]
 
 styled = (
     view[show_cols]
-    .sort_values(["deleted_signal", "red_flag", "media_relevance", "priority_score", "fallback_hit", "action_date"], ascending=[False, False, False, False, True, True])
+    .sort_values(
+        ["deleted_signal", "red_flag", "media_relevance", "priority_score", "source_quality", "fallback_hit", "action_date"],
+        ascending=[False, False, False, False, False, True, True]
+    )
     .style
     .map(style_status, subset=[c for c in ["status"] if c in show_cols])
     .apply(style_date, axis=1)
@@ -202,6 +216,7 @@ st.dataframe(
         "days_to_event": st.column_config.NumberColumn("Days", format="%d"),
         "priority_score": st.column_config.NumberColumn("Priority", format="%d"),
         "media_relevance": st.column_config.NumberColumn("Media relevance", format="%d"),
+        "source_quality": st.column_config.NumberColumn("Source quality", format="%.2f"),
         "fallback_hit": st.column_config.CheckboxColumn("Fallback"),
         "red_flag": st.column_config.CheckboxColumn("Red flag"),
         "deleted_signal": st.column_config.CheckboxColumn("Deleted"),
@@ -221,7 +236,7 @@ with left:
 with right:
     st.subheader("By source")
     if "source" in view.columns and not view.empty:
-        source_counts = view["source"].value_counts().head(15).reset_index()
+        source_counts = view["source"].value_counts().head(20).reset_index()
         source_counts.columns = ["Source", "Count"]
         st.bar_chart(source_counts.set_index("Source"))
 
@@ -235,7 +250,26 @@ with st.expander("Source diagnostics"):
                 deleted=("deleted_signal", "sum"),
                 fallback_hits=("fallback_hit", "sum"),
                 avg_priority=("priority_score", "mean"),
+                avg_quality=("source_quality", "mean"),
             )
             .reset_index()
         )
         st.dataframe(diag, hide_index=True, use_container_width=True)
+
+with st.expander("Source health memory"):
+    if health:
+        rows = []
+        for source_name, payload in health.items():
+            for page_url, page_stats in payload.get("pages", {}).items():
+                rows.append({
+                    "source": source_name,
+                    "page": page_url,
+                    "attempts": page_stats.get("attempts", 0),
+                    "successes": page_stats.get("successes", 0),
+                    "failures": page_stats.get("failures", 0),
+                    "items_seen": page_stats.get("items", 0),
+                    "last_success": payload.get("last_success", ""),
+                    "last_failure": payload.get("last_failure", ""),
+                })
+        if rows:
+            st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
