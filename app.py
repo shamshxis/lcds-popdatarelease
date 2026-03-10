@@ -109,20 +109,24 @@ with st.sidebar:
     exec_only = st.checkbox("🚩 Show Executive Red Flags Only", value=False)
     
     all_groups = ["All"] + sorted(df["source_group"].unique().tolist())
-    sel_group = st.selectbox("Region / Group", all_controllers=all_groups)
+    sel_group = st.selectbox("Region / Group", options=all_groups)
     
     all_sources = ["All"] + sorted(df["source"].unique().tolist())
-    sel_source = st.selectbox("Data Controller", all_sources)
+    sel_source = st.selectbox("Data Controller", options=all_sources)
     
     all_themes = ["All"] + sorted(df["theme_primary"].unique().tolist())
-    sel_theme = st.selectbox("Primary Theme", all_themes)
+    sel_theme = st.selectbox("Primary Theme", options=all_themes)
     
     search_q = st.text_input("Keyword Search", placeholder="e.g. Migration")
 
 # --- FILTER LOGIC ---
 view = df.copy()
 
-if exec_only: view = view[view["executive_flag"] == 1]
+if exec_only:
+    # Handle mixed types gracefully. Ensure it evaluates to numeric 1 before filtering
+    view["executive_flag"] = pd.to_numeric(view["executive_flag"], errors="coerce").fillna(0)
+    view = view[view["executive_flag"] == 1]
+    
 if sel_group != "All": view = view[view["source_group"] == sel_group]
 if sel_source != "All": view = view[view["source"] == sel_source]
 if sel_theme != "All": view = view[view["theme_primary"] == sel_theme]
