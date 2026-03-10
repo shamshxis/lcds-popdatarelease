@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-03-10T07:32:16.906477",
+  "generated_at": "2026-03-10T07:37:53.819176",
   "logs": [
     {
-      "source": "UN Population Division",
+      "source": "DHS Program News",
       "items": 0
     },
     {
-      "source": "DHS Program News",
+      "source": "UN Population Division",
       "items": 0
     },
     {
@@ -14,16 +14,16 @@
       "items": 0
     },
     {
+      "source": "ONS Upcoming Releases",
+      "items": 34
+    },
+    {
       "source": "Statistics Japan (e-Stat)",
       "items": 7
     },
     {
       "source": "NRS Scotland",
-      "items": 1
-    },
-    {
-      "source": "ONS Upcoming Releases",
-      "items": 34
+      "items": 4
     },
     {
       "source": "US Census Releases",
@@ -47,17 +47,17 @@
     },
     {
       "source": "NBS China",
-      "items": 1
+      "items": 0
     }
   ],
   "metrics": {
-    "records": 245,
+    "records": 247,
     "upcoming": 150,
-    "red_flags": 3,
+    "red_flags": 6,
     "deletions": 0,
     "academic_matches": 48,
     "next_14_days": 10,
     "fallback_hits": 7,
-    "generated_at": "2026-03-10T07:32:16.907168"
+    "generated_at": "2026-03-10T07:37:53.819959"
   }
 }
