@@ -1,7 +1,10 @@
-streamlit
+streamlit>=1.35.0
+altair<5
 pandas
 requests
 beautifulsoup4
-lxml
 pyyaml
 python-dateutil
+lxml
+sentence-transformers
+torch
