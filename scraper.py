@@ -31,7 +31,7 @@ SOURCE_HEALTH_FILE = os.path.join(DATA_DIR, "source_health.json")
 
 DEFAULT_TIMEOUT = 25
 DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-MAX_ABS_DAYS = 366
+MAX_ABS_DAYS = 730
 
 THEME_KEYWORDS = {
     "Population": ["population", "demograph", "census", "resident", "ageing", "aging", "household", "people", "names", "surnames"],
@@ -49,10 +49,11 @@ RED_FLAG_TERMS = ["discontinued", "deleted", "closure", "decommission", "retired
 STOPWORDS = {"about","above","across","after","against","along","among","around","before","behind","below","beneath","beside","between","during","except","from","inside","into","like","near","outside","over","past","since","through","throughout","toward","under","underneath","until","upon","with","within","without","although","because","since","unless","these","those","were","have","does","could","should","would","might","must","using","based","analysis","study","data","effects","impact","changes","patterns","trends","evidence","review","between","their","there","which","where","when","what","who","whom","whose","why","some","many","much","most","other","such","only","also","very","more","than","then","this","that","using","approach","method","methods","model","models","results","effect","among","associated","association","factors"}
 
 DATE_PATTERNS = [
-    r"\b\d{4}-\d{2}-\d{2}\b", r"\b\d{1,2}/\d{1,2}/\d{4}\b", 
-    r"\b\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]{3,9}\s+\d{4}\b", 
-    r"\b[A-Za-z]{3,9}\s+\d{1,2}(?:st|nd|rd|th)?(?:,)?\s*\d{4}\b", 
-    r"\b[A-Za-z]{3,9}\s+\d{4}\b"
+    r"\b\d{4}-\d{2}-\d{2}\b", 
+    r"\b\d{1,2}/\d{1,2}/\d{4}\b", 
+    r"\b\d{1,2}(?:st|nd|rd|th)?\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b", 
+    r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?(?:,)?\s*\d{4}\b", 
+    r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b"
 ]
 
 print("🧠 Loading AI Semantic Model...")
@@ -153,6 +154,10 @@ class LCDSDataEngine:
         if isinstance(value, datetime): return value.replace(tzinfo=None)
         text = str(value).strip()
         if not text or text.lower() in {"nat", "nan", "none"}: return None
+        
+        # Strip ordinals (1st, 2nd, 3rd, 4th) so date parser doesn't crash
+        text = re.sub(r"(\d+)(st|nd|rd|th)", r"\1", text, flags=re.IGNORECASE)
+        
         for fmt in ("%Y%m%d", "%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
             try: return datetime.strptime(text, fmt)
             except: pass
@@ -199,13 +204,17 @@ class LCDSDataEngine:
 
     def is_relevant(self, title: str, summary: str, source: dict) -> bool:
         combined = f"{title} {summary}".lower()
-        if any(x in combined for x in [x.lower() for x in source.get("exclude_keywords", [])]): return False
         
-        hard_rejects = ["economic census", "turnover", "producer price", "consumer price", "cpi", "inflation", "gdp", "gross domestic product", "trade in goods", "export", "import", "retail sales", "crop", "livestock", "agriculture", "fishery", "forestry", "manufacturing", "industrial production", "financial market", "stock exchange", "interest rate", "business insights", "company mergers", "acquisitions", "energy consumption", "electricity", "emissions", "weather", "precipitation", "labour cost index", "wage index", "price index", "construction index", "services index", "balance of payments"]
+        # 1. Hard Rejects (Kills Garbage instantly)
+        if any(x in combined for x in [x.lower() for x in source.get("exclude_keywords", [])]): return False
+        hard_rejects = ["economic census", "turnover", "producer price", "consumer price", "cpi", "inflation", "gdp", "gross domestic product", "trade in goods", "export", "import", "retail sales", "crop", "livestock", "agriculture", "fishery", "forestry", "manufacturing", "industrial production", "financial market", "stock exchange", "interest rate", "business insights", "company mergers", "acquisitions", "energy consumption", "electricity", "emissions", "weather", "precipitation", "labour cost index", "wage index", "price index", "construction index", "services index", "balance of payments", "vehicle", "aviation", "freight", "transport turnover", "telecommunications"]
         if any(x in combined for x in hard_rejects): return False
 
-        if any(x in title.lower() for x in ["population estimates", "birth statistics", "fertility", "mortality rate", "life expectancy", "census results", "international migration", "demographic trends", "eu population", "babies' first names"]): return True
+        # 2. Heuristic Fast-Track (Never miss these)
+        strong_demographic = ["population estimates", "birth statistics", "fertility", "mortality", "life expectancy", "census results", "international migration", "demographic trends", "eu population", "babies' first names", "surnames in birth", "population projections", "death registrations", "annual births data", "baby names", "europop"]
+        if any(x in title.lower() for x in strong_demographic): return True
 
+        # 3. AI Semantic Check
         context = f"{title} {summary} {source['name']}"
         if len(context) < 10: return False
         
@@ -273,6 +282,7 @@ class LCDSDataEngine:
         url_parts = list(urlparse(page_url))
         query = parse_qs(url_parts[4])
         
+        # Multi-Vector ONS Search to guarantee no data is hidden
         target_queries = ["population", "migration", "health", "admin-based", "births", "deaths"] 
         if self.dynamic_terms: target_queries.append(self.dynamic_terms[0])
             
@@ -310,28 +320,29 @@ class LCDSDataEngine:
         return results
 
     def parser_generic_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
-        """Surgical Anchor-Based Parser - guarantees capturing Japan/China/Scotland deeply nested datasets."""
         resp = self.fetch(page_url, source)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
         results = []
         seen_texts = set()
 
-        for a in soup.find_all("a", href=True):
-            parent = a.find_parent(["tr", "li", "article", "div", "p", "td"])
-            if not parent: continue
-            
-            text = self.normalize_whitespace(parent.get_text(" ", strip=True))
+        for node in soup.find_all(["a", "h2", "h3", "h4", "td", "li"]):
+            text = self.normalize_whitespace(node.get_text(" ", strip=True))
             if len(text) < 10 or text in seen_texts: continue
             seen_texts.add(text)
             
-            date_text = next((m.group(0) for p in DATE_PATTERNS if (m := re.search(p, text, re.IGNORECASE))), None)
-            title = self.normalize_whitespace(a.get_text(strip=True))
-            if not title: title = text.replace(date_text or "", "").strip(" |-:")[:150]
-
-            url = urljoin(page_url, a["href"])
-            summary = text.replace(title, "").replace(date_text or "", "").strip(" -:|")
-            if rec := self.record_from_fields(source, title, summary, date_text, url, extra_text=text, source_page=page_url, fallback_hit=fallback_hit): 
+            parent_text = self.normalize_whitespace(node.find_parent().get_text(" ", strip=True)) if node.find_parent() else text
+            date_text = next((m.group(0) for p in DATE_PATTERNS if (m := re.search(p, parent_text, re.IGNORECASE))), None)
+            
+            title = text
+            if node.name != "a":
+                link = node.find("a", href=True)
+                if link: title = self.normalize_whitespace(link.get_text(strip=True))
+                
+            url = urljoin(page_url, link["href"]) if 'link' in locals() and link else page_url
+            summary = parent_text.replace(title, "").replace(date_text or "", "").strip(" -:|")
+            
+            if rec := self.record_from_fields(source, title, summary, date_text, url, extra_text=parent_text, source_page=page_url, fallback_hit=fallback_hit): 
                 results.append(rec)
         return results
 
@@ -352,7 +363,6 @@ class LCDSDataEngine:
         resp = self.fetch(page_url, source)
         resp.raise_for_status()
         results = []
-        # Fix line endings explicitly for Eurostat
         text_clean = resp.text.replace('\r', '')
         for block in text_clean.split("BEGIN:VEVENT")[1:]:
             unf = []
