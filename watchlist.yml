@@ -1,8 +1,9 @@
 settings:
   user_agent: "Mozilla/5.0 (ResearchBot/LCDS-ExecutiveWatch)"
-  timeout: 20
-  max_workers: 10
+  timeout: 25
+  max_workers: 12
   page_workers: 4
+  max_abs_days: 366
 
 sources:
   - name: "ONS Upcoming Releases"
@@ -38,16 +39,15 @@ sources:
       - trade
       - manufacturing
     track_missing_as_deleted: true
-    priority_weight: 20
+    priority_weight: 22
 
   - name: "US Census Releases"
     group: "USA"
     source_type: "Official"
     url: "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
     fallback_urls:
-      - "https://www.census.gov/data/what-is-data-census-gov/latest-releases/2025.html"
-      - "https://www.census.gov/newsroom/tip-sheets/2025/tp25-05.html"
-      - "https://www.census.gov/newsroom/tip-sheets/2025/tp25-06.html"
+      - "https://www.census.gov/newsroom.html"
+      - "https://www.census.gov/about/contact-us/feeds.html"
     parser: "census_upcoming"
     keywords_any:
       - current population survey
@@ -60,7 +60,7 @@ sources:
       - demographic
       - fertility
       - mortality
-    priority_weight: 16
+    priority_weight: 18
 
   - name: "CBS Netherlands Publication Calendar"
     group: "Netherlands"
@@ -80,7 +80,7 @@ sources:
       - labour market
       - demographics
       - housing
-    priority_weight: 12
+    priority_weight: 14
 
   - name: "Eurostat Release Calendar"
     group: "EU"
@@ -88,7 +88,7 @@ sources:
     url: "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_EN.ics"
     fallback_urls:
       - "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_en.xml"
-      - "https://ec.europa.eu/eurostat/en/web/products-eurostat-news/w/wdn-20250102-1"
+      - "https://ec.europa.eu/eurostat/news/release-calendar"
     parser: "ics_calendar"
     keywords_any:
       - population
@@ -100,6 +100,27 @@ sources:
       - household
       - labour
       - census
+    priority_weight: 20
+
+  - name: "Eurostat Dataset Update RSS"
+    group: "EU"
+    source_type: "Official"
+    url: "https://ec.europa.eu/eurostat/api/dissemination/catalogue/rss/en/statistics-update.rss"
+    parser: "rss"
+    max_items: 100
+    keywords_any:
+      - population
+      - demography
+      - migration
+      - asylum
+      - fertility
+      - mortality
+      - household
+      - labour
+      - deleted
+      - update
+      - dataset
+      - code list
     priority_weight: 18
 
   - name: "Statistics Norway Upcoming Releases"
@@ -108,7 +129,7 @@ sources:
     url: "https://www.ssb.no/en/kommende-publiseringer"
     fallback_urls:
       - "https://www.ssb.no/en/kommende-publiseringer/"
-      - "https://www.ssb.no/en/statbank1"
+      - "https://www.ssb.no/en/statbank"
     parser: "generic_calendar"
     keywords_any:
       - population
@@ -127,8 +148,7 @@ sources:
     source_type: "Official"
     url: "https://www.scb.se/en/finding-statistics/publishing-calendar/"
     fallback_urls:
-      - "https://www.scb.se/en/About-us/official-statistics-of-sweden/government-agencies-responsible-for-official-statistics/statistikansvariga-myndigheter-med-annan-publiceringstidpunkt-an-8.00"
-      - "https://www.scb.se/en/About-us/news-and-press-releases/press-contacts/"
+      - "https://www.scb.se/en/About-us/news-and-press-releases/"
     parser: "generic_calendar"
     keywords_any:
       - population
@@ -142,45 +162,31 @@ sources:
       - demographic
     priority_weight: 10
 
-  - name: "Statistics Denmark Releases"
-    group: "Denmark"
-    source_type: "Official"
-    url: "https://www.dst.dk/en/presse"
-    fallback_urls:
-      - "https://www.dst.dk/en/presse/danmarks-statistiks-pressepolitik"
-    parser: "html_signal_scan"
-    keywords_any:
-      - population
-      - migration
-      - immigrants
-      - fertility
-      - death
-      - mortality
-      - household
-      - labour
-      - release
-      - publication
-    priority_weight: 8
-
-  - name: "Statistics Finland Releases"
+  - name: "Statistics Finland Signals"
     group: "Finland"
     source_type: "Official"
     url: "https://stat.fi/en/news/Schedule-for-statistical-releases-in-2026-has-been-published"
     fallback_urls:
+      - "https://stat.fi/en/statistics"
       - "https://stat.fi/org/periaatteet/index_en.html/publication-principles-for-statistics"
-      - "https://stat.fi/til/index_en.html"
     parser: "html_signal_scan"
+    signal_terms:
+      - schedule
+      - statistical releases
+      - publication principles
+      - discontinued
+      - metadata
+      - deleted
     keywords_any:
       - population
       - migration
       - births
       - deaths
       - fertility
-      - household
       - mortality
-      - release calendar
-      - discontinued
-      - changes in statistics
+      - household
+      - release
+      - access
     priority_weight: 10
 
   - name: "UN Population Division News"
@@ -188,6 +194,7 @@ sources:
     source_type: "Signal"
     url: "https://www.un.org/development/desa/pd/feed"
     parser: "rss"
+    max_items: 60
     keywords_any:
       - population
       - demographic
@@ -204,6 +211,7 @@ sources:
     source_type: "Signal"
     url: "https://dhsprogram.com/rss/news.cfm"
     parser: "rss"
+    max_items: 60
     keywords_any:
       - survey
       - demographic
@@ -214,6 +222,33 @@ sources:
       - household
       - family planning
     priority_weight: 8
+
+  - name: "Finngen Signals"
+    group: "Europe Registries"
+    source_type: "Signal"
+    url: "https://www.finngen.fi/en/news"
+    fallback_urls:
+      - "https://www.finngen.fi/en/access_results"
+    parser: "html_signal_scan"
+    signal_terms:
+      - release
+      - update
+      - archive
+      - access
+      - discontinued
+      - metadata
+      - new data
+    keywords_any:
+      - registry
+      - population
+      - cohort
+      - data release
+      - archive
+      - decommission
+      - discontinued
+      - mortality
+      - access
+    priority_weight: 10
 
   - name: "Human Mortality Database Events"
     group: "Global"
@@ -228,21 +263,38 @@ sources:
       - population
     priority_weight: 12
 
-  - name: "Finngen Signals"
-    group: "Europe Registries"
-    source_type: "Signal"
-    url: "https://www.finngen.fi/en/news"
-    fallback_urls:
-      - "https://www.finngen.fi/en/access_results"
-    parser: "html_signal_scan"
+  - name: "GDELT Demography Media Signals"
+    group: "Media"
+    source_type: "Media"
+    url: "https://api.gdeltproject.org/api/v2/doc/doc"
+    parser: "gdelt"
+    gdelt_query: "(population OR demography OR census OR fertility OR mortality OR migration)"
+    gdelt_timespan: "1week"
+    max_items: 75
+    keywords_any:
+      - population
+      - demography
+      - census
+      - fertility
+      - mortality
+      - migration
+    priority_weight: 6
+
+  - name: "GDELT Registry and Data Access Signals"
+    group: "Media"
+    source_type: "Media"
+    url: "https://api.gdeltproject.org/api/v2/doc/doc"
+    parser: "gdelt"
+    gdelt_query: "(registry OR microdata OR dataset OR census) (deleted OR discontinued OR archive OR withdrawn OR access)"
+    gdelt_timespan: "1week"
+    max_items: 75
     keywords_any:
       - registry
-      - population
-      - cohort
-      - data release
-      - archive
-      - decommission
+      - microdata
+      - dataset
+      - census
+      - deleted
       - discontinued
-      - mortality
+      - archive
       - access
-    priority_weight: 10
+    priority_weight: 8
