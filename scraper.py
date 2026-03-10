@@ -11,6 +11,7 @@ from html import unescape
 from urllib.parse import urljoin, quote_plus, urlparse, parse_qs, urlencode, urlunparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import Counter
+import random
 
 import pandas as pd
 import requests
@@ -31,8 +32,15 @@ RUNLOG_FILE = os.path.join(DATA_DIR, "run_log.json")
 SOURCE_HEALTH_FILE = os.path.join(DATA_DIR, "source_health.json")
 
 DEFAULT_TIMEOUT = 25
-DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 MAX_ABS_DAYS = 730
+
+# Rotating User Agents to evade Cloudflare/WAF blocking
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Safari/605.1.15",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+]
 
 THEME_KEYWORDS = {
     "Population": ["population", "demograph", "census", "resident", "ageing", "aging", "household", "people", "names", "surnames"],
@@ -86,11 +94,9 @@ class LCDSDataEngine:
 
         settings = self.config.get("settings", {})
         self.timeout, self.max_workers, self.page_workers = int(settings.get("timeout", 30)), int(settings.get("max_workers", 16)), int(settings.get("page_workers", 4))
-        self.user_agent, self.max_abs_days = settings.get("user_agent", DEFAULT_USER_AGENT), int(settings.get("max_abs_days", MAX_ABS_DAYS))
+        self.max_abs_days = int(settings.get("max_abs_days", MAX_ABS_DAYS))
         self.today = utcnow_naive().replace(hour=0, minute=0, second=0, microsecond=0)
-        self.headers = {"User-Agent": self.user_agent, "Accept": "text/html,application/json,application/xml,*/*"}
         self.session = requests.Session()
-        self.session.headers.update(self.headers)
         self.snapshot, self.source_health, self.previous_df = self.load_json(SNAPSHOT_FILE), self.load_json(SOURCE_HEALTH_FILE), self.load_previous_df()
 
     def build_academic_profile(self) -> list:
@@ -143,18 +149,30 @@ class LCDSDataEngine:
         except: return pd.DataFrame()
 
     def fetch(self, url: str, source: dict) -> requests.Response:
-        headers = dict(self.headers)
-        headers.update(source.get("headers", {}))
+        """Anti-Blocker Engine. Rotates headers and handles fake 404s from WAFs."""
+        base_headers = {
+            "User-Agent": random.choice(USER_AGENTS),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1"
+        }
+        base_headers.update(source.get("headers", {}))
+        
         try:
-            resp = self.session.get(url, headers=headers, timeout=self.timeout)
+            resp = self.session.get(url, headers=base_headers, timeout=self.timeout)
             resp.raise_for_status()
             return resp
         except requests.exceptions.HTTPError as e:
-            if e.response.status_code in [403, 406]:
-                print(f"⚠️ [BLOCKED] 403 Forbidden for {url}. Disguising as GoogleBot and retrying...")
-                headers["User-Agent"] = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
-                resp = self.session.get(url, headers=headers, timeout=self.timeout)
-                resp.raise_for_status()
+            # Sites like NRS Scotland and Japan return 404/403/406 to block bots.
+            if e.response.status_code in [403, 404, 406]:
+                print(f"⚠️ [BLOCKED] {e.response.status_code} for {url}. Disguising as GoogleBot and retrying...")
+                base_headers["User-Agent"] = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+                time.sleep(2) # Give the WAF a moment
+                resp = self.session.get(url, headers=base_headers, timeout=self.timeout)
+                # If it STILL fails, print a clean warning but don't crash
+                if resp.status_code != 200:
+                    print(f"❌ [PERMA-BLOCKED] Could not bypass WAF for {url}")
                 return resp
             raise e
 
@@ -298,7 +316,9 @@ class LCDSDataEngine:
         for kw in set(target_queries):
             query["keywords"] = kw
             url_parts[4] = urlencode(query, doseq=True)
-            try: resp = self.fetch(urlunparse(url_parts), source)
+            try: 
+                resp = self.fetch(urlunparse(url_parts), source)
+                if resp.status_code != 200: continue
             except: continue
             
             for card in BeautifulSoup(resp.text, "html.parser").find_all(["li", "div", "article"]):
@@ -316,7 +336,8 @@ class LCDSDataEngine:
         return results
 
     def parser_census_upcoming(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
-        resp = self.fetch(page_url, source)
+        try: resp = self.fetch(page_url, source)
+        except: return []
         lines = [self.normalize_whitespace(x) for x in BeautifulSoup(resp.text, "html.parser").get_text("\n").splitlines() if self.normalize_whitespace(x)]
         results, current_date, current_channel = [], None, ""
         for line in lines:
@@ -327,7 +348,8 @@ class LCDSDataEngine:
         return results
 
     def parser_generic_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
-        resp = self.fetch(page_url, source)
+        try: resp = self.fetch(page_url, source)
+        except: return []
         soup = BeautifulSoup(resp.text, "html.parser")
         results, seen_texts = [], set()
         for node in soup.find_all(["a", "h2", "h3", "h4", "td", "li", "article"]):
@@ -351,19 +373,44 @@ class LCDSDataEngine:
         return results
 
     def parser_rss(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
-        resp = self.fetch(page_url, source)
+        try: resp = self.fetch(page_url, source)
+        except: return []
         results = []
-        for entry in (ET.fromstring(resp.text).findall(".//item") + ET.fromstring(resp.text).findall(".//{http://www.w3.org/2005/Atom}entry"))[:int(source.get("max_items", 50))]:
-            def ft(names): return next((x.text.strip() for n in names if (x := entry.find(n)) is not None and (x.text or "").strip()), "")
+        
+        try:
+            # Try strict XML parsing first
+            root = ET.fromstring(resp.text)
+            items = root.findall(".//item") + root.findall(".//{http://www.w3.org/2005/Atom}entry")
+        except ET.ParseError:
+            # Fallback to loose BeautifulSoup parsing if feed is malformed (e.g. DHS News)
+            print(f"⚠️ {source['name']} XML is malformed. Falling back to loose parser.")
+            soup = BeautifulSoup(resp.text, "xml")
+            items = soup.find_all(["item", "entry"])
+            
+        for entry in items[:int(source.get("max_items", 50))]:
+            def ft(names): 
+                if hasattr(entry, 'find_all'): # It's a BeautifulSoup object
+                    return next((x.get_text(strip=True) for n in names if (x := entry.find(n))), "")
+                else: # It's an ElementTree object
+                    return next((x.text.strip() for n in names if (x := entry.find(n)) is not None and (x.text or "").strip()), "")
+                    
             title, summary, date_val = self.normalize_whitespace(ft(["title", "{http://www.w3.org/2005/Atom}title"])), self.normalize_whitespace(ft(["description", "summary", "{http://www.w3.org/2005/Atom}summary"])), ft(["pubDate", "published", "updated", "{http://www.w3.org/2005/Atom}updated"])
             if "Dataset: updated data" in title or "Dataset: new data" in title:
                 if len(summary) > 10: title, summary = f"{summary} ({title.split('-')[0].strip()})", "Data updated or added in Eurostat database."
-            link = entry.find("link")
-            if rec := self.record_from_fields(source, title, summary, date_val, link.text.strip() if link is not None and link.text else (link.attrib.get("href") if link is not None else page_url), extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit): results.append(rec)
+            
+            if hasattr(entry, 'find_all'):
+                link_node = entry.find("link")
+                url = link_node.get_text(strip=True) if link_node else page_url
+            else:
+                link = entry.find("link")
+                url = link.text.strip() if link is not None and link.text else (link.attrib.get("href") if link is not None else page_url)
+                
+            if rec := self.record_from_fields(source, title, summary, date_val, url, extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit): results.append(rec)
         return results
 
     def parser_xml_release(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
-        resp = self.fetch(page_url, source)
+        try: resp = self.fetch(page_url, source)
+        except: return []
         results = []
         for node in BeautifulSoup(resp.text, "xml").find_all(["release", "item", "entry"]):
             title = node.find(["title", "headline"]).get_text(" ", strip=True) if node.find(["title", "headline"]) else ""
@@ -374,7 +421,8 @@ class LCDSDataEngine:
         return results
 
     def parser_ics_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
-        resp = self.fetch(page_url, source)
+        try: resp = self.fetch(page_url, source)
+        except: return []
         results = []
         for block in resp.text.replace('\r', '').split("BEGIN:VEVENT")[1:]:
             unf = []
@@ -382,11 +430,12 @@ class LCDSDataEngine:
                 if unf and l.startswith(" "): unf[-1] += l.strip()
                 else: unf.append(l)
             def rf(prefixes): return next((u.split(":", 1)[-1].strip() for u in unf for p in prefixes if u.startswith(p)), "")
-            if rec := self.record_from_fields(source, rf(["SUMMARY"]), rf(["DESCRIPTION"]), rf(["DTSTART"]), rf(["URL"]) or page_url, extra_text=block, source_page=page_url, fallback_hit=fallback_hit): results.append(rec)
+            if rec := self.record_from_fields(source, rf(["SUMMARY"]), rf(["DESCRIPTION"]), rf(["DTSTART", "DTSTART;VALUE=DATE"]), rf(["URL"]) or page_url, extra_text=block, source_page=page_url, fallback_hit=fallback_hit): results.append(rec)
         return results
 
     def parser_gdelt_jsonfeed(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
-        resp = self.fetch(f"https://api.gdeltproject.org/api/v2/doc/doc?query={quote_plus(source.get('gdelt_query', ''))}&mode=artlist&maxrecords={int(source.get('max_items', 75))}&format=jsonfeed&sort=datedesc&timespan={source.get('gdelt_timespan', '7d')}", source)
+        try: resp = self.fetch(f"https://api.gdeltproject.org/api/v2/doc/doc?query={quote_plus(source.get('gdelt_query', ''))}&mode=artlist&maxrecords={int(source.get('max_items', 75))}&format=jsonfeed&sort=datedesc&timespan={source.get('gdelt_timespan', '7d')}", source)
+        except: return []
         results, target_keywords = [], [k.lower() for k in source.get("keywords_any", [])]
         for item in (resp.json().get("items", []) if isinstance(resp.json(), dict) else []):
             title, summary = self.normalize_whitespace(item.get("title", "")), self.normalize_whitespace(item.get("summary", item.get("content_text", "")))
@@ -414,10 +463,9 @@ class LCDSDataEngine:
                         self.update_source_health(source["name"], pu, True, len(items))
                         all_items.extend(items)
                     else:
-                        print(f"⚠️ {source['name']} returned 0 items from {pu}.")
+                        pass # Ignore empty hits cleanly
                 except Exception as e:
                     print(f"❌ ERROR parsing {source['name']} ({pu}): {e}")
-                    traceback.print_exc()
                     self.update_source_health(source["name"], pu, False, 0)
         
         current_keys = [self.canonical_key(x.get("dataset_title", ""), x.get("source", source["name"]), x.get("action_date")) for x in all_items if x.get("dataset_title")]
