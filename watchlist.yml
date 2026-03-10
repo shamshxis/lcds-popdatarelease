@@ -6,7 +6,7 @@ settings:
   max_abs_days: 730
 
 sources:
-  # --- UK & ONS ---
+  # --- UK & SCOTLAND ---
   - name: "ONS Upcoming Releases"
     group: "UK Official"
     source_type: "Official"
@@ -14,6 +14,14 @@ sources:
     parser: "ons_release_calendar"
     keywords_any: ["population", "census", "migration", "fertility", "mortality", "health", "demographic", "labour"]
     priority_weight: 22
+
+  - name: "NRS Scotland"
+    group: "UK Official"
+    source_type: "Official"
+    url: "https://www.nrscotland.gov.uk/statistics-and-data/statistics/forthcoming-publications"
+    parser: "generic_calendar"
+    keywords_any: ["population", "birth", "death", "migration", "household", "life expectancy", "names", "surnames"]
+    priority_weight: 20
 
   # --- USA ---
   - name: "US Census Releases"
@@ -32,6 +40,48 @@ sources:
     keywords_any: ["health", "mortality", "birth", "vital statistics", "survey", "dataset"]
     priority_weight: 20
 
+  # --- ASIA ---
+  - name: "Statistics Japan (e-Stat)"
+    group: "Japan Official"
+    source_type: "Official"
+    url: "https://www.stat.go.jp/english/info/calendar/index.html"
+    fallback_urls: ["https://www.stat.go.jp/english/info/news/"]
+    parser: "generic_calendar"
+    keywords_any: ["population", "demographic", "birth", "death", "migration", "household"]
+    priority_weight: 20
+
+  - name: "KOSTAT South Korea"
+    group: "Korea Official"
+    source_type: "Official"
+    url: "https://kostat.go.kr/anse/"
+    parser: "generic_calendar"
+    keywords_any: ["population", "demographic", "birth", "death", "migration", "household", "fertility"]
+    priority_weight: 20
+
+  - name: "NBS China"
+    group: "China Official"
+    source_type: "Official"
+    url: "http://www.stats.gov.cn/english/PressRelease/"
+    parser: "generic_calendar"
+    keywords_any: ["population", "demographic", "birth", "death", "migration", "household", "yearbook"]
+    priority_weight: 20
+
+  - name: "MOSPI India"
+    group: "India Official"
+    source_type: "Official"
+    url: "https://mospi.gov.in/"
+    parser: "generic_calendar"
+    keywords_any: ["survey", "statistics", "data", "release", "health", "demographic", "employment", "PLFS", "NSS"]
+    priority_weight: 20
+
+  - name: "Census of India"
+    group: "India Official"
+    source_type: "Official"
+    url: "https://censusindia.gov.in/census.website/"
+    parser: "generic_calendar"
+    keywords_any: ["census", "population", "demographic", "data", "release", "SRS", "sample registration"]
+    priority_weight: 20
+
   # --- EUROSTAT & EU REGISTRIES ---
   - name: "Eurostat Dataset Updates"
     group: "EU Official"
@@ -41,6 +91,14 @@ sources:
     max_items: 100
     keywords_any: ["population", "demography", "migration", "asylum", "fertility", "mortality", "health", "census"]
     priority_weight: 20
+
+  - name: "Eurostat Release Calendar"
+    group: "EU Official"
+    source_type: "Official"
+    url: "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_EN.ics"
+    parser: "ics_calendar"
+    keywords_any: ["population", "demography", "migration", "asylum", "fertility", "mortality", "health", "census", "marriages", "divorces", "life expectancy"]
+    priority_weight: 22
 
   - name: "FinData News"
     group: "EU Registries"
@@ -74,14 +132,6 @@ sources:
     keywords_any: ["population", "migration", "birth", "death", "fertility", "health", "asylum"]
     priority_weight: 12
 
-  - name: "Statistics Finland"
-    group: "EU Official"
-    source_type: "Official"
-    url: "https://stat.fi/en/news/feed"
-    parser: "rss"
-    keywords_any: ["population", "migration", "health", "mortality", "fertility"]
-    priority_weight: 12
-
   # --- BIOBANKS ---
   - name: "UK Biobank News"
     group: "Biobanks"
@@ -113,8 +163,8 @@ sources:
     source_type: "Signal"
     url: "https://www.un.org/development/desa/pd/feed"
     parser: "rss"
-    keywords_any: ["population", "demographic", "migration", "fertility", "mortality", "projections"]
-    priority_weight: 15
+    keywords_any: ["population", "demographic", "migration", "fertility", "mortality", "projections", "prospects"]
+    priority_weight: 20
 
   - name: "DHS Program News"
     group: "Global / UN"
@@ -132,31 +182,6 @@ sources:
     parser: "generic_calendar"
     keywords_any: ["mortality", "death", "life expectancy", "update", "data"]
     priority_weight: 18
-
-  # --- INDIA ---
-  - name: "MOSPI India"
-    group: "India Official"
-    source_type: "Official"
-    url: "https://mospi.gov.in/"
-    parser: "generic_calendar"
-    keywords_any: ["survey", "statistics", "data", "release", "health", "demographic", "employment", "PLFS", "NSS"]
-    priority_weight: 20
-
-  - name: "Census of India"
-    group: "India Official"
-    source_type: "Official"
-    url: "https://censusindia.gov.in/census.website/"
-    parser: "generic_calendar"
-    keywords_any: ["census", "population", "demographic", "data", "release", "SRS", "sample registration"]
-    priority_weight: 20
-    
-  - name: "NFHS India (IIPS)"
-    group: "India Official"
-    source_type: "Official"
-    url: "http://rchiips.org/nfhs/news.shtml"
-    parser: "generic_calendar"
-    keywords_any: ["survey", "fact sheet", "data", "release", "health", "family", "report"]
-    priority_weight: 22
 
   # --- MEDIA SIGNALS ---
   - name: "GDELT Demography & Cohorts"
