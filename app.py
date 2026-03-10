@@ -7,7 +7,7 @@ from datetime import datetime
 
 # --- CONFIG ---
 st.set_page_config(
-    page_title="LCDS Executive Watch", 
+    page_title="LCDS Pop Watch", 
     page_icon="🛡️", 
     layout="wide",
     initial_sidebar_state="expanded"
@@ -16,17 +16,10 @@ st.set_page_config(
 # Custom CSS for Dark/Light Mode Adaptability & Floating Footer
 st.markdown("""
 <style>
-    /* Typography & General Layout */
-    .main { padding: 1rem 2rem 5rem 2rem; } /* Extra padding at bottom for footer */
+    .main { padding: 1rem 2rem 5rem 2rem; }
     h1, h2, h3, h4, h5, h6 { font-family: 'Inter', 'Helvetica Neue', sans-serif; }
-    
-    /* Table Styling */
     .stDataFrame { border: none !important; }
-    
-    /* Metrics Optimization for both modes */
     div[data-testid="stMetricValue"] { font-weight: 700; }
-    
-    /* Tab Styling - Transparent to adapt to Light/Dark Mode automatically */
     .stTabs [data-baseweb="tab-list"] { gap: 2rem; }
     .stTabs [data-baseweb="tab"] { 
         height: 50px; 
@@ -37,15 +30,13 @@ st.markdown("""
         padding-top: 10px; 
         padding-bottom: 10px; 
     }
-    
-    /* Oxford Floating Footer */
     .footer {
         position: fixed;
         left: 0;
         bottom: 0;
         width: 100%;
-        background-color: #002147; /* Oxford Blue */
-        color: #FFFFFF; /* White Text */
+        background-color: #002147;
+        color: #FFFFFF;
         text-align: center;
         padding: 12px 0;
         font-family: 'Inter', 'Helvetica Neue', sans-serif;
@@ -53,16 +44,8 @@ st.markdown("""
         z-index: 9999;
         box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
     }
-    .footer a {
-        color: #FFD700; /* Yellow Hyperlink */
-        text-decoration: none;
-        font-weight: 600;
-    }
-    .footer a:hover {
-        text-decoration: underline;
-    }
-    
-    /* Hide default Streamlit footer */
+    .footer a { color: #FFD700; text-decoration: none; font-weight: 600; }
+    .footer a:hover { text-decoration: underline; }
     footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
@@ -70,8 +53,6 @@ st.markdown("""
 DATA_DIR = Path("data")
 DATA_FILE = DATA_DIR / "dataset_tracker.csv"
 RUNLOG_FILE = DATA_DIR / "run_log.json"
-
-# --- DATA PROCESSING ---
 
 @st.cache_data(ttl=60)
 def load_metrics():
@@ -102,25 +83,18 @@ def load_data():
     df["Title"] = df["dataset_title"].apply(lambda x: str(x).strip())
     df["Title"] = df.apply(lambda r: f"🧬 {r['Title']}" if r.get("academic_match", 0) == 1 else r['Title'], axis=1)
     
-    # Abstract refinement process
     def refine_abstract(row):
         t, s = str(row['dataset_title']).strip(), str(row.get('summary', '')).strip()
-        # Remove title repetition from abstract
-        if s.lower().startswith(t.lower()): 
-            s = s[len(t):].strip(" -:|")
+        if s.lower().startswith(t.lower()): s = s[len(t):].strip(" -:|")
         return s if s and len(s) >= 5 else "No additional abstract provided."
 
     df["Abstract"] = df.apply(refine_abstract, axis=1)
     df["Date"] = df["display_date"]
-
     return df
-
-# --- UI ---
 
 st.title("🛡️ LCDS Executive Watch")
 st.markdown("Global Demographics, Population Data & Biobank Intelligence")
 
-# --- EXECUTIVE METRICS ---
 metrics = load_metrics()
 if metrics:
     m1, m2, m3, m4, m5 = st.columns(5)
@@ -137,49 +111,35 @@ if df.empty:
     st.info("No data available yet. Please wait for the scraper to finish its first run.")
     st.stop()
 
-# --- SIDEBAR FILTERS ---
 with st.sidebar:
     st.header("🔍 Filter Intelligence")
-    
     all_groups = ["All"] + sorted(df["source_group"].unique().tolist())
     sel_group = st.selectbox("Region / Group", options=all_groups)
-    
     all_sources = ["All"] + sorted(df["source"].unique().tolist())
     sel_source = st.selectbox("Data Controller", options=all_sources)
-    
     all_themes = ["All"] + sorted(df["theme_primary"].unique().tolist())
     sel_theme = st.selectbox("Primary Theme", options=all_themes)
-    
     search_q = st.text_input("Keyword Search", placeholder="e.g. Migration, Biobank")
 
-# --- FILTER LOGIC ---
 view = df.copy()
 
 if sel_group != "All": view = view[view["source_group"] == sel_group]
 if sel_source != "All": view = view[view["source"] == sel_source]
 if sel_theme != "All": view = view[view["theme_primary"] == sel_theme]
-
 if search_q:
-    mask = (
-        view["Title"].str.contains(search_q, case=False) |
-        view["Abstract"].str.contains(search_q, case=False) |
-        view["tags"].str.contains(search_q, case=False)
-    )
+    mask = (view["Title"].str.contains(search_q, case=False) | view["Abstract"].str.contains(search_q, case=False) | view["tags"].str.contains(search_q, case=False))
     view = view[mask]
 
-# --- VISUALIZATIONS ---
 if not view.empty:
     with st.expander("📊 View Intelligence Plots", expanded=True):
         c1, c2, c3 = st.columns([2, 1, 1])
-        
         with c1:
             time_df = view.dropna(subset=["dt"]).copy()
             time_df = time_df[(time_df['dt'] >= pd.Timestamp.now()) & (time_df['dt'] <= pd.Timestamp.now() + pd.Timedelta(days=90))]
             if not time_df.empty:
                 fig_timeline = px.scatter(
                     time_df, x="dt", y="source_group", color="theme_primary", 
-                    hover_data=["Title", "Date"],
-                    title="Release Horizon (Next 90 Days)",
+                    hover_data=["Title", "Date"], title="Release Horizon (Next 90 Days)",
                     labels={"dt": "Release Date", "source_group": "Region"}
                 )
                 fig_timeline.update_traces(marker=dict(size=12, opacity=0.8, line=dict(width=1, color='DarkSlateGrey')))
@@ -191,10 +151,7 @@ if not view.empty:
         with c2:
             theme_counts = view["theme_primary"].value_counts().reset_index()
             theme_counts.columns = ["Theme", "Count"]
-            fig_donut = px.pie(
-                theme_counts, values='Count', names='Theme', hole=0.6,
-                title="Thematic Focus"
-            )
+            fig_donut = px.pie(theme_counts, values='Count', names='Theme', hole=0.6, title="Thematic Focus")
             fig_donut.update_traces(textposition='inside', textinfo='percent')
             fig_donut.update_layout(margin=dict(l=20, r=20, t=40, b=20), showlegend=False)
             st.plotly_chart(fig_donut, use_container_width=True)
@@ -202,14 +159,10 @@ if not view.empty:
         with c3:
             source_counts = view["source"].value_counts().head(5).reset_index()
             source_counts.columns = ["Source", "Count"]
-            fig_bar = px.bar(
-                source_counts, x="Count", y="Source", orientation='h',
-                title="Top Publishing Sources"
-            )
+            fig_bar = px.bar(source_counts, x="Count", y="Source", orientation='h', title="Top Publishing Sources")
             fig_bar.update_layout(yaxis={'categoryorder': 'total ascending'}, margin=dict(l=20, r=20, t=40, b=20))
             st.plotly_chart(fig_bar, use_container_width=True)
 
-# --- RENDER TABS ---
 def render_table(data_view):
     display_months = sorted(data_view["Month"].unique(), key=lambda m: datetime.max if m == "Unscheduled / TBC" else datetime.strptime(m, "%B %Y"))
     for month in display_months:
@@ -255,7 +208,6 @@ else:
         st.caption("Comprehensive view of all holistic data sources across all dates.")
         render_table(view)
 
-# --- DOWNLOAD ---
 st.markdown("---")
 st.download_button(
     "📥 Download Full Intelligence Report (CSV)",
@@ -264,7 +216,6 @@ st.download_button(
     "text/csv"
 )
 
-# --- FOOTER ---
 st.markdown("""
     <div class="footer">
         © Leverhulme Centre for Demographic Science 2026 | University of Oxford <br>
