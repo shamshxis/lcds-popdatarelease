@@ -16,7 +16,7 @@ sources:
   - name: "NRS Scotland"
     group: "UK Official"
     source_type: "Official"
-    url: "https://www.nrscotland.gov.uk/statistics-and-data/statistics/forthcoming-publications"
+    url: "https://www.nrscotland.gov.uk/statistics-and-data/upcoming-publications/"
     fallback_urls: ["https://www.gov.scot/publications/"]
     parser: "generic_calendar"
     keywords_any: ["population", "birth", "death", "migration", "household", "names", "surnames", "demographic"]
@@ -33,8 +33,7 @@ sources:
   - name: "Statistics Japan (e-Stat)"
     group: "Japan Official"
     source_type: "Official"
-    url: "https://www.stat.go.jp/english/info/calendar/index.html"
-    fallback_urls: ["https://www.stat.go.jp/english/info/news/"]
+    url: "https://www.stat.go.jp/english/info/news/"
     parser: "generic_calendar"
     keywords_any: ["population", "demographic", "birth", "death", "migration", "household"]
     priority_weight: 20
@@ -67,17 +66,16 @@ sources:
   - name: "Eurostat Release Calendar"
     group: "EU Official"
     source_type: "Official"
-    url: "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_EN.ics"
-    fallback_urls: ["https://ec.europa.eu/eurostat/web/main/news/release-calendar"]
-    parser: "ics_calendar"
+    url: "https://ec.europa.eu/eurostat/web/main/news/release-calendar"
+    parser: "generic_calendar"
     keywords_any: ["population", "demography", "migration", "asylum", "fertility", "mortality", "health", "census", "marriages", "divorces", "life expectancy", "EUROPOP"]
     priority_weight: 25
 
   - name: "UN Population Division"
     group: "Global / UN"
     source_type: "Signal"
-    url: "https://www.un.org/development/desa/pd/feed"
-    parser: "rss"
+    url: "https://www.un.org/development/desa/pd/news"
+    parser: "generic_calendar"
     keywords_any: ["population", "demographic", "migration", "fertility", "mortality", "prospects", "projections"]
     priority_weight: 20
 
