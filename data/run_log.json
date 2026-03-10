@@ -1,10 +1,6 @@
 {
-  "generated_at": "2026-03-10T05:13:09.947308",
+  "generated_at": "2026-03-10T06:29:41.137245",
   "logs": [
-    {
-      "source": "DHS Program News",
-      "items": 0
-    },
     {
       "source": "UN Population Division News",
       "items": 0
@@ -14,16 +10,24 @@
       "items": 0
     },
     {
-      "source": "ONS Upcoming Releases",
-      "items": 13
+      "source": "DHS Program News",
+      "items": 0
     },
     {
       "source": "Statistics Sweden Publishing Calendar",
       "items": 0
     },
     {
+      "source": "Statistics Norway Upcoming Releases",
+      "items": 0
+    },
+    {
       "source": "Eurostat Release Calendar",
       "items": 0
+    },
+    {
+      "source": "ONS Upcoming Releases",
+      "items": 25
     },
     {
       "source": "Statistics Finland Signals",
@@ -34,37 +38,34 @@
       "items": 0
     },
     {
-      "source": "Statistics Norway Upcoming Releases",
-      "items": 0
-    },
-    {
       "source": "Human Mortality Database Events",
       "items": 0
     },
     {
-      "source": "Eurostat Dataset Update RSS",
-      "items": 96
-    },
-    {
-      "source": "GDELT Registry and Data Access Signals",
-      "items": 2
-    },
-    {
       "source": "US Census Releases",
-      "items": 90
+      "items": 115
     },
     {
       "source": "GDELT Demography Media Signals",
       "items": 0
+    },
+    {
+      "source": "Eurostat Dataset Update RSS",
+      "items": 15
+    },
+    {
+      "source": "GDELT Registry and Data Access Signals",
+      "items": 2
     }
   ],
   "metrics": {
-    "records": 200,
-    "upcoming": 95,
-    "red_flags": 0,
-    "deletions": 0,
-    "next_14_days": 0,
-    "fallback_hits": 4,
-    "generated_at": "2026-03-10T05:13:09.947872"
+    "records": 156,
+    "upcoming": 121,
+    "red_flags": 8,
+    "deletions": 8,
+    "academic_matches": 23,
+    "next_14_days": 3,
+    "fallback_hits": 8,
+    "generated_at": "2026-03-10T06:29:41.137898"
   }
 }
