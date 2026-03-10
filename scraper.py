@@ -226,23 +226,53 @@ class LCDSDataEngine:
         if len(t) < 5 or re.fullmatch(r"^[0-9\/\-\. ]+$", t): return True
         return any(t.startswith(j) or t == j for j in ["clear all", "search results", "skip to", "microdata access", "upcoming releases", "release date", "data.census.gov"])
 
-    def ai_semantic_filter(self, text: str) -> bool:
-        if not text or len(text) < 10: return False
-        embedding = ai_model.encode(text, convert_to_tensor=True)
-        target_score = float(util.cos_sim(embedding, self.target_embeddings).max())
-        if float(util.cos_sim(embedding, anti_embeddings).max()) > target_score: return False
-        return target_score >= SIMILARITY_THRESHOLD
-
     def is_relevant(self, title: str, summary: str, source: dict) -> bool:
+        """The unbreakable logic pipeline ensuring no garbage creeps in."""
         combined = f"{title} {summary}".lower()
-        if any(x in combined for x in [x.lower() for x in source.get("exclude_keywords", [])]): return False
-        if any(x in combined for x in ["crop production", "livestock", "agriculture", "financial market", "stock exchange", "manufacturing"]): return False
         
-        keywords_any = [x.lower() for x in source.get("keywords_any", [])]
-        if keywords_any and (any(x in title.lower() for x in keywords_any) or any(x in summary.lower() for x in keywords_any)):
+        # 1. HARD REJECTS (Instantly kills Economic/Trade/Farming data)
+        exclude_kw = [x.lower() for x in source.get("exclude_keywords", [])]
+        hard_rejects = [
+            "economic census", "turnover", "producer price", "consumer price", "cpi", "inflation",
+            "gdp", "gross domestic product", "trade in goods", "export", "import", "retail sales",
+            "crop", "livestock", "agriculture", "fishery", "forestry", "manufacturing", 
+            "industrial production", "financial market", "stock exchange", "interest rate",
+            "business insights", "company mergers", "acquisitions", "energy consumption",
+            "electricity", "emissions", "weather", "precipitation", "labour cost index",
+            "wage index", "price index", "construction index", "services index", "balance of payments",
+            "vehicle", "aviation", "freight", "transport turnover", "telecommunications"
+        ]
+        if any(x in combined for x in exclude_kw + hard_rejects): 
+            return False
+
+        # 2. HEURISTIC FAST-TRACK (Safe demographic phrases)
+        strong_demographic = ["population estimates", "birth statistics", "fertility rate", "mortality rate", "life expectancy", "census results", "long-term international migration", "demographic trends"]
+        if any(x in title.lower() for x in strong_demographic):
             return True
-        if self.dynamic_terms and any(t in combined for t in self.dynamic_terms[:10]): return True
-        return self.ai_semantic_filter(f"{title} {summary} {source['name']}")
+
+        # 3. AI SEMANTIC CHECK
+        context = f"{title} {summary} {source['name']}"
+        if len(context) < 10: return False
+        
+        embedding = ai_model.encode(context, convert_to_tensor=True)
+        target_score = float(util.cos_sim(embedding, self.target_embeddings).max())
+        anti_score = float(util.cos_sim(embedding, anti_embeddings).max())
+        
+        if anti_score > target_score: 
+            return False # AI confirms it is closer to agriculture/finance than population
+            
+        if target_score >= SIMILARITY_THRESHOLD: 
+            return True
+
+        # 4. FALLBACK KEYWORD (Only allowed if it survived the AI veto)
+        if self.dynamic_terms and any(t in combined for t in self.dynamic_terms[:10]):
+            return True
+            
+        keywords_any = [x.lower() for x in source.get("keywords_any", [])]
+        if keywords_any and any(x in title.lower() for x in keywords_any):
+            return True
+            
+        return False
 
     def get_source_quality(self, source_name: str, page_url: str) -> float:
         state = self.source_health.get(source_name, {}).get("pages", {}).get(page_url, {})
@@ -297,27 +327,33 @@ class LCDSDataEngine:
     def parser_ons_release_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
         url_parts = list(urlparse(page_url))
         query = parse_qs(url_parts[4])
-        if "keywords" not in query and (search_kw := source.get("keywords_any", [])[:2] + (self.dynamic_terms[:3] if self.dynamic_terms else [])):
-            query["keywords"] = " ".join(search_kw)
-        url_parts[4] = urlencode(query, doseq=True)
-        resp = self.fetch(urlunparse(url_parts), source)
-        resp.raise_for_status()
-        soup = BeautifulSoup(resp.text, "html.parser")
+        
+        # Perform 3 distinct queries to ensure ONS doesn't hide data behind specific keywords
+        target_queries = ["population", "migration", "health"] 
+        if self.dynamic_terms: target_queries.append(self.dynamic_terms[0])
+            
         results, seen_links = [], set()
 
-        for card in soup.find_all(["li", "div", "article"]):
-            text = card.get_text(" ", strip=True)
-            if "Release date:" not in text: continue
-            link = card.find("a", href=True)
-            if not link or (url := urljoin(page_url, link["href"])) in seen_links: continue
-            title = self.normalize_whitespace(link.get_text())
-            if not (m := re.search(r"Release date:\s*([^|]+)\|\s*([A-Za-z]+)", text)): continue
-            date_text, label = m.group(1).strip(), m.group(2).strip()
-            seen_links.add(url)
-            rec = self.record_from_fields(source, title, text.replace(title, "").replace(f"Release date: {date_text} | {label}", "").strip(), date_text, url, extra_text=text, source_page=page_url, fallback_hit=fallback_hit)
-            if rec:
-                rec["status"] = {"Published": "Published", "Confirmed": "Upcoming", "Cancelled": "Cancelled"}.get(label, rec["status"])
-                results.append(rec)
+        for kw in set(target_queries):
+            query["keywords"] = kw
+            url_parts[4] = urlencode(query, doseq=True)
+            resp = self.fetch(urlunparse(url_parts), source)
+            if resp.status_code != 200: continue
+            
+            soup = BeautifulSoup(resp.text, "html.parser")
+            for card in soup.find_all(["li", "div", "article"]):
+                text = card.get_text(" ", strip=True)
+                if "Release date:" not in text: continue
+                link = card.find("a", href=True)
+                if not link or (url := urljoin(page_url, link["href"])) in seen_links: continue
+                title = self.normalize_whitespace(link.get_text())
+                if not (m := re.search(r"Release date:\s*([^|]+)\|\s*([A-Za-z]+)", text)): continue
+                date_text, label = m.group(1).strip(), m.group(2).strip()
+                seen_links.add(url)
+                rec = self.record_from_fields(source, title, text.replace(title, "").replace(f"Release date: {date_text} | {label}", "").strip(), date_text, url, extra_text=text, source_page=page_url, fallback_hit=fallback_hit)
+                if rec:
+                    rec["status"] = {"Published": "Published", "Confirmed": "Upcoming", "Cancelled": "Cancelled"}.get(label, rec["status"])
+                    results.append(rec)
         return results
 
     def parser_census_upcoming(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
@@ -336,17 +372,16 @@ class LCDSDataEngine:
         resp = self.fetch(page_url, source)
         resp.raise_for_status()
         results = []
-        for row in BeautifulSoup(resp.text, "html.parser").find_all(["tr", "li", "article", "section", "div.news-item"]):
+        for row in BeautifulSoup(resp.text, "html.parser").find_all(["tr", "li", "article", "section", "div.news-item", "div.item"]):
             text = self.normalize_whitespace(row.get_text(" ", strip=True))
             if len(text) < 15: continue
             
-            # FIX: If there is no date, it will pass `None` and process it as an Announcement
             date_text = next((m.group(0) for p in DATE_PATTERNS if (m := re.search(p, text))), None)
             
             head_node, link_node = row.find(["h2", "h3", "h4", "strong"]), row.find("a", href=True)
             title = self.normalize_whitespace(head_node.get_text(strip=True)) if head_node and len(head_node.get_text(strip=True)) > 5 else (self.normalize_whitespace(link_node.get_text(strip=True)) if link_node and len(link_node.get_text(strip=True)) > 5 else "")
             
-            if not title and not date_text: continue # Only skip if BOTH title and date are missing
+            if not title and not date_text: continue 
             if not title: title = text.replace(date_text or "", "").strip(" |-:")[:150]
 
             if rec := self.record_from_fields(source, title, text.replace(title, "").replace(date_text or "", "").strip(" -:|"), date_text, urljoin(page_url, link_node["href"]) if link_node else page_url, extra_text=text, source_page=page_url, fallback_hit=fallback_hit): results.append(rec)
@@ -450,7 +485,6 @@ class LCDSDataEngine:
         missing_key = df["record_key"].fillna("") == ""
         if missing_key.any(): df.loc[missing_key, "record_key"] = df.loc[missing_key].apply(lambda r: self.canonical_key(r.get("dataset_title", ""), r.get("source", ""), r.get("action_date")), axis=1)
 
-        # Vectorized Deduplication (Instant Speed)
         df = df.sort_values(["deleted_signal", "red_flag", "priority_score", "confidence", "source_quality", "fallback_hit", "action_date"], ascending=[False, False, False, False, False, True, True])
         df = df.drop_duplicates(subset=["record_key"], keep="first")
         df["date_key"] = df["action_date"].dt.strftime("%Y-%m-%d").fillna("nodate")
