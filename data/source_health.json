@@ -410,13 +410,13 @@
   "Statistics Sweden": {
     "pages": {
       "https://www.scb.se/en/finding-statistics/publishing-calendar/": {
-        "attempts": 11,
-        "successes": 7,
+        "attempts": 12,
+        "successes": 8,
         "failures": 4,
-        "items": 49
+        "items": 53
       }
     },
-    "last_success": "2026-03-10T11:27:26.906812",
+    "last_success": "2026-03-10T11:35:29.558908",
     "last_failure": "2026-03-10T08:54:10.067456"
   },
   "CBS Netherlands": {
@@ -434,13 +434,13 @@
   "Eurostat Dataset Updates": {
     "pages": {
       "https://ec.europa.eu/eurostat/api/dissemination/catalogue/rss/en/statistics-update.rss": {
-        "attempts": 11,
-        "successes": 7,
+        "attempts": 12,
+        "successes": 8,
         "failures": 4,
-        "items": 114
+        "items": 130
       }
     },
-    "last_success": "2026-03-10T11:27:27.884404",
+    "last_success": "2026-03-10T11:35:29.539081",
     "last_failure": "2026-03-10T08:54:12.394850"
   },
   "NRS Scotland": {
@@ -452,13 +452,13 @@
         "items": 6
       },
       "https://www.gov.scot/publications/": {
-        "attempts": 9,
-        "successes": 5,
+        "attempts": 10,
+        "successes": 6,
         "failures": 4,
-        "items": 19
+        "items": 21
       }
     },
-    "last_success": "2026-03-10T11:27:23.985140",
+    "last_success": "2026-03-10T11:35:27.971874",
     "last_failure": "2026-03-10T08:54:09.142581"
   },
   "Statistics Japan (e-Stat)": {
@@ -470,37 +470,37 @@
         "items": 0
       },
       "https://www.stat.go.jp/english/info/news/": {
-        "attempts": 10,
-        "successes": 6,
+        "attempts": 11,
+        "successes": 7,
         "failures": 4,
-        "items": 34
+        "items": 39
       }
     },
-    "last_success": "2026-03-10T11:27:24.070144",
+    "last_success": "2026-03-10T11:35:27.845793",
     "last_failure": "2026-03-10T08:54:10.073122"
   },
   "KOSTAT South Korea": {
     "pages": {
       "https://kostat.go.kr/anse/": {
-        "attempts": 10,
-        "successes": 6,
+        "attempts": 11,
+        "successes": 7,
         "failures": 4,
-        "items": 354
+        "items": 359
       }
     },
-    "last_success": "2026-03-10T11:27:28.824584",
+    "last_success": "2026-03-10T11:35:30.357276",
     "last_failure": "2026-03-10T08:54:09.751794"
   },
   "NBS China": {
     "pages": {
       "http://www.stats.gov.cn/english/PressRelease/": {
-        "attempts": 8,
-        "successes": 4,
+        "attempts": 9,
+        "successes": 5,
         "failures": 4,
-        "items": 4
+        "items": 5
       }
     },
-    "last_success": "2026-03-10T11:19:35.397041",
+    "last_success": "2026-03-10T11:35:43.656861",
     "last_failure": "2026-03-10T08:54:13.149826"
   }
 }
