@@ -1,0 +1,70 @@
+{
+  "generated_at": "2026-03-10T04:38:31.986611",
+  "logs": [
+    {
+      "source": "UN Population Division News",
+      "items": 1
+    },
+    {
+      "source": "US Census Releases",
+      "items": 107
+    },
+    {
+      "source": "ONS Upcoming Releases",
+      "items": 0
+    },
+    {
+      "source": "GDELT Demography Media Signals",
+      "items": 1
+    },
+    {
+      "source": "Statistics Sweden Publishing Calendar",
+      "items": 2
+    },
+    {
+      "source": "Eurostat Release Calendar",
+      "items": 2
+    },
+    {
+      "source": "GDELT Registry and Data Access Signals",
+      "items": 1
+    },
+    {
+      "source": "Statistics Finland Signals",
+      "items": 12
+    },
+    {
+      "source": "CBS Netherlands Publication Calendar",
+      "items": 0
+    },
+    {
+      "source": "Human Mortality Database Events",
+      "items": 1
+    },
+    {
+      "source": "DHS Program News",
+      "items": 1
+    },
+    {
+      "source": "Finngen Signals",
+      "items": 22
+    },
+    {
+      "source": "Eurostat Dataset Update RSS",
+      "items": 100
+    },
+    {
+      "source": "Statistics Norway Upcoming Releases",
+      "items": 0
+    }
+  ],
+  "metrics": {
+    "records": 236,
+    "upcoming": 106,
+    "red_flags": 0,
+    "deletions": 0,
+    "next_14_days": 1,
+    "fallback_hits": 21,
+    "generated_at": "2026-03-10T04:38:31.987226"
+  }
+}
