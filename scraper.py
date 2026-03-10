@@ -37,7 +37,7 @@ MAX_ABS_DAYS = 366
 THEME_KEYWORDS = {
     "Population": ["population", "demograph", "census", "resident", "ageing", "aging", "household", "people"],
     "Migration": ["migration", "migrant", "immigration", "emigration", "asylum", "refugee", "mobility", "visa"],
-    "Fertility & Births": ["fertility", "birth", "newborn", "pregnan", "family formation", "maternity"],
+    "Fertility & Births": ["fertility", "birth", "newborn", "pregnant", "family formation", "maternity"],
     "Mortality & Health": ["mortality", "death", "life expectancy", "health", "cause of death", "suicide", "disease"],
     "Labour & Economy": ["labour", "labor", "employment", "earnings", "income", "poverty", "benefit", "workless", "workforce"],
     "Housing & Families": ["housing", "rent", "home", "family", "marriage", "divorce", "living conditions"],
@@ -345,6 +345,17 @@ class LCDSDataEngine:
         else:
             page_state["failures"] += 1
             state["last_failure"] = utcnow_naive().isoformat()
+            
+    def compute_media_relevance(self, theme_primary: str, status: str, days_to_event, source_type: str, red_flag: int, title: str) -> int:
+        score = 0
+        if theme_primary in {"Population", "Biobanks & Registries", "Mortality & Health", "Labour & Economy", "Housing & Families"}: score += 20
+        if status in {"Upcoming", "Cancelled", "Deleted", "Rescheduled", "Restricted"}: score += 30
+        if days_to_event is not None and pd.notna(days_to_event) and 0 <= int(days_to_event) <= 14: score += 25
+        if source_type == "Official": score += 15
+        if int(red_flag) == 1: score += 10
+        title_l = (title or "").lower()
+        if any(x in title_l for x in ["population", "migration", "fertility", "death", "mortality", "census", "asylum"]): score += 10
+        return int(score)
 
     def record_from_fields(self, source: dict, title: str, summary: str, date_value, url: str, extra_text: str = "", source_page: str = "", fallback_hit: int = 0) -> dict | None:
         title = self.normalize_whitespace(re.sub(r"^\d+\.\s*", "", title or "").strip())
@@ -373,9 +384,7 @@ class LCDSDataEngine:
         confidence = 0.48 + (0.15 if title else 0) + (0.10 if summary else 0) + (0.15 if action_date else 0)
         days_to_event = None if action_date is None else (action_date.date() - self.today.date()).days
         
-        media_relevance = 0
-        if theme_primary in {"Population", "Biobanks & Registries", "Mortality & Health"}: media_relevance += 20
-        if status in {"Upcoming", "Cancelled", "Deleted", "Rescheduled", "Restricted"}: media_relevance += 30
+        media_relevance = self.compute_media_relevance(theme_primary, status, days_to_event, source.get("source_type", "Official"), red_flag, title)
         
         priority_score += int(source.get("priority_weight", 0))
         record_key = self.canonical_key(title, source["name"], action_date)
@@ -618,7 +627,9 @@ class LCDSDataEngine:
         df = df.sort_values(["deleted_signal", "red_flag", "priority_score", "confidence", "source_quality", "fallback_hit", "action_date"], ascending=[False, False, False, False, False, True, True])
         df = df.drop_duplicates(subset=["record_key"], keep="first")
         date_key = df["action_date"].dt.strftime("%Y-%m-%d").fillna("nodate")
-        df = df.groupby([df["dataset_title_norm"], date_key], group_keys=False).apply(lambda g: g.sort_values(["deleted_signal", "red_flag", "priority_score", "confidence", "source_quality", "fallback_hit"], ascending=[False, False, False, False, False, True]).head(1)).reset_index(drop=True)
+        
+        # Fixed FutureWarning by adding include_groups=False
+        df = df.groupby([df["dataset_title_norm"], date_key], group_keys=False).apply(lambda g: g.sort_values(["deleted_signal", "red_flag", "priority_score", "confidence", "source_quality", "fallback_hit"], ascending=[False, False, False, False, False, True]).head(1), include_groups=False).reset_index(drop=True)
 
         df["days_to_event"] = (df["action_date"].dt.normalize() - pd.Timestamp(self.today)).dt.days
         df["display_date"] = df["action_date"].dt.strftime("%d %b %Y")
