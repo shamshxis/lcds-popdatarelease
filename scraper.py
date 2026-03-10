@@ -34,9 +34,9 @@ DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.
 MAX_ABS_DAYS = 366
 
 THEME_KEYWORDS = {
-    "Population": ["population", "demograph", "census", "resident", "ageing", "aging", "household", "people"],
+    "Population": ["population", "demograph", "census", "resident", "ageing", "aging", "household", "people", "names", "surnames"],
     "Migration": ["migration", "migrant", "immigration", "emigration", "asylum", "refugee", "mobility", "visa"],
-    "Fertility & Births": ["fertility", "birth", "newborn", "pregnan", "family formation", "maternity"],
+    "Fertility & Births": ["fertility", "birth", "newborn", "pregnan", "family formation", "maternity", "babies"],
     "Mortality & Health": ["mortality", "death", "life expectancy", "health", "cause of death", "suicide", "disease"],
     "Labour & Economy": ["labour", "labor", "employment", "earnings", "income", "poverty", "benefit", "workless", "workforce"],
     "Housing & Families": ["housing", "rent", "home", "family", "marriage", "divorce", "living conditions"],
@@ -45,14 +45,14 @@ THEME_KEYWORDS = {
 }
 
 STATUS_PRIORITY = {"Deleted": 100, "Cancelled": 95, "Rescheduled": 90, "Restricted": 88, "Upcoming": 80, "Published": 60, "Announcement": 45, "Monitor": 30}
-
 RED_FLAG_TERMS = ["discontinued", "deleted", "closure", "decommission", "retired", "withdrawn", "cancelled", "canceled", "removed", "archive", "archived", "end of series", "access change", "restricted access", "deprecation", "deprecated", "shutdown"]
-
 STOPWORDS = {"about","above","across","after","against","along","among","around","before","behind","below","beneath","beside","between","during","except","from","inside","into","like","near","outside","over","past","since","through","throughout","toward","under","underneath","until","upon","with","within","without","although","because","since","unless","these","those","were","have","does","could","should","would","might","must","using","based","analysis","study","data","effects","impact","changes","patterns","trends","evidence","review","between","their","there","which","where","when","what","who","whom","whose","why","some","many","much","most","other","such","only","also","very","more","than","then","this","that","using","approach","method","methods","model","models","results","effect","among","associated","association","factors"}
 
 DATE_PATTERNS = [
-    r"\b\d{4}-\d{2}-\d{2}\b", r"\b\d{1,2}/\d{1,2}/\d{4}\b", r"\b\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}\b", 
-    r"\b[A-Za-z]{3,9}\s+\d{1,2},\s*\d{4}\b", r"\b[A-Za-z]{3,9}\s+\d{4}\b", r"\b\d{1,2}\s+[A-Za-z]{3,9}\b"
+    r"\b\d{4}-\d{2}-\d{2}\b", r"\b\d{1,2}/\d{1,2}/\d{4}\b", 
+    r"\b\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]{3,9}\s+\d{4}\b", 
+    r"\b[A-Za-z]{3,9}\s+\d{1,2}(?:st|nd|rd|th)?(?:,)?\s*\d{4}\b", 
+    r"\b[A-Za-z]{3,9}\s+\d{4}\b"
 ]
 
 print("🧠 Loading AI Semantic Model...")
@@ -66,32 +66,10 @@ def utcnow_naive() -> datetime: return datetime.now(timezone.utc).replace(tzinfo
 
 @dataclass
 class ParsedItem:
-    dataset_title: str
-    source: str
-    source_group: str
-    source_type: str
-    event_type: str
-    action_date: datetime | None
-    status: str
-    url: str
-    summary: str = ""
-    theme_primary: str = "General"
-    theme_secondary: str = ""
-    priority_score: int = 0
-    confidence: float = 0.0
-    red_flag: int = 0
-    deleted_signal: int = 0
-    embargo: int = 0
-    tags: str = ""
-    raw_date: str = ""
-    last_checked: str = ""
-    source_page: str = ""
-    fallback_hit: int = 0
-    source_quality: float = 0.0
-    media_relevance: int = 0
-    executive_flag: int = 0
-    academic_match: int = 0 
-    record_key: str = ""
+    dataset_title: str; source: str; source_group: str; source_type: str; event_type: str; action_date: datetime | None; status: str; url: str
+    summary: str = ""; theme_primary: str = "General"; theme_secondary: str = ""; priority_score: int = 0; confidence: float = 0.0; red_flag: int = 0
+    deleted_signal: int = 0; embargo: int = 0; tags: str = ""; raw_date: str = ""; last_checked: str = ""; source_page: str = ""
+    fallback_hit: int = 0; source_quality: float = 0.0; media_relevance: int = 0; executive_flag: int = 0; academic_match: int = 0; record_key: str = ""
     def to_record(self) -> dict: return self.__dict__.copy()
 
 class LCDSDataEngine:
@@ -105,11 +83,8 @@ class LCDSDataEngine:
         self.target_embeddings = ai_model.encode(active_targets, convert_to_tensor=True)
 
         settings = self.config.get("settings", {})
-        self.timeout = int(settings.get("timeout", DEFAULT_TIMEOUT))
-        self.max_workers = int(settings.get("max_workers", 12))
-        self.page_workers = int(settings.get("page_workers", 4))
-        self.user_agent = settings.get("user_agent", DEFAULT_USER_AGENT)
-        self.max_abs_days = int(settings.get("max_abs_days", MAX_ABS_DAYS))
+        self.timeout, self.max_workers, self.page_workers = int(settings.get("timeout", 30)), int(settings.get("max_workers", 16)), int(settings.get("page_workers", 4))
+        self.user_agent, self.max_abs_days = settings.get("user_agent", DEFAULT_USER_AGENT), int(settings.get("max_abs_days", MAX_ABS_DAYS))
         self.today = utcnow_naive().replace(hour=0, minute=0, second=0, microsecond=0)
         self.headers = {"User-Agent": self.user_agent, "Accept": "text/html,application/json,*/*"}
         self.session = requests.Session()
@@ -125,8 +100,6 @@ class LCDSDataEngine:
             df = pd.read_csv(ORCID_FILE)
             if "ORCID" not in df.columns: return []
             orcids = [o for o in df["ORCID"].dropna().astype(str).str.strip().tolist() if re.match(r"^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$", o)]
-            if not orcids: return []
-            
             all_words = []
             def fetch_orcid(orcid):
                 try:
@@ -134,15 +107,13 @@ class LCDSDataEngine:
                     if resp.status_code == 200: return resp.json().get("message", {}).get("items", [])
                 except: pass
                 return []
-
             with ThreadPoolExecutor(max_workers=8) as ex:
                 futures = {ex.submit(fetch_orcid, o): o for o in orcids}
                 for future in as_completed(futures):
                     for item in future.result():
                         for subj in item.get("subject", []):
                             if s_clean := subj.lower().strip(): all_words.append(s_clean)
-                        for title in item.get("title", []):
-                            all_words.extend([w for w in re.findall(r'\b[a-z]{5,}\b', title.lower()) if w not in STOPWORDS])
+                        for title in item.get("title", []): all_words.extend([w for w in re.findall(r'\b[a-z]{5,}\b', title.lower()) if w not in STOPWORDS])
             top_terms = [term for term, _ in Counter(all_words).most_common(40)]
             os.makedirs(os.path.dirname(DYNAMIC_PROFILE_CACHE), exist_ok=True)
             with open(DYNAMIC_PROFILE_CACHE, "w") as f: json.dump({"timestamp": time.time(), "keywords": top_terms}, f)
@@ -187,7 +158,7 @@ class LCDSDataEngine:
             except: pass
         try: return parsedate_to_datetime(text).replace(tzinfo=None)
         except: pass
-        try: return date_parser.parse(text, fuzzy=True, dayfirst=False).replace(tzinfo=None)
+        try: return date_parser.parse(text, fuzzy=True, dayfirst=True).replace(tzinfo=None)
         except: return None
 
     def in_time_window(self, dt: datetime | None) -> bool:
@@ -224,54 +195,28 @@ class LCDSDataEngine:
     def is_junk_title(self, title: str) -> bool:
         t = title.lower().strip()
         if len(t) < 5 or re.fullmatch(r"^[0-9\/\-\. ]+$", t): return True
-        return any(t.startswith(j) or t == j for j in ["clear all", "search results", "skip to", "microdata access", "upcoming releases", "release date", "data.census.gov"])
+        return any(t.startswith(j) or t == j for j in ["clear all", "search results", "skip to", "microdata access", "upcoming releases", "release date", "data.census.gov", "incremental developmental", "top of section", "---"])
 
     def is_relevant(self, title: str, summary: str, source: dict) -> bool:
-        """The unbreakable logic pipeline ensuring no garbage creeps in."""
         combined = f"{title} {summary}".lower()
+        if any(x in combined for x in [x.lower() for x in source.get("exclude_keywords", [])]): return False
         
-        # 1. HARD REJECTS (Instantly kills Economic/Trade/Farming data)
-        exclude_kw = [x.lower() for x in source.get("exclude_keywords", [])]
-        hard_rejects = [
-            "economic census", "turnover", "producer price", "consumer price", "cpi", "inflation",
-            "gdp", "gross domestic product", "trade in goods", "export", "import", "retail sales",
-            "crop", "livestock", "agriculture", "fishery", "forestry", "manufacturing", 
-            "industrial production", "financial market", "stock exchange", "interest rate",
-            "business insights", "company mergers", "acquisitions", "energy consumption",
-            "electricity", "emissions", "weather", "precipitation", "labour cost index",
-            "wage index", "price index", "construction index", "services index", "balance of payments",
-            "vehicle", "aviation", "freight", "transport turnover", "telecommunications"
-        ]
-        if any(x in combined for x in exclude_kw + hard_rejects): 
-            return False
+        hard_rejects = ["economic census", "turnover", "producer price", "consumer price", "cpi", "inflation", "gdp", "gross domestic product", "trade in goods", "export", "import", "retail sales", "crop", "livestock", "agriculture", "fishery", "forestry", "manufacturing", "industrial production", "financial market", "stock exchange", "interest rate", "business insights", "company mergers", "acquisitions", "energy consumption", "electricity", "emissions", "weather", "precipitation", "labour cost index", "wage index", "price index", "construction index", "services index", "balance of payments"]
+        if any(x in combined for x in hard_rejects): return False
 
-        # 2. HEURISTIC FAST-TRACK (Safe demographic phrases)
-        strong_demographic = ["population estimates", "birth statistics", "fertility rate", "mortality rate", "life expectancy", "census results", "long-term international migration", "demographic trends"]
-        if any(x in title.lower() for x in strong_demographic):
-            return True
+        if any(x in title.lower() for x in ["population estimates", "birth statistics", "fertility", "mortality rate", "life expectancy", "census results", "international migration", "demographic trends", "eu population", "babies' first names"]): return True
 
-        # 3. AI SEMANTIC CHECK
         context = f"{title} {summary} {source['name']}"
         if len(context) < 10: return False
         
         embedding = ai_model.encode(context, convert_to_tensor=True)
         target_score = float(util.cos_sim(embedding, self.target_embeddings).max())
-        anti_score = float(util.cos_sim(embedding, anti_embeddings).max())
-        
-        if anti_score > target_score: 
-            return False # AI confirms it is closer to agriculture/finance than population
-            
-        if target_score >= SIMILARITY_THRESHOLD: 
-            return True
+        if float(util.cos_sim(embedding, anti_embeddings).max()) > target_score: return False
+        if target_score >= SIMILARITY_THRESHOLD: return True
 
-        # 4. FALLBACK KEYWORD (Only allowed if it survived the AI veto)
-        if self.dynamic_terms and any(t in combined for t in self.dynamic_terms[:10]):
-            return True
-            
         keywords_any = [x.lower() for x in source.get("keywords_any", [])]
-        if keywords_any and any(x in title.lower() for x in keywords_any):
-            return True
-            
+        if keywords_any and (any(x in title.lower() for x in keywords_any) or any(x in summary.lower() for x in keywords_any)): return True
+        if self.dynamic_terms and any(t in combined for t in self.dynamic_terms[:10]): return True
         return False
 
     def get_source_quality(self, source_name: str, page_url: str) -> float:
@@ -328,20 +273,17 @@ class LCDSDataEngine:
         url_parts = list(urlparse(page_url))
         query = parse_qs(url_parts[4])
         
-        # Perform 3 distinct queries to ensure ONS doesn't hide data behind specific keywords
-        target_queries = ["population", "migration", "health"] 
+        target_queries = ["population", "migration", "health", "admin-based", "births", "deaths"] 
         if self.dynamic_terms: target_queries.append(self.dynamic_terms[0])
             
         results, seen_links = [], set()
-
         for kw in set(target_queries):
             query["keywords"] = kw
             url_parts[4] = urlencode(query, doseq=True)
             resp = self.fetch(urlunparse(url_parts), source)
             if resp.status_code != 200: continue
             
-            soup = BeautifulSoup(resp.text, "html.parser")
-            for card in soup.find_all(["li", "div", "article"]):
+            for card in BeautifulSoup(resp.text, "html.parser").find_all(["li", "div", "article"]):
                 text = card.get_text(" ", strip=True)
                 if "Release date:" not in text: continue
                 link = card.find("a", href=True)
@@ -350,8 +292,7 @@ class LCDSDataEngine:
                 if not (m := re.search(r"Release date:\s*([^|]+)\|\s*([A-Za-z]+)", text)): continue
                 date_text, label = m.group(1).strip(), m.group(2).strip()
                 seen_links.add(url)
-                rec = self.record_from_fields(source, title, text.replace(title, "").replace(f"Release date: {date_text} | {label}", "").strip(), date_text, url, extra_text=text, source_page=page_url, fallback_hit=fallback_hit)
-                if rec:
+                if rec := self.record_from_fields(source, title, text.replace(title, "").replace(f"Release date: {date_text} | {label}", "").strip(), date_text, url, extra_text=text, source_page=page_url, fallback_hit=fallback_hit):
                     rec["status"] = {"Published": "Published", "Confirmed": "Upcoming", "Cancelled": "Cancelled"}.get(label, rec["status"])
                     results.append(rec)
         return results
@@ -369,22 +310,29 @@ class LCDSDataEngine:
         return results
 
     def parser_generic_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
+        """Surgical Anchor-Based Parser - guarantees capturing Japan/China/Scotland deeply nested datasets."""
         resp = self.fetch(page_url, source)
         resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
         results = []
-        for row in BeautifulSoup(resp.text, "html.parser").find_all(["tr", "li", "article", "section", "div.news-item", "div.item"]):
-            text = self.normalize_whitespace(row.get_text(" ", strip=True))
-            if len(text) < 15: continue
+        seen_texts = set()
+
+        for a in soup.find_all("a", href=True):
+            parent = a.find_parent(["tr", "li", "article", "div", "p", "td"])
+            if not parent: continue
             
-            date_text = next((m.group(0) for p in DATE_PATTERNS if (m := re.search(p, text))), None)
+            text = self.normalize_whitespace(parent.get_text(" ", strip=True))
+            if len(text) < 10 or text in seen_texts: continue
+            seen_texts.add(text)
             
-            head_node, link_node = row.find(["h2", "h3", "h4", "strong"]), row.find("a", href=True)
-            title = self.normalize_whitespace(head_node.get_text(strip=True)) if head_node and len(head_node.get_text(strip=True)) > 5 else (self.normalize_whitespace(link_node.get_text(strip=True)) if link_node and len(link_node.get_text(strip=True)) > 5 else "")
-            
-            if not title and not date_text: continue 
+            date_text = next((m.group(0) for p in DATE_PATTERNS if (m := re.search(p, text, re.IGNORECASE))), None)
+            title = self.normalize_whitespace(a.get_text(strip=True))
             if not title: title = text.replace(date_text or "", "").strip(" |-:")[:150]
 
-            if rec := self.record_from_fields(source, title, text.replace(title, "").replace(date_text or "", "").strip(" -:|"), date_text, urljoin(page_url, link_node["href"]) if link_node else page_url, extra_text=text, source_page=page_url, fallback_hit=fallback_hit): results.append(rec)
+            url = urljoin(page_url, a["href"])
+            summary = text.replace(title, "").replace(date_text or "", "").strip(" -:|")
+            if rec := self.record_from_fields(source, title, summary, date_text, url, extra_text=text, source_page=page_url, fallback_hit=fallback_hit): 
+                results.append(rec)
         return results
 
     def parser_rss(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
@@ -400,27 +348,19 @@ class LCDSDataEngine:
             if rec := self.record_from_fields(source, title, summary, date_val, link.text.strip() if link is not None and link.text else (link.attrib.get("href") if link is not None else page_url), extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit): results.append(rec)
         return results
 
-    def parser_xml_release(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
-        resp = self.fetch(page_url, source)
-        resp.raise_for_status()
-        results = []
-        for node in BeautifulSoup(resp.text, "xml").find_all(["release", "item", "entry"]):
-            title = node.find(["title", "headline"]).get_text(" ", strip=True) if node.find(["title", "headline"]) else ""
-            summary = node.find(["description", "summary"]).get_text(" ", strip=True) if node.find(["description", "summary"]) else ""
-            if rec := self.record_from_fields(source, title, summary, node.find(["release_date", "pubDate", "updated", "published", "date"]).get_text(" ", strip=True) if node.find(["release_date", "pubDate", "updated", "published", "date"]) else "", node.find(["link", "id"]).get_text(" ", strip=True) if node.find(["link", "id"]) else page_url, extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit): results.append(rec)
-        return results
-
     def parser_ics_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
         resp = self.fetch(page_url, source)
         resp.raise_for_status()
         results = []
-        for block in resp.text.split("BEGIN:VEVENT")[1:]:
+        # Fix line endings explicitly for Eurostat
+        text_clean = resp.text.replace('\r', '')
+        for block in text_clean.split("BEGIN:VEVENT")[1:]:
             unf = []
-            for l in [x.strip() for x in block.split("END:VEVENT")[0].splitlines() if x.strip()]:
+            for l in [x.strip() for x in block.split("END:VEVENT")[0].split('\n') if x.strip()]:
                 if unf and l.startswith(" "): unf[-1] += l.strip()
                 else: unf.append(l)
             def rf(prefixes): return next((u.split(":", 1)[-1].strip() for u in unf for p in prefixes if u.startswith(p)), "")
-            if rec := self.record_from_fields(source, rf(["SUMMARY"]), rf(["DESCRIPTION"]), rf(["DTSTART", "DTSTART;VALUE=DATE"]), rf(["URL"]) or page_url, extra_text=block, source_page=page_url, fallback_hit=fallback_hit): results.append(rec)
+            if rec := self.record_from_fields(source, rf(["SUMMARY"]), rf(["DESCRIPTION"]), rf(["DTSTART"]), rf(["URL"]) or page_url, extra_text=block, source_page=page_url, fallback_hit=fallback_hit): results.append(rec)
         return results
 
     def parser_gdelt_jsonfeed(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
@@ -485,6 +425,7 @@ class LCDSDataEngine:
         missing_key = df["record_key"].fillna("") == ""
         if missing_key.any(): df.loc[missing_key, "record_key"] = df.loc[missing_key].apply(lambda r: self.canonical_key(r.get("dataset_title", ""), r.get("source", ""), r.get("action_date")), axis=1)
 
+        # Vectorized Deduplication (Instant Speed)
         df = df.sort_values(["deleted_signal", "red_flag", "priority_score", "confidence", "source_quality", "fallback_hit", "action_date"], ascending=[False, False, False, False, False, True, True])
         df = df.drop_duplicates(subset=["record_key"], keep="first")
         df["date_key"] = df["action_date"].dt.strftime("%Y-%m-%d").fillna("nodate")
