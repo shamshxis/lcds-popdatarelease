@@ -1,20 +1,20 @@
 {
-  "generated_at": "2026-03-10T06:54:58.403566",
+  "generated_at": "2026-03-10T07:05:05.988079",
   "logs": [
-    {
-      "source": "NCHS / CDC Health Data",
-      "items": 0
-    },
-    {
-      "source": "All of Us Research Program",
-      "items": 0
-    },
     {
       "source": "NRS Scotland",
       "items": 0
     },
     {
-      "source": "Eurostat Release Calendar",
+      "source": "Statistics Japan (e-Stat)",
+      "items": 0
+    },
+    {
+      "source": "ONS Upcoming Releases",
+      "items": 0
+    },
+    {
+      "source": "KOSTAT South Korea",
       "items": 0
     },
     {
@@ -22,82 +22,42 @@
       "items": 0
     },
     {
-      "source": "UK Biobank News",
-      "items": 0
-    },
-    {
-      "source": "Census of India",
-      "items": 0
-    },
-    {
       "source": "DHS Program News",
       "items": 0
     },
     {
-      "source": "MOSPI India",
+      "source": "US Census Releases",
       "items": 0
     },
     {
-      "source": "GDELT Demography & Cohorts",
-      "items": 0
-    },
-    {
-      "source": "Statistics Norway",
-      "items": 0
-    },
-    {
-      "source": "Statistics Japan (e-Stat)",
-      "items": 3
-    },
-    {
-      "source": "Human Mortality Database",
-      "items": 0
-    },
-    {
-      "source": "ONS Upcoming Releases",
-      "items": 19
-    },
-    {
-      "source": "FinData News",
+      "source": "NBS China",
       "items": 0
     },
     {
       "source": "Statistics Sweden",
-      "items": 6
-    },
-    {
-      "source": "Our Future Health UK",
-      "items": 39
-    },
-    {
-      "source": "US Census Releases",
-      "items": 96
-    },
-    {
-      "source": "Eurostat Dataset Updates",
-      "items": 16
+      "items": 0
     },
     {
       "source": "CBS Netherlands",
-      "items": 28
+      "items": 0
     },
     {
-      "source": "KOSTAT South Korea",
-      "items": 123
+      "source": "Eurostat Dataset Updates",
+      "items": 0
     },
     {
-      "source": "NBS China",
-      "items": 1
+      "source": "Eurostat Release Calendar",
+      "items": 0
     }
   ],
   "metrics": {
-    "records": 232,
-    "upcoming": 131,
-    "red_flags": 1,
+    "records": 0,
+    "upcoming": 0,
+    "red_flags": 0,
     "deletions": 0,
-    "academic_matches": 24,
-    "next_14_days": 9,
-    "fallback_hits": 1,
-    "generated_at": "2026-03-10T06:54:58.404252"
+    "academic_matches": 0,
+    "next_14_days": 0,
+    "fallback_hits": 0,
+    "generated_at": "2026-03-10T07:05:05.988101"
   }
 }
