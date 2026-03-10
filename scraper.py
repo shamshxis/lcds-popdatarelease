@@ -6,9 +6,12 @@ import time
 import traceback
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from collections import Counter
+from datetime import datetime, timezone, timedelta
+from html import unescape
+from urllib.parse import urljoin, quote_plus, urlparse, parse_qs, urlencode, urlunparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections import Counter
+from email.utils import parsedate_to_datetime
 import random
 
 import pandas as pd
@@ -185,7 +188,6 @@ class LCDSDataEngine:
         text = text.replace("GMT", "").replace("Z", "").strip()
 
         try:
-            # Set default day to 1st of the month if omitted (prevents "March 2026" parsing as "March 10 2026")
             fallback_default = datetime(self.today.year, self.today.month, 1)
             parsed = date_parser.parse(text, fuzzy=True, dayfirst=True, default=fallback_default)
             return parsed.replace(tzinfo=None)
@@ -232,7 +234,7 @@ class LCDSDataEngine:
         exclude_kw = [x.lower() for x in (source.get("exclude_keywords") or [])]
         if exclude_kw and any(x in combined for x in exclude_kw): return False
         
-        hard_rejects = ["economic census", "turnover", "producer price", "consumer price", "cpi", "inflation", "gdp", "gross domestic product", "trade in goods", "export", "import", "retail sales", "crop", "livestock", "agriculture", "fishery", "forestry", "manufacturing", "industrial production", "financial market", "stock exchange", "interest rate", "business insights", "company mergers", "acquisitions", "energy consumption", "electricity", "emissions", "weather", "precipitation", "labour cost index", "wage index", "price index", "construction index", "services index", "balance of payments", "vehicle", "aviation", "freight", "transport turnover", "telecommunications"]
+        hard_rejects = ["economic census", "turnover", "producer price", "consumer price", "cpi", "inflation", "gdp", "gross domestic product", "trade in goods", "export", "import", "retail sales", "crop", "livestock", "agriculture", "fishery", "forestry", "manufacturing", "industrial production", "financial market", "stock exchange", "interest rate", "business insights", "company mergers", "acquisitions", "energy consumption", "electricity", "emissions", "weather", "precipitation", "labour cost index", "wage index", "price index", "construction index", "services index", "balance of payments"]
         if any(x in combined for x in hard_rejects): return False
 
         strong_demographic = ["population estimates", "birth statistics", "fertility", "mortality", "life expectancy", "census results", "international migration", "demographic trends", "eu population", "babies' first names", "surnames in birth", "population projections", "death registrations", "annual births data", "baby names", "europop"]
@@ -304,7 +306,6 @@ class LCDSDataEngine:
     # --- PARSERS ---
     
     def parser_ons_release_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
-        from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
         url_parts = list(urlparse(page_url))
         query = parse_qs(url_parts[4])
         target_queries = ["population", "migration", "health", "admin-based", "births", "deaths"] 
@@ -448,7 +449,6 @@ class LCDSDataEngine:
         return parsers.get(aliases.get(source.get("parser", "generic_calendar"), source.get("parser", "generic_calendar")), self.parser_generic_calendar)(source, page_url, fallback_hit)
 
     def parse_source(self, source: dict) -> tuple[dict, list[dict], dict]:
-        from urllib.parse import quote_plus
         pages, all_items = self.source_page_list(source), []
         with ThreadPoolExecutor(max_workers=min(self.page_workers, max(1, len(pages)))) as ex:
             futures = {ex.submit(self.parse_page, source, pu, fh): (pu, fh) for pu, fh in pages}
@@ -461,6 +461,7 @@ class LCDSDataEngine:
                         all_items.extend(items)
                 except Exception as e:
                     print(f"❌ ERROR parsing {source['name']} ({pu}): {e}")
+                    traceback.print_exc()
                     self.update_source_health(source["name"], pu, False, 0)
         
         current_keys = [self.canonical_key(x.get("dataset_title", ""), x.get("source", source["name"]), x.get("action_date")) for x in all_items if x.get("dataset_title")]
