@@ -143,7 +143,6 @@ class LCDSDataEngine:
         except: return pd.DataFrame()
 
     def fetch(self, url: str, source: dict) -> requests.Response:
-        """Anti-Blocker Engine. If it gets a 403 Forbidden, it disguises itself and tries again."""
         headers = dict(self.headers)
         headers.update(source.get("headers", {}))
         try:
@@ -169,7 +168,6 @@ class LCDSDataEngine:
         if not text or text.lower() in {"nat", "nan", "none"}: return None
         
         text = re.sub(r"(\d+)(st|nd|rd|th)", r"\1", text, flags=re.IGNORECASE)
-        
         for fmt in ("%Y%m%d", "%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
             try: return datetime.strptime(text, fmt)
             except: pass
@@ -216,8 +214,6 @@ class LCDSDataEngine:
 
     def is_relevant(self, title: str, summary: str, source: dict) -> bool:
         combined = f"{title} {summary}".lower()
-        
-        # FIX: Ensure we safely handle missing 'exclude_keywords' without crashing
         exclude_kw = [x.lower() for x in (source.get("exclude_keywords") or [])]
         if exclude_kw and any(x in combined for x in exclude_kw): return False
         
@@ -290,6 +286,8 @@ class LCDSDataEngine:
             executive_flag=int(priority_score >= 80 or red_flag == 1 or deleted_signal == 1), academic_match=academic_match, record_key=self.canonical_key(title, source["name"], action_date),
         ).to_record()
 
+    # --- PARSERS ---
+    
     def parser_ons_release_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
         url_parts = list(urlparse(page_url))
         query = parse_qs(url_parts[4])
@@ -362,6 +360,17 @@ class LCDSDataEngine:
                 if len(summary) > 10: title, summary = f"{summary} ({title.split('-')[0].strip()})", "Data updated or added in Eurostat database."
             link = entry.find("link")
             if rec := self.record_from_fields(source, title, summary, date_val, link.text.strip() if link is not None and link.text else (link.attrib.get("href") if link is not None else page_url), extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit): results.append(rec)
+        return results
+
+    def parser_xml_release(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
+        resp = self.fetch(page_url, source)
+        results = []
+        for node in BeautifulSoup(resp.text, "xml").find_all(["release", "item", "entry"]):
+            title = node.find(["title", "headline"]).get_text(" ", strip=True) if node.find(["title", "headline"]) else ""
+            summary = node.find(["description", "summary"]).get_text(" ", strip=True) if node.find(["description", "summary"]) else ""
+            date_val = node.find(["release_date", "pubDate", "updated", "published", "date"]).get_text(" ", strip=True) if node.find(["release_date", "pubDate", "updated", "published", "date"]) else ""
+            url = node.find(["link", "id"]).get_text(" ", strip=True) if node.find(["link", "id"]) else page_url
+            if rec := self.record_from_fields(source, title, summary, date_val, url, extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit): results.append(rec)
         return results
 
     def parser_ics_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
