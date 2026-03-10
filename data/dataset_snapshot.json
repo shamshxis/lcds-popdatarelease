@@ -1,5 +1,8 @@
 {
-  "NRS Scotland": {},
+  "UN Population Division": {},
+  "DHS Program News": {
+    "2ea1c0ea94744b91636e1b2c1c37b26e": true
+  },
   "ONS Upcoming Releases": {
     "996a18cabde123acc3afee4142fcd3a2": true,
     "1c0f3c5a3076814dc7476a4b3662c601": true,
@@ -32,7 +35,21 @@
     "6e80d9ac94f194d0fe305495a8394241": true,
     "b9a5268ecfe64e0de57367f67e838194": true
   },
-  "UN Population Division": {},
+  "Statistics Sweden": {
+    "76f3a2ae7c9014f73a28e7d1f932f252": true,
+    "63bd2fd961f3cf7b6863521e076537c0": true,
+    "c283e4cc202c92504fef8ca28d070995": true,
+    "ee83a2b64c14da0f4755d7ec9e03658b": true,
+    "859206be214d55b4e21b0cf317e59901": true,
+    "020164a520a7e15d70f82c15320b03e9": true,
+    "70d224fcd07d35feaa34abe33e714d1e": true,
+    "f807c9e45354cce25d214b4aef30f9d8": true,
+    "4e0dece324b943c3d90a1bb0ed1a68b7": true,
+    "687a0a183b21fbd14a151809f56ef0d0": true
+  },
+  "NBS China": {
+    "56ebff02a42eae95d40a8fe626ea30a6": true
+  },
   "KOSTAT South Korea": {
     "243e58ba2a56fc59941c11471912bdc3": true,
     "72ec5898cf17fdfbee3c763b33e024ef": true,
@@ -75,12 +92,6 @@
     "0679f115f3ec28ffda367e2f7311b0b0": true,
     "ebeca3a887e6f5a5a17b325bcb95a95a": true,
     "a96c07dab3d2f6e3aca388c9e0a2762f": true
-  },
-  "DHS Program News": {
-    "2ea1c0ea94744b91636e1b2c1c37b26e": true
-  },
-  "Statistics Japan (e-Stat)": {
-    "0f427f625bdb298bf00c722ef0379e10": true
   },
   "US Census Releases": {
     "2a4e08014935420351200fe18aded82a": true,
@@ -218,21 +229,6 @@
     "a71f71fedba86520556452a9162f0b11": true,
     "c92b8c9b5c9b4fa13af5078ede0741ed": true
   },
-  "NBS China": {
-    "56ebff02a42eae95d40a8fe626ea30a6": true
-  },
-  "Statistics Sweden": {
-    "76f3a2ae7c9014f73a28e7d1f932f252": true,
-    "63bd2fd961f3cf7b6863521e076537c0": true,
-    "c283e4cc202c92504fef8ca28d070995": true,
-    "ee83a2b64c14da0f4755d7ec9e03658b": true,
-    "859206be214d55b4e21b0cf317e59901": true,
-    "020164a520a7e15d70f82c15320b03e9": true,
-    "70d224fcd07d35feaa34abe33e714d1e": true,
-    "f807c9e45354cce25d214b4aef30f9d8": true,
-    "4e0dece324b943c3d90a1bb0ed1a68b7": true,
-    "687a0a183b21fbd14a151809f56ef0d0": true
-  },
   "CBS Netherlands": {
     "04c28591be0ff01de10de11814992b26": true,
     "53eaf7bd75a5ac6714a09f89910bea30": true,
@@ -291,6 +287,10 @@
     "bd0a20f954fec2e6f0f39482ec4927e3": true,
     "40b833c7d1eade6f9b7443ccee191a56": true,
     "7dc047a84c8169e560cbdf6e4df8f631": true
+  },
+  "NRS Scotland": {},
+  "Statistics Japan (e-Stat)": {
+    "0f427f625bdb298bf00c722ef0379e10": true
   },
   "Eurostat Release Calendar": {}
 }
