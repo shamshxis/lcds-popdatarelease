@@ -7,7 +7,7 @@ from datetime import datetime
 
 # --- CONFIG ---
 st.set_page_config(
-    page_title="LCDS Pop Watch", 
+    page_title="LCDS Executive Watch", 
     page_icon="🛡️", 
     layout="wide",
     initial_sidebar_state="expanded"
