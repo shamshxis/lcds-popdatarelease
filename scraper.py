@@ -182,7 +182,6 @@ class LCDSDataEngine:
         text = str(value).strip()
         if not text or text.lower() in {"nat", "nan", "none", "tbc", "tbd"}: return None
         
-        # Aggressive date cleaning
         text = re.sub(r"(?<=\d)(st|nd|rd|th)\b", "", text, flags=re.IGNORECASE)
         text = re.sub(r"\|.*$", "", text).strip()
         text = text.replace("GMT", "").replace("Z", "").strip()
@@ -227,14 +226,29 @@ class LCDSDataEngine:
     def is_junk_title(self, title: str) -> bool:
         t = title.lower().strip()
         if len(t) < 5 or re.fullmatch(r"^[0-9\/\-\. ]+$", t): return True
-        return any(t.startswith(j) or t == j for j in ["clear all", "search results", "skip to", "microdata access", "upcoming releases", "release date", "data.census.gov", "incremental developmental", "top of section", "---"])
+        if re.fullmatch(r"^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}$", t): return True
+        if re.fullmatch(r"^\d{1,3}(,\d{3})*\s+results$", t): return True
+        
+        exact_matches = {
+            "information", "news bulletin", "jobs and vacancies", "registration", 
+            "records and archives", "statistics and data", "database tables", 
+            "publishing calendar", "data collection", "results", "search", 
+            "contact us", "privacy", "cookie", "main contents start here", 
+            "top of section", "skip to", "clear all", "search results", 
+            "data.census.gov", "incremental developmental", "---", "about us",
+            "news and press releases", "finding statistics", "menu"
+        }
+        
+        if t in exact_matches: return True
+        if t.startswith("skip to") or t.startswith("main contents"): return True
+        return False
 
     def is_relevant(self, title: str, summary: str, source: dict) -> bool:
         combined = f"{title} {summary}".lower()
         exclude_kw = [x.lower() for x in (source.get("exclude_keywords") or [])]
         if exclude_kw and any(x in combined for x in exclude_kw): return False
         
-        hard_rejects = ["economic census", "turnover", "producer price", "consumer price", "cpi", "inflation", "gdp", "gross domestic product", "trade in goods", "export", "import", "retail sales", "crop", "livestock", "agriculture", "fishery", "forestry", "manufacturing", "industrial production", "financial market", "stock exchange", "interest rate", "business insights", "company mergers", "acquisitions", "energy consumption", "electricity", "emissions", "weather", "precipitation", "labour cost index", "wage index", "price index", "construction index", "services index", "balance of payments"]
+        hard_rejects = ["economic census", "turnover", "producer price", "consumer price", "cpi", "inflation", "gdp", "gross domestic product", "trade in goods", "export", "import", "retail sales", "crop", "livestock", "agriculture", "fishery", "forestry", "manufacturing", "industrial production", "financial market", "stock exchange", "interest rate", "business insights", "company mergers", "acquisitions", "energy consumption", "electricity", "emissions", "weather", "precipitation", "labour cost index", "wage index", "price index", "construction index", "services index", "balance of payments", "bovine", "cattle", "animal", "pig ", "poultry", "economic growth", "ict usage", "enterprises", "spending", "consumer confidence", "producer confidence"]
         if any(x in combined for x in hard_rejects): return False
 
         strong_demographic = ["population estimates", "birth statistics", "fertility", "mortality", "life expectancy", "census results", "international migration", "demographic trends", "eu population", "babies' first names", "surnames in birth", "population projections", "death registrations", "annual births data", "baby names", "europop"]
@@ -248,9 +262,12 @@ class LCDSDataEngine:
         if float(util.cos_sim(embedding, anti_embeddings).max()) > target_score: return False
         if target_score >= SIMILARITY_THRESHOLD: return True
 
+        # STRICT OVERRIDE: Keywords MUST be in the Title. 
+        # This stops the word "population" in a footer from dragging in "ICT Usage"
         keywords_any = [x.lower() for x in (source.get("keywords_any") or [])]
-        if keywords_any and (any(x in title.lower() for x in keywords_any) or any(x in summary.lower() for x in keywords_any)): return True
-        if self.dynamic_terms and any(t in combined for t in self.dynamic_terms[:10]): return True
+        if keywords_any and any(x in title.lower() for x in keywords_any): return True
+        if self.dynamic_terms and any(t in title.lower() for t in self.dynamic_terms[:10]): return True
+        
         return False
 
     def get_source_quality(self, source_name: str, page_url: str) -> float:
@@ -285,7 +302,7 @@ class LCDSDataEngine:
         theme_primary, theme_secondary, tags = self.classify_themes(combined)
 
         if any(term in combined.lower() for term in RED_FLAG_TERMS): red_flag = 1
-        academic_match = 1 if self.dynamic_terms and any(t in combined.lower() for t in self.dynamic_terms[:15]) else 0
+        academic_match = 1 if self.dynamic_terms and any(t in title.lower() for t in self.dynamic_terms[:15]) else 0
         if academic_match: priority_score += 15; tags.append("Academic Priority")
 
         days_to_event = None if action_date is None else (action_date.date() - self.today.date()).days
@@ -305,6 +322,12 @@ class LCDSDataEngine:
 
     # --- PARSERS ---
     
+    def strip_html_noise(self, soup: BeautifulSoup) -> BeautifulSoup:
+        """Destroys footers and navs so they cannot be accidentally scraped."""
+        for tag in soup(["nav", "footer", "header", "aside", "style", "script"]):
+            tag.decompose()
+        return soup
+
     def parser_ons_release_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
         url_parts = list(urlparse(page_url))
         query = parse_qs(url_parts[4])
@@ -320,7 +343,8 @@ class LCDSDataEngine:
                 if resp.status_code != 200: continue
             except: continue
             
-            for card in BeautifulSoup(resp.text, "html.parser").find_all(["li", "div", "article"]):
+            soup = self.strip_html_noise(BeautifulSoup(resp.text, "html.parser"))
+            for card in soup.find_all(["li", "div", "article"]):
                 text = card.get_text(" ", strip=True)
                 if "Release date:" not in text: continue
                 link = card.find("a", href=True)
@@ -337,7 +361,8 @@ class LCDSDataEngine:
     def parser_census_upcoming(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
         try: resp = self.fetch(page_url, source)
         except: return []
-        lines = [self.normalize_whitespace(x) for x in BeautifulSoup(resp.text, "html.parser").get_text("\n").splitlines() if self.normalize_whitespace(x)]
+        soup = self.strip_html_noise(BeautifulSoup(resp.text, "html.parser"))
+        lines = [self.normalize_whitespace(x) for x in soup.get_text("\n").splitlines() if self.normalize_whitespace(x)]
         results, current_date, current_channel = [], None, ""
         for line in lines:
             if re.fullmatch(r"\d{1,2}/\d{1,2}/\d{4}", line): current_date, current_channel = line, ""
@@ -349,9 +374,10 @@ class LCDSDataEngine:
     def parser_generic_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
         try: resp = self.fetch(page_url, source)
         except: return []
-        soup = BeautifulSoup(resp.text, "html.parser")
+        soup = self.strip_html_noise(BeautifulSoup(resp.text, "html.parser"))
         results, seen_texts = [], set()
-        for node in soup.find_all(["a", "h2", "h3", "h4", "td", "li", "article"]):
+        
+        for node in soup.find_all(["a", "h2", "h3", "h4", "article"]):
             text = self.normalize_whitespace(node.get_text(" ", strip=True))
             if len(text) < 10 or text in seen_texts: continue
             seen_texts.add(text)
@@ -461,7 +487,6 @@ class LCDSDataEngine:
                         all_items.extend(items)
                 except Exception as e:
                     print(f"❌ ERROR parsing {source['name']} ({pu}): {e}")
-                    traceback.print_exc()
                     self.update_source_health(source["name"], pu, False, 0)
         
         current_keys = [self.canonical_key(x.get("dataset_title", ""), x.get("source", source["name"]), x.get("action_date")) for x in all_items if x.get("dataset_title")]
