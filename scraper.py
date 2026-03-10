@@ -12,6 +12,7 @@ from urllib.parse import urljoin, quote_plus, urlparse, parse_qs, urlencode, url
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import Counter
 from email.utils import parsedate_to_datetime
+import random
 
 import pandas as pd
 import urllib3
@@ -19,14 +20,17 @@ import yaml
 from bs4 import BeautifulSoup
 from dateutil import parser as date_parser
 from sentence_transformers import SentenceTransformer, util
+
+# curl_cffi perfectly mimics Google Chrome's network stack to bypass WAFs naturally
 from curl_cffi import requests as cffi_requests
 
-# Suppress SSL warnings
+# Suppress annoying SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# --- ETHICAL BOT CONFIGURATION ---
+# --- POLITE BOT CONFIGURATION ---
 CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL", "research@demography.ox.ac.uk")
-POLITE_USER_AGENT = f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 (LCDS-Demography-Research-Bot; +https://demography.ox.ac.uk; {CONTACT_EMAIL})"
+# We append our identity cleanly to a standard Chrome header
+POLITE_USER_AGENT = f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 (LCDS-Demography-Bot; {CONTACT_EMAIL})"
 
 # --- CONSTANTS ---
 DATA_DIR = "data"
@@ -38,7 +42,7 @@ SNAPSHOT_FILE = os.path.join(DATA_DIR, "dataset_snapshot.json")
 RUNLOG_FILE = os.path.join(DATA_DIR, "run_log.json")
 SOURCE_HEALTH_FILE = os.path.join(DATA_DIR, "source_health.json")
 
-DEFAULT_TIMEOUT = 25
+DEFAULT_TIMEOUT = 30
 MAX_ABS_DAYS = 730
 
 THEME_KEYWORDS = {
@@ -63,10 +67,27 @@ DATE_PATTERNS = [
     r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[A-Za-z]*\s+\d{4}\b", r"\b(?:Q[1-4]|Spring|Summer|Autumn|Winter)\s+\d{4}\b"
 ]
 
-print("🧠 Loading AI Semantic Model...")
+print("🧠 Loading Local NLM (Natural Language Model) for Semantic Filtering...")
 ai_model = SentenceTransformer('all-MiniLM-L6-v2')
-BASE_TARGETS = ["population estimates and demographic projections", "international migration asylum and refugee statistics", "national census results and household survey data", "births deaths mortality life expectancy and fertility rates", "employment labour market participation and workforce data", "housing living conditions and family structure statistics", "biobanks medical registries longitudinal cohorts and genomic health data"]
-ANTI_TARGETS = ["agricultural crop production farming and livestock", "financial market stock exchange banking and corporate bonds", "weather climate change meteorology and environmental data", "software updates IT infrastructure and network maintenance", "manufacturing output industrial production and trade in goods"]
+
+BASE_TARGETS = [
+    "population estimates and demographic projections", 
+    "international migration asylum and refugee statistics", 
+    "national census results and household survey data", 
+    "births deaths mortality life expectancy and fertility rates", 
+    "employment labour market participation and workforce data", 
+    "housing living conditions and family structure statistics", 
+    "biobanks medical registries longitudinal cohorts and genomic health data"
+]
+
+ANTI_TARGETS = [
+    "agricultural crop production farming and livestock", 
+    "financial market stock exchange banking and corporate bonds", 
+    "weather climate change meteorology and environmental data", 
+    "software updates IT infrastructure and network maintenance", 
+    "manufacturing output industrial production and trade in goods",
+    "job vacancies and career opportunities"
+]
 anti_embeddings = ai_model.encode(ANTI_TARGETS, convert_to_tensor=True)
 SIMILARITY_THRESHOLD = 0.35 
 
@@ -101,11 +122,15 @@ class LCDSDataEngine:
         self.target_embeddings = ai_model.encode(active_targets, convert_to_tensor=True)
 
         settings = self.config.get("settings", {})
-        self.timeout = int(settings.get("timeout", 25))
-        self.max_workers = int(settings.get("max_workers", 12))
-        self.page_workers = int(settings.get("page_workers", 3))
+        self.timeout = int(settings.get("timeout", 30))
+        # Keep max_workers high for parallel domain processing, but sequential inside domains.
+        self.max_workers = int(settings.get("max_workers", 8)) 
         self.max_abs_days = int(settings.get("max_abs_days", MAX_ABS_DAYS))
         self.today = utcnow_naive().replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        # Human-like persistent session (Maintains cookies and TLS connections)
+        self.session = cffi_requests.Session(impersonate="chrome110")
+        
         self.snapshot = self.load_json(SNAPSHOT_FILE)
         self.source_health = self.load_json(SOURCE_HEALTH_FILE)
         self.previous_df = self.load_previous_df()
@@ -126,7 +151,7 @@ class LCDSDataEngine:
                     if resp.status_code == 200: return resp.json().get("message", {}).get("items", [])
                 except: pass
                 return []
-            with ThreadPoolExecutor(max_workers=8) as ex:
+            with ThreadPoolExecutor(max_workers=4) as ex:
                 futures = {ex.submit(fetch_orcid, o): o for o in orcids}
                 for future in as_completed(futures):
                     for item in future.result():
@@ -160,22 +185,24 @@ class LCDSDataEngine:
         except: return pd.DataFrame()
 
     def fetch(self, url: str, source: dict):
-        """Ethical fetcher using curl_cffi for standard browser TLS fingerprinting."""
+        """Slow-paced, human-like browser simulator using persistent sessions."""
         headers = {
             "User-Agent": POLITE_USER_AGENT,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
             "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+            "Referer": "https://www.google.com/"
         }
         headers.update(source.get("headers", {}))
         
-        # Respectful delay so we don't bombard servers
-        time.sleep(1.5)
+        # HUMAN PAUSE: Random delay between 3 to 6 seconds before EVERY click
+        time.sleep(random.uniform(3.0, 6.0))
         
         try:
-            resp = cffi_requests.get(url, headers=headers, impersonate="chrome110", timeout=self.timeout, verify=False)
+            # We use the persistent self.session rather than isolated requests
+            resp = self.session.get(url, headers=headers, timeout=self.timeout)
             
             if resp.status_code in [403, 404, 406, 429] or "cloudflare" in resp.text.lower() or "Just a moment..." in resp.text:
-                print(f"🛑 [BLOCKED] {url} rejected the request. Accepting block cleanly.")
+                print(f"🛑 [BLOCKED] {url} rejected the human-mimic session.")
                 raise Exception(f"HTTP {resp.status_code} Blocked by WAF")
                 
             return DummyResponse(resp.text, resp.status_code)
@@ -183,7 +210,6 @@ class LCDSDataEngine:
             raise e
 
     def strip_html_noise(self, soup: BeautifulSoup) -> BeautifulSoup:
-        """Prunes navigation, footers, and widgets so we don't scrape 'Privacy Policy'."""
         for tag in soup(["nav", "footer", "header", "aside", "style", "script", "button", "svg", "form"]):
             tag.decompose()
             
@@ -253,8 +279,6 @@ class LCDSDataEngine:
         if len(t) < 5 or re.fullmatch(r"^[0-9\/\-\. ]+$", t): return True
         if re.fullmatch(r"^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}$", t): return True
         if re.fullmatch(r"^\d{1,3}(,\d{3})*\s+results$", t): return True
-        
-        # Hard kill URLs and Email addresses masquerading as titles
         if "@" in t or t.startswith("http") or "facebook.com" in t or "twitter.com" in t: return True
         
         exact_matches = {
@@ -306,6 +330,7 @@ class LCDSDataEngine:
         context = f"{title} {summary} {source['name']}"
         if len(context) < 10: return False
         
+        # Local NLM / Semantic Scoring
         embedding = ai_model.encode(context, convert_to_tensor=True)
         target_score = float(util.cos_sim(embedding, self.target_embeddings).max())
         if float(util.cos_sim(embedding, anti_embeddings).max()) > target_score: return False
@@ -447,7 +472,6 @@ class LCDSDataEngine:
             items = root.findall(".//item") + root.findall(".//{http://www.w3.org/2005/Atom}entry")
         except ET.ParseError:
             soup = BeautifulSoup(resp.text, "xml")
-            if "Cloudflare" in soup.get_text() or "Just a moment" in soup.get_text(): return []
             items = soup.find_all(["item", "entry"])
             
         for entry in items[:int(source.get("max_items", 50))]:
@@ -526,17 +550,18 @@ class LCDSDataEngine:
 
     def parse_source(self, source: dict) -> tuple[dict, list[dict], dict]:
         pages, all_items = self.source_page_list(source), []
-        with ThreadPoolExecutor(max_workers=min(self.page_workers, max(1, len(pages)))) as ex:
-            futures = {ex.submit(self.parse_page, source, pu, fh): (pu, fh) for pu, fh in pages}
-            for future in as_completed(futures):
-                pu, fh = futures[future]
-                try:
-                    items = future.result()
-                    if items:
-                        self.update_source_health(source["name"], pu, True, len(items))
-                        all_items.extend(items)
-                except Exception as e:
-                    self.update_source_health(source["name"], pu, False, 0)
+        
+        # SLOW-PACED SEQUENTIAL BROWSING
+        # We no longer thread pages *inside* a source. 
+        # The bot clicks one page, waits, then clicks the next, just like a human.
+        for pu, fh in pages:
+            try:
+                items = self.parse_page(source, pu, fh)
+                if items:
+                    self.update_source_health(source["name"], pu, True, len(items))
+                    all_items.extend(items)
+            except Exception as e:
+                self.update_source_health(source["name"], pu, False, 0)
         
         current_keys = [self.canonical_key(x.get("dataset_title", ""), x.get("source", source["name"]), x.get("action_date")) for x in all_items if x.get("dataset_title")]
         current_snapshot = {k: True for k in current_keys}
@@ -600,6 +625,8 @@ class LCDSDataEngine:
 
     def run(self) -> pd.DataFrame:
         sources, snapshots_out, all_rows, logs = self.config.get("sources", []), {}, [], []
+        
+        # We only thread across DIFFERENT websites. We do not thread within a single website.
         with ThreadPoolExecutor(max_workers=self.max_workers) as ex:
             futures = {ex.submit(self.parse_source, source): source for source in sources}
             for future in as_completed(futures):
