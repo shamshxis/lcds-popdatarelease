@@ -5,6 +5,7 @@ import hashlib
 import time
 import traceback
 import xml.etree.ElementTree as ET
+import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from html import unescape
@@ -12,15 +13,21 @@ from urllib.parse import urljoin, quote_plus, urlparse, parse_qs, urlencode, url
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import Counter
 from email.utils import parsedate_to_datetime
-import random
-import urllib.request
 
 import pandas as pd
 import requests
+import urllib3
 import yaml
 from bs4 import BeautifulSoup
 from dateutil import parser as date_parser
 from sentence_transformers import SentenceTransformer, util
+
+# Suppress annoying SSL warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# --- POLITE BOT CONFIGURATION ---
+CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL", "research@demography.ox.ac.uk")
+POLITE_USER_AGENT = f"LCDS-Demography-Research-Bot/1.0 (+https://demography.ox.ac.uk; mailto:{CONTACT_EMAIL})"
 
 # --- CONSTANTS ---
 DATA_DIR = "data"
@@ -32,7 +39,7 @@ SNAPSHOT_FILE = os.path.join(DATA_DIR, "dataset_snapshot.json")
 RUNLOG_FILE = os.path.join(DATA_DIR, "run_log.json")
 SOURCE_HEALTH_FILE = os.path.join(DATA_DIR, "source_health.json")
 
-DEFAULT_TIMEOUT = 25
+DEFAULT_TIMEOUT = 30
 MAX_ABS_DAYS = 730
 
 THEME_KEYWORDS = {
@@ -71,7 +78,9 @@ class DummyResponse:
         self.text = text
         self.status_code = status_code
     def raise_for_status(self): pass
-    def json(self): return json.loads(self.text)
+    def json(self): 
+        try: return json.loads(self.text)
+        except: return {}
 
 @dataclass
 class ParsedItem:
@@ -110,7 +119,7 @@ class LCDSDataEngine:
             all_words = []
             def fetch_orcid(orcid):
                 try:
-                    resp = requests.get(f"https://api.crossref.org/works?filter=orcid:{orcid}&select=title,subject&rows=12", headers={"User-Agent": "LCDS-Scraper/2.0"}, timeout=10)
+                    resp = requests.get(f"https://api.crossref.org/works?filter=orcid:{orcid}&select=title,subject&rows=12", headers={"User-Agent": POLITE_USER_AGENT}, timeout=10)
                     if resp.status_code == 200: return resp.json().get("message", {}).get("items", [])
                 except: pass
                 return []
@@ -148,12 +157,16 @@ class LCDSDataEngine:
         except: return pd.DataFrame()
 
     def fetch(self, url: str, source: dict) -> requests.Response:
+        """Polite fetching engine. Declares identity clearly to avoid WAF bans."""
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "User-Agent": POLITE_USER_AGENT,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
+            "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
         }
         headers.update(source.get("headers", {}))
+        
+        # Respectful delay so we don't hammer their servers
+        time.sleep(1)
         
         try:
             resp = self.session.get(url, headers=headers, timeout=self.timeout, verify=False)
@@ -161,22 +174,20 @@ class LCDSDataEngine:
                 raise requests.exceptions.HTTPError(response=resp)
             resp.raise_for_status()
             return resp
-        except requests.exceptions.RequestException as e:
-            print(f"⚠️ [WAF BLOCKED] Rerouting {url} through public proxy...")
-            try:
-                proxy_url = f"https://api.allorigins.win/get?url={quote_plus(url)}"
-                proxy_resp = self.session.get(proxy_url, timeout=self.timeout)
-                if proxy_resp.status_code == 200:
-                    data = proxy_resp.json()
-                    if data and data.get("contents"):
-                        return DummyResponse(data["contents"])
-            except Exception as proxy_e:
-                pass
-            print(f"❌ [PERMA-BLOCKED/DEAD] {url}")
+        except requests.exceptions.HTTPError as e:
+            # If the Requests library fails the TLS fingerprinting check, fallback to native urllib 
+            # with the EXACT SAME polite header. This bypasses many strict WAFs honestly.
+            if getattr(e.response, 'status_code', 0) in [403, 406]:
+                try:
+                    req = urllib.request.Request(url, headers={"User-Agent": POLITE_USER_AGENT})
+                    with urllib.request.urlopen(req, timeout=self.timeout) as response:
+                        return DummyResponse(response.read().decode('utf-8', errors='ignore'))
+                except Exception:
+                    pass
+            print(f"❌ [BLOCKED/DEAD] {url} rejected the polite request.")
             raise e
 
     def strip_html_noise(self, soup: BeautifulSoup) -> BeautifulSoup:
-        """Aggressive pruning of headers, footers, and mega-menus to prevent scraping 'Jobs' and 'Privacy' links."""
         for tag in soup(["nav", "footer", "header", "aside", "style", "script", "button", "svg", "form"]):
             tag.decompose()
             
@@ -255,7 +266,8 @@ class LCDSDataEngine:
             "top of section", "skip to", "clear all", "search results", 
             "data.census.gov", "incremental developmental", "---", "about us",
             "news and press releases", "finding statistics", "menu", "read more",
-            "view article", "click here", "find out more", "share this", "home"
+            "view article", "click here", "find out more", "share this", "home",
+            "rss feeds", "email alerts"
         }
         
         if t in exact_matches: return True
@@ -369,6 +381,7 @@ class LCDSDataEngine:
             url_parts[4] = urlencode(query, doseq=True)
             try: 
                 resp = self.fetch(urlunparse(url_parts), source)
+                if getattr(resp, 'status_code', 0) != 200: continue
             except: continue
             
             soup = self.strip_html_noise(BeautifulSoup(resp.text, "html.parser"))
@@ -480,7 +493,12 @@ class LCDSDataEngine:
                 if unf and l.startswith(" "): unf[-1] += l.strip()
                 else: unf.append(l)
             def rf(prefixes): return next((u.split(":", 1)[-1].strip() for u in unf for p in prefixes if u.startswith(p)), "")
-            if rec := self.record_from_fields(source, rf(["SUMMARY"]), rf(["DESCRIPTION"]), rf(["DTSTART", "DTSTART;VALUE=DATE"]), rf(["URL"]) or page_url, extra_text=block, source_page=page_url, fallback_hit=fallback_hit): results.append(rec)
+            
+            event_url = rf(["URL"])
+            if not event_url or event_url.lower() == "none": event_url = page_url
+            
+            if rec := self.record_from_fields(source, rf(["SUMMARY"]), rf(["DESCRIPTION"]), rf(["DTSTART", "DTSTART;VALUE=DATE"]), event_url, extra_text=block, source_page=page_url, fallback_hit=fallback_hit): 
+                results.append(rec)
         return results
 
     def parser_gdelt_jsonfeed(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
