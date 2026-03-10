@@ -1,71 +1,91 @@
 {
-  "generated_at": "2026-03-10T06:29:41.137245",
+  "generated_at": "2026-03-10T06:44:07.954378",
   "logs": [
     {
-      "source": "UN Population Division News",
+      "source": "NCHS / CDC Health Data",
       "items": 0
     },
     {
-      "source": "Finngen Signals",
+      "source": "UN Population Division",
       "items": 0
+    },
+    {
+      "source": "All of Us Research Program",
+      "items": 0
+    },
+    {
+      "source": "US Census Releases",
+      "items": 124
+    },
+    {
+      "source": "NFHS India (IIPS)",
+      "items": 0
+    },
+    {
+      "source": "ONS Upcoming Releases",
+      "items": 10
     },
     {
       "source": "DHS Program News",
       "items": 0
     },
     {
-      "source": "Statistics Sweden Publishing Calendar",
+      "source": "Statistics Finland",
       "items": 0
     },
     {
-      "source": "Statistics Norway Upcoming Releases",
+      "source": "Census of India",
       "items": 0
     },
     {
-      "source": "Eurostat Release Calendar",
+      "source": "Statistics Norway",
       "items": 0
     },
     {
-      "source": "ONS Upcoming Releases",
-      "items": 25
-    },
-    {
-      "source": "Statistics Finland Signals",
+      "source": "FinData News",
       "items": 0
     },
     {
-      "source": "CBS Netherlands Publication Calendar",
+      "source": "MOSPI India",
       "items": 0
     },
     {
-      "source": "Human Mortality Database Events",
+      "source": "Human Mortality Database",
       "items": 0
     },
     {
-      "source": "US Census Releases",
-      "items": 115
-    },
-    {
-      "source": "GDELT Demography Media Signals",
+      "source": "UK Biobank News",
       "items": 0
     },
     {
-      "source": "Eurostat Dataset Update RSS",
-      "items": 15
+      "source": "Our Future Health UK",
+      "items": 44
     },
     {
-      "source": "GDELT Registry and Data Access Signals",
-      "items": 2
+      "source": "GDELT Demography & Cohorts",
+      "items": 0
+    },
+    {
+      "source": "Statistics Sweden",
+      "items": 11
+    },
+    {
+      "source": "CBS Netherlands",
+      "items": 37
+    },
+    {
+      "source": "Eurostat Dataset Updates",
+      "items": 18
     }
   ],
   "metrics": {
-    "records": 156,
-    "upcoming": 121,
-    "red_flags": 8,
-    "deletions": 8,
-    "academic_matches": 23,
-    "next_14_days": 3,
-    "fallback_hits": 8,
-    "generated_at": "2026-03-10T06:29:41.137898"
+    "records": 226,
+    "upcoming": 154,
+    "red_flags": 0,
+    "deletions": 0,
+    "academic_matches": 26,
+    "next_14_days": 14,
+    "fallback_hits": 0,
+    "generated_at": "2026-03-10T06:44:07.955243"
   }
 }
