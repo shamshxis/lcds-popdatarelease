@@ -12,15 +12,16 @@ sources:
     source_type: "Official"
     url: "https://www.ons.gov.uk/releasecalendar?release-type=type-upcoming"
     parser: "ons_release_calendar"
-    keywords_any: ["population", "census", "migration", "fertility", "mortality", "health", "demographic", "labour"]
+    keywords_any: ["population", "census", "migration", "fertility", "mortality", "health", "demographic", "admin-based", "births"]
     priority_weight: 22
 
   - name: "NRS Scotland"
     group: "UK Official"
     source_type: "Official"
     url: "https://www.nrscotland.gov.uk/statistics-and-data/statistics/forthcoming-publications"
+    fallback_urls: ["https://www.gov.scot/publications/"]
     parser: "generic_calendar"
-    keywords_any: ["population", "birth", "death", "migration", "household", "life expectancy", "names", "surnames"]
+    keywords_any: ["population", "birth", "death", "migration", "household", "names", "surnames", "demographic"]
     priority_weight: 20
 
   # --- USA ---
@@ -31,14 +32,6 @@ sources:
     parser: "census_upcoming"
     keywords_any: ["population", "census", "migration", "household", "microdata", "demographic", "survey"]
     priority_weight: 18
-
-  - name: "NCHS / CDC Health Data"
-    group: "US Official"
-    source_type: "Official"
-    url: "https://www.cdc.gov/nchs/rss/nchs.xml"
-    parser: "rss"
-    keywords_any: ["health", "mortality", "birth", "vital statistics", "survey", "dataset"]
-    priority_weight: 20
 
   # --- ASIA ---
   - name: "Statistics Japan (e-Stat)"
@@ -66,23 +59,7 @@ sources:
     keywords_any: ["population", "demographic", "birth", "death", "migration", "household", "yearbook"]
     priority_weight: 20
 
-  - name: "MOSPI India"
-    group: "India Official"
-    source_type: "Official"
-    url: "https://mospi.gov.in/"
-    parser: "generic_calendar"
-    keywords_any: ["survey", "statistics", "data", "release", "health", "demographic", "employment", "PLFS", "NSS"]
-    priority_weight: 20
-
-  - name: "Census of India"
-    group: "India Official"
-    source_type: "Official"
-    url: "https://censusindia.gov.in/census.website/"
-    parser: "generic_calendar"
-    keywords_any: ["census", "population", "demographic", "data", "release", "SRS", "sample registration"]
-    priority_weight: 20
-
-  # --- EUROSTAT & EU REGISTRIES ---
+  # --- EUROSTAT ---
   - name: "Eurostat Dataset Updates"
     group: "EU Official"
     source_type: "Official"
@@ -96,66 +73,10 @@ sources:
     group: "EU Official"
     source_type: "Official"
     url: "https://ec.europa.eu/eurostat/cache/RELEASE_CALENDAR/calendar_EN.ics"
+    fallback_urls: ["https://ec.europa.eu/eurostat/web/main/news/release-calendar"]
     parser: "ics_calendar"
-    keywords_any: ["population", "demography", "migration", "asylum", "fertility", "mortality", "health", "census", "marriages", "divorces", "life expectancy"]
-    priority_weight: 22
-
-  - name: "FinData News"
-    group: "EU Registries"
-    source_type: "Registry"
-    url: "https://findata.fi/en/feed/"
-    parser: "rss"
-    keywords_any: ["data", "health", "social", "register", "permit", "release", "dataset", "cohort"]
-    priority_weight: 18
-
-  - name: "CBS Netherlands"
-    group: "EU Official"
-    source_type: "Official"
-    url: "https://www.cbs.nl/en-gb/publication-calendar"
-    parser: "generic_calendar"
-    keywords_any: ["population", "migration", "asylum", "births", "mortality", "health", "housing", "labour"]
-    priority_weight: 14
-
-  - name: "Statistics Norway"
-    group: "EU Official"
-    source_type: "Official"
-    url: "https://www.ssb.no/en/rss"
-    parser: "rss"
-    keywords_any: ["population", "migration", "births", "deaths", "health", "labour", "asylum"]
-    priority_weight: 12
-
-  - name: "Statistics Sweden"
-    group: "EU Official"
-    source_type: "Official"
-    url: "https://www.scb.se/en/finding-statistics/publishing-calendar/"
-    parser: "generic_calendar"
-    keywords_any: ["population", "migration", "birth", "death", "fertility", "health", "asylum"]
-    priority_weight: 12
-
-  # --- BIOBANKS ---
-  - name: "UK Biobank News"
-    group: "Biobanks"
-    source_type: "Registry"
-    url: "https://www.ukbiobank.ac.uk/explore-your-participation/news-and-events"
-    parser: "generic_calendar"
-    keywords_any: ["data release", "cohort", "genomic", "health data", "update", "researchers", "dataset"]
+    keywords_any: ["population", "demography", "migration", "asylum", "fertility", "mortality", "health", "census", "marriages", "divorces", "life expectancy", "EUROPOP"]
     priority_weight: 25
-
-  - name: "All of Us Research Program"
-    group: "Biobanks"
-    source_type: "Registry"
-    url: "https://allofus.nih.gov/news-events-and-media/announcements"
-    parser: "generic_calendar"
-    keywords_any: ["data", "researcher workbench", "release", "cohort", "genomic", "health"]
-    priority_weight: 20
-
-  - name: "Our Future Health UK"
-    group: "Biobanks"
-    source_type: "Registry"
-    url: "https://ourfuturehealth.org.uk/news/"
-    parser: "generic_calendar"
-    keywords_any: ["data", "release", "research", "cohort", "blood", "health"]
-    priority_weight: 20
 
   # --- GLOBAL & UN ---
   - name: "UN Population Division"
@@ -163,7 +84,7 @@ sources:
     source_type: "Signal"
     url: "https://www.un.org/development/desa/pd/feed"
     parser: "rss"
-    keywords_any: ["population", "demographic", "migration", "fertility", "mortality", "projections", "prospects"]
+    keywords_any: ["population", "demographic", "migration", "fertility", "mortality", "prospects", "projections"]
     priority_weight: 20
 
   - name: "DHS Program News"
@@ -174,23 +95,19 @@ sources:
     max_items: 50
     keywords_any: ["survey", "demographic", "population", "health", "mortality", "dataset", "available"]
     priority_weight: 15
-
-  - name: "Human Mortality Database"
-    group: "Global / UN"
-    source_type: "Registry"
-    url: "https://www.mortality.org/News/Events"
+    
+  - name: "CBS Netherlands"
+    group: "EU Official"
+    source_type: "Official"
+    url: "https://www.cbs.nl/en-gb/publication-calendar"
     parser: "generic_calendar"
-    keywords_any: ["mortality", "death", "life expectancy", "update", "data"]
-    priority_weight: 18
+    keywords_any: ["population", "migration", "asylum", "births", "mortality", "health", "housing", "labour"]
+    priority_weight: 14
 
-  # --- MEDIA SIGNALS ---
-  - name: "GDELT Demography & Cohorts"
-    group: "Media Signals"
-    source_type: "Media"
-    url: "https://api.gdeltproject.org/api/v2/doc/doc"
-    parser: "gdelt"
-    gdelt_query: "(population OR demography OR census OR fertility OR mortality OR migration OR biobank OR cohort)"
-    gdelt_timespan: "1week"
-    max_items: 60
-    keywords_any: ["population", "demography", "census", "fertility", "mortality", "migration", "biobank", "cohort"]
-    priority_weight: 5
+  - name: "Statistics Sweden"
+    group: "EU Official"
+    source_type: "Official"
+    url: "https://www.scb.se/en/finding-statistics/publishing-calendar/"
+    parser: "generic_calendar"
+    keywords_any: ["population", "migration", "birth", "death", "fertility", "health", "asylum"]
+    priority_weight: 12
