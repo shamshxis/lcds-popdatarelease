@@ -6,11 +6,9 @@ import time
 import traceback
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
-from datetime import datetime, timezone, timedelta
-from html import unescape
-from urllib.parse import urljoin, quote_plus, urlparse, parse_qs, urlencode, urlunparse
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import random
 
 import pandas as pd
@@ -18,7 +16,6 @@ import requests
 import yaml
 from bs4 import BeautifulSoup
 from dateutil import parser as date_parser
-from email.utils import parsedate_to_datetime
 from sentence_transformers import SentenceTransformer, util
 
 # --- CONSTANTS ---
@@ -34,7 +31,6 @@ SOURCE_HEALTH_FILE = os.path.join(DATA_DIR, "source_health.json")
 DEFAULT_TIMEOUT = 25
 MAX_ABS_DAYS = 730
 
-# Rotating User Agents to evade Cloudflare/WAF blocking
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Safari/605.1.15",
@@ -60,9 +56,10 @@ STOPWORDS = {"about","above","across","after","against","along","among","around"
 DATE_PATTERNS = [
     r"\b\d{4}-\d{2}-\d{2}\b", 
     r"\b\d{1,2}/\d{1,2}/\d{4}\b", 
-    r"\b\d{1,2}(?:st|nd|rd|th)?\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b", 
-    r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?(?:,)?\s*\d{4}\b", 
-    r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\b"
+    r"\b\d{1,2}(?:st|nd|rd|th)?\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[A-Za-z]*\s+\d{4}\b", 
+    r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[A-Za-z]*\s+\d{1,2}(?:st|nd|rd|th)?(?:,)?\s*\d{4}\b", 
+    r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[A-Za-z]*\s+\d{4}\b",
+    r"\b(?:Q[1-4]|Spring|Summer|Autumn|Winter)\s+\d{4}\b"
 ]
 
 print("🧠 Loading AI Semantic Model...")
@@ -149,7 +146,6 @@ class LCDSDataEngine:
         except: return pd.DataFrame()
 
     def fetch(self, url: str, source: dict) -> requests.Response:
-        """Anti-Blocker Engine. Rotates headers and handles fake 404s from WAFs."""
         base_headers = {
             "User-Agent": random.choice(USER_AGENTS),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
@@ -164,15 +160,12 @@ class LCDSDataEngine:
             resp.raise_for_status()
             return resp
         except requests.exceptions.HTTPError as e:
-            # Sites like NRS Scotland and Japan return 404/403/406 to block bots.
             if e.response.status_code in [403, 404, 406]:
-                print(f"⚠️ [BLOCKED] {e.response.status_code} for {url}. Disguising as GoogleBot and retrying...")
+                print(f"⚠️ [BLOCKED] {e.response.status_code} for {url}. Retrying as Bot...")
                 base_headers["User-Agent"] = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
-                time.sleep(2) # Give the WAF a moment
+                time.sleep(1.5) 
                 resp = self.session.get(url, headers=base_headers, timeout=self.timeout)
-                # If it STILL fails, print a clean warning but don't crash
-                if resp.status_code != 200:
-                    print(f"❌ [PERMA-BLOCKED] Could not bypass WAF for {url}")
+                if resp.status_code != 200: print(f"❌ [PERMA-BLOCKED] {url}")
                 return resp
             raise e
 
@@ -182,21 +175,25 @@ class LCDSDataEngine:
         if value is None or (isinstance(value, float) and pd.isna(value)): return None
         if isinstance(value, pd.Timestamp): return value.to_pydatetime().replace(tzinfo=None)
         if isinstance(value, datetime): return value.replace(tzinfo=None)
-        text = str(value).strip()
-        if not text or text.lower() in {"nat", "nan", "none"}: return None
         
-        text = re.sub(r"(\d+)(st|nd|rd|th)", r"\1", text, flags=re.IGNORECASE)
-        for fmt in ("%Y%m%d", "%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
-            try: return datetime.strptime(text, fmt)
-            except: pass
-        try: return parsedate_to_datetime(text).replace(tzinfo=None)
-        except: pass
-        try: return date_parser.parse(text, fuzzy=True, dayfirst=True).replace(tzinfo=None)
+        text = str(value).strip()
+        if not text or text.lower() in {"nat", "nan", "none", "tbc", "tbd"}: return None
+        
+        # Aggressive date cleaning
+        text = re.sub(r"(?<=\d)(st|nd|rd|th)\b", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"\|.*$", "", text).strip()
+        text = text.replace("GMT", "").replace("Z", "").strip()
+
+        try:
+            # Set default day to 1st of the month if omitted (prevents "March 2026" parsing as "March 10 2026")
+            fallback_default = datetime(self.today.year, self.today.month, 1)
+            parsed = date_parser.parse(text, fuzzy=True, dayfirst=True, default=fallback_default)
+            return parsed.replace(tzinfo=None)
         except: return None
 
     def in_time_window(self, dt: datetime | None) -> bool:
         if dt is None: return True
-        return -60 <= (dt.date() - self.today.date()).days <= self.max_abs_days
+        return -90 <= (dt.date() - self.today.date()).days <= self.max_abs_days
 
     def canonical_key(self, title: str, source: str, date_obj) -> str:
         base = re.sub(r"[^a-z0-9]+", " ", str(title or "").lower()).strip()
@@ -307,6 +304,7 @@ class LCDSDataEngine:
     # --- PARSERS ---
     
     def parser_ons_release_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
+        from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
         url_parts = list(urlparse(page_url))
         query = parse_qs(url_parts[4])
         target_queries = ["population", "migration", "health", "admin-based", "births", "deaths"] 
@@ -378,20 +376,18 @@ class LCDSDataEngine:
         results = []
         
         try:
-            # Try strict XML parsing first
             root = ET.fromstring(resp.text)
             items = root.findall(".//item") + root.findall(".//{http://www.w3.org/2005/Atom}entry")
         except ET.ParseError:
-            # Fallback to loose BeautifulSoup parsing if feed is malformed (e.g. DHS News)
             print(f"⚠️ {source['name']} XML is malformed. Falling back to loose parser.")
             soup = BeautifulSoup(resp.text, "xml")
             items = soup.find_all(["item", "entry"])
             
         for entry in items[:int(source.get("max_items", 50))]:
             def ft(names): 
-                if hasattr(entry, 'find_all'): # It's a BeautifulSoup object
+                if hasattr(entry, 'find_all'): 
                     return next((x.get_text(strip=True) for n in names if (x := entry.find(n))), "")
-                else: # It's an ElementTree object
+                else:
                     return next((x.text.strip() for n in names if (x := entry.find(n)) is not None and (x.text or "").strip()), "")
                     
             title, summary, date_val = self.normalize_whitespace(ft(["title", "{http://www.w3.org/2005/Atom}title"])), self.normalize_whitespace(ft(["description", "summary", "{http://www.w3.org/2005/Atom}summary"])), ft(["pubDate", "published", "updated", "{http://www.w3.org/2005/Atom}updated"])
@@ -452,6 +448,7 @@ class LCDSDataEngine:
         return parsers.get(aliases.get(source.get("parser", "generic_calendar"), source.get("parser", "generic_calendar")), self.parser_generic_calendar)(source, page_url, fallback_hit)
 
     def parse_source(self, source: dict) -> tuple[dict, list[dict], dict]:
+        from urllib.parse import quote_plus
         pages, all_items = self.source_page_list(source), []
         with ThreadPoolExecutor(max_workers=min(self.page_workers, max(1, len(pages)))) as ex:
             futures = {ex.submit(self.parse_page, source, pu, fh): (pu, fh) for pu, fh in pages}
@@ -462,8 +459,6 @@ class LCDSDataEngine:
                     if items:
                         self.update_source_health(source["name"], pu, True, len(items))
                         all_items.extend(items)
-                    else:
-                        pass # Ignore empty hits cleanly
                 except Exception as e:
                     print(f"❌ ERROR parsing {source['name']} ({pu}): {e}")
                     self.update_source_health(source["name"], pu, False, 0)
