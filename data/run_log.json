@@ -1,71 +1,71 @@
 {
-  "generated_at": "2026-03-11T05:20:07.532930",
+  "generated_at": "2026-03-11T05:23:35.991583",
   "logs": [
     {
-      "source": "ONS Upcoming Releases",
-      "items": 2
-    },
-    {
-      "source": "Statistics Japan (e-Stat)",
-      "items": 1
+      "source": "Statistics Sweden",
+      "items": 7
     },
     {
       "source": "Eurostat Dataset Updates",
       "items": 50
     },
     {
-      "source": "Statistics Sweden",
-      "items": 7
-    },
-    {
-      "source": "NRS Scotland",
-      "items": 0
-    },
-    {
-      "source": "Eurostat Release Calendar",
-      "items": 7
+      "source": "KOSTAT South Korea",
+      "items": 5
     },
     {
       "source": "UK Biobank News",
       "items": 2
     },
     {
-      "source": "NBS China",
+      "source": "Our Future Health UK",
+      "items": 5
+    },
+    {
+      "source": "ONS Upcoming Releases",
+      "items": 7
+    },
+    {
+      "source": "Statistics Japan (e-Stat)",
       "items": 1
     },
     {
       "source": "UN Population Division",
-      "items": 4
+      "items": 5
     },
     {
-      "source": "CBS Netherlands",
-      "items": 1
+      "source": "Eurostat Release Calendar",
+      "items": 7
     },
     {
       "source": "DHS Program News",
       "items": 0
     },
     {
-      "source": "Our Future Health UK",
-      "items": 5
+      "source": "NRS Scotland",
+      "items": 0
     },
     {
-      "source": "KOSTAT South Korea",
-      "items": 2
+      "source": "CBS Netherlands",
+      "items": 4
+    },
+    {
+      "source": "NBS China",
+      "items": 3
     },
     {
       "source": "US Census Releases",
-      "items": 13
+      "items": 7
     }
   ],
   "metrics": {
-    "records": 94,
+    "records": 102,
     "upcoming": 46,
     "red_flags": 4,
     "deletions": 4,
-    "academic_matches": 24,
+    "academic_matches": 29,
     "next_14_days": 0,
-    "fallback_hits": 60,
-    "generated_at": "2026-03-11T05:20:07.533656"
+    "fallback_hits": 52,
+    "generated_at": "2026-03-11T05:23:35.992232"
   }
 }
