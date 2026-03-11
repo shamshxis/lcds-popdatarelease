@@ -139,12 +139,12 @@ class LCDSDataEngine:
     def is_allowed_by_robots(self, target_url: str) -> bool:
         """
         ETHICAL SCRAPING LAYER 1: Parses robots.txt.
-        Public APIs and Google RSS feeds are whitelisted inherently.
+        Public APIs and Syndication engines are inherently whitelisted.
         """
         parsed = urlparse(target_url)
         domain = f"{parsed.scheme}://{parsed.netloc}"
         
-        if "api.rss2json.com" in domain or "news.google.com" in domain:
+        if any(whitelisted in domain for whitelisted in ["api.rss2json.com", "news.google.com", "bing.com", "yahoo.com"]):
             return True
             
         robots_url = f"{domain}/robots.txt"
@@ -267,7 +267,7 @@ class LCDSDataEngine:
     def normalize_whitespace(self, text: str) -> str: 
         if not text: return ""
         text = unescape(text)
-        # Strip HTML tags (crucial for cleaning Google News RSS descriptions)
+        # Strip HTML tags (crucial for cleaning syndication descriptions)
         text = re.sub(r'<[^>]+>', ' ', text)
         return re.sub(r"\s+", " ", text).strip()
 
@@ -613,24 +613,34 @@ class LCDSDataEngine:
                 else:
                     raise Exception("No items parsed (Possible layout change or silent block)")
             except Exception as e:
-                # ETHICAL SCRAPING LAYER 3: Google News Syndication Fallback.
-                # If we get a 404, WAF block, or empty page, we ask Google News for their RSS feed of this specific domain!
-                print(f"📡 [LAYER 3] {source['name']} failed ({e}). Querying Google Syndication...")
+                # ETHICAL SCRAPING LAYER 3: Multi-Engine Syndication Fallback.
+                print(f"📡 [LAYER 3] {source['name']} failed. Querying Global Syndication Engines (Google, Bing, Yahoo)...")
                 
                 domain_clean = urlparse(pu).netloc.replace("www.", "")
                 kws = source.get("keywords_any", ["statistics"])[:4]
                 query_str = f"site:{domain_clean} ({' OR '.join(kws)})"
-                google_rss_url = f"https://news.google.com/rss/search?q={quote_plus(query_str)}&hl=en-GB&gl=GB&ceid=GB:en"
                 
-                try:
-                    fallback_items = self.parser_rss(source, google_rss_url, fallback_hit=2)
-                    if fallback_items:
-                        print(f"✅ [LAYER 3 SUCCESS] Recovered {len(fallback_items)} items for {source['name']} via Google.")
-                        self.update_source_health(source["name"], pu, True, len(fallback_items))
-                        all_items.extend(fallback_items)
-                    else:
-                        self.update_source_health(source["name"], pu, False, 0)
-                except:
+                syndication_urls = [
+                    f"https://news.google.com/rss/search?q={quote_plus(query_str)}&hl=en-GB&gl=GB&ceid=GB:en",
+                    f"https://www.bing.com/news/search?q={quote_plus(query_str)}&format=rss",
+                    f"https://news.search.yahoo.com/news/rss?p={quote_plus(query_str)}"
+                ]
+                
+                all_fallback_items = []
+                for syn_url in syndication_urls:
+                    try:
+                        time.sleep(1.5) # Polite delay between engines
+                        fb_items = self.parser_rss(source, syn_url, fallback_hit=2)
+                        if fb_items:
+                            all_fallback_items.extend(fb_items)
+                    except:
+                        pass
+                
+                if all_fallback_items:
+                    print(f"✅ [LAYER 3 SUCCESS] Recovered {len(all_fallback_items)} items for {source['name']} via Syndication.")
+                    self.update_source_health(source["name"], pu, True, len(all_fallback_items))
+                    all_items.extend(all_fallback_items)
+                else:
                     self.update_source_health(source["name"], pu, False, 0)
         
         current_keys = [self.canonical_key(x.get("dataset_title", ""), x.get("source", source["name"]), x.get("action_date")) for x in all_items if x.get("dataset_title")]
@@ -664,6 +674,7 @@ class LCDSDataEngine:
         missing_key = df["record_key"].fillna("") == ""
         if missing_key.any(): df.loc[missing_key, "record_key"] = df.loc[missing_key].apply(lambda r: self.canonical_key(r.get("dataset_title", ""), r.get("source", ""), r.get("action_date")), axis=1)
 
+        # The postprocessor's deduplication block naturally handles identical items from Google, Bing, and Yahoo
         df = df.sort_values(["deleted_signal", "red_flag", "priority_score", "confidence", "source_quality", "fallback_hit", "action_date"], ascending=[False, False, False, False, False, True, True])
         df = df.drop_duplicates(subset=["record_key"], keep="first")
         df["date_key"] = df["action_date"].dt.strftime("%Y-%m-%d").fillna("nodate")
