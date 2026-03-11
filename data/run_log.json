@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-11T05:14:53.501871",
+  "generated_at": "2026-03-11T05:20:07.532930",
   "logs": [
     {
       "source": "ONS Upcoming Releases",
@@ -10,28 +10,24 @@
       "items": 1
     },
     {
-      "source": "Statistics Sweden",
-      "items": 7
-    },
-    {
       "source": "Eurostat Dataset Updates",
       "items": 50
+    },
+    {
+      "source": "Statistics Sweden",
+      "items": 7
     },
     {
       "source": "NRS Scotland",
       "items": 0
     },
     {
+      "source": "Eurostat Release Calendar",
+      "items": 7
+    },
+    {
       "source": "UK Biobank News",
       "items": 2
-    },
-    {
-      "source": "CBS Netherlands",
-      "items": 1
-    },
-    {
-      "source": "DHS Program News",
-      "items": 0
     },
     {
       "source": "NBS China",
@@ -42,8 +38,12 @@
       "items": 4
     },
     {
-      "source": "Eurostat Release Calendar",
-      "items": 7
+      "source": "CBS Netherlands",
+      "items": 1
+    },
+    {
+      "source": "DHS Program News",
+      "items": 0
     },
     {
       "source": "Our Future Health UK",
@@ -55,17 +55,17 @@
     },
     {
       "source": "US Census Releases",
-      "items": 7
+      "items": 13
     }
   ],
   "metrics": {
-    "records": 88,
+    "records": 94,
     "upcoming": 46,
     "red_flags": 4,
     "deletions": 4,
-    "academic_matches": 25,
+    "academic_matches": 24,
     "next_14_days": 0,
-    "fallback_hits": 34,
-    "generated_at": "2026-03-11T05:14:53.502590"
+    "fallback_hits": 60,
+    "generated_at": "2026-03-11T05:20:07.533656"
   }
 }
