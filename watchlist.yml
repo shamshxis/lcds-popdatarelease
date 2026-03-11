@@ -8,25 +8,24 @@ sources:
   - name: "ONS Upcoming Releases"
     group: "UK Official"
     source_type: "Official"
-    # Pure base URL, so robots.txt allows it through.
-    url: "https://www.ons.gov.uk/releasecalendar?release-type=type-upcoming"
-    parser: "ons_release_calendar"
+    url: "https://www.ons.gov.uk/releasecalendar/data.ics?release-type=type-upcoming"
+    parser: "ics_calendar"
     keywords_any: ["population", "census", "migration", "fertility", "mortality", "health", "demographic", "admin-based", "births"]
     priority_weight: 22
 
   - name: "NRS Scotland"
     group: "UK Official"
     source_type: "Official"
-    url: "https://news.gov.scot/feed/rss"
-    parser: "rss"
+    url: "https://www.nrscotland.gov.uk/statistics-and-data/upcoming-publications/"
+    parser: "generic_calendar"
     keywords_any: ["population", "birth", "death", "migration", "household", "names", "surnames", "demographic", "statistics"]
     priority_weight: 20
 
   - name: "US Census Releases"
     group: "US Official"
     source_type: "Official"
-    url: "https://www.census.gov/newsroom/press-releases.xml"
-    parser: "rss"
+    url: "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
+    parser: "census_upcoming"
     keywords_any: ["population", "census", "migration", "household", "microdata", "demographic", "survey"]
     priority_weight: 18
 
@@ -52,15 +51,6 @@ sources:
     url: "http://www.stats.gov.cn/english/PressRelease/"
     parser: "generic_calendar"
     keywords_any: ["population", "demographic", "birth", "death", "migration", "household", "yearbook"]
-    priority_weight: 20
-
-  - name: "Eurostat Dataset Updates"
-    group: "EU Official"
-    source_type: "Official"
-    url: "https://ec.europa.eu/eurostat/api/dissemination/catalogue/rss/en/statistics-update.rss"
-    parser: "rss"
-    max_items: 100
-    keywords_any: ["population", "demography", "migration", "asylum", "fertility", "mortality", "health", "census"]
     priority_weight: 20
 
   - name: "Eurostat Release Calendar"
@@ -91,8 +81,8 @@ sources:
   - name: "CBS Netherlands"
     group: "EU Official"
     source_type: "Official"
-    url: "https://www.cbs.nl/en-gb/rss"
-    parser: "rss"
+    url: "https://www.cbs.nl/en-gb/publication-calendar"
+    parser: "generic_calendar"
     keywords_any: ["population", "migration", "asylum", "births", "mortality", "health", "housing", "labour"]
     priority_weight: 14
 
