@@ -8,7 +8,8 @@ sources:
   - name: "ONS Upcoming Releases"
     group: "UK Official"
     source_type: "Official"
-    url: "https://www.ons.gov.uk/releasecalendar?release-type=type-upcoming"
+    # Using the hidden JSON data endpoint
+    url: "https://www.ons.gov.uk/releasecalendar/data?release-type=type-upcoming"
     parser: "ons_release_calendar"
     keywords_any: ["population", "census", "migration", "fertility", "mortality", "health", "demographic", "admin-based", "births"]
     priority_weight: 22
@@ -16,17 +17,16 @@ sources:
   - name: "NRS Scotland"
     group: "UK Official"
     source_type: "Official"
-    url: "https://www.nrscotland.gov.uk/statistics-and-data/upcoming-publications/"
-    fallback_urls: ["https://www.gov.scot/publications/"]
-    parser: "generic_calendar"
-    keywords_any: ["population", "birth", "death", "migration", "household", "names", "surnames", "demographic"]
+    url: "https://news.gov.scot/feed/rss"
+    parser: "rss"
+    keywords_any: ["population", "birth", "death", "migration", "household", "names", "surnames", "demographic", "statistics"]
     priority_weight: 20
 
   - name: "US Census Releases"
     group: "US Official"
     source_type: "Official"
-    url: "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html"
-    parser: "census_upcoming"
+    url: "https://www.census.gov/newsroom/press-releases.xml"
+    parser: "rss"
     keywords_any: ["population", "census", "migration", "household", "microdata", "demographic", "survey"]
     priority_weight: 18
 
@@ -91,8 +91,8 @@ sources:
   - name: "CBS Netherlands"
     group: "EU Official"
     source_type: "Official"
-    url: "https://www.cbs.nl/en-gb/publication-calendar"
-    parser: "generic_calendar"
+    url: "https://www.cbs.nl/en-gb/rss"
+    parser: "rss"
     keywords_any: ["population", "migration", "asylum", "births", "mortality", "health", "housing", "labour"]
     priority_weight: 14
 
@@ -107,8 +107,8 @@ sources:
   - name: "UK Biobank News"
     group: "Biobanks"
     source_type: "Registry"
-    url: "https://www.ukbiobank.ac.uk/explore-your-participation/news-and-events"
-    parser: "generic_calendar"
+    url: "https://www.ukbiobank.ac.uk/feed/"
+    parser: "rss"
     keywords_any: ["data release", "cohort", "genomic", "health data", "update", "researchers", "dataset"]
     priority_weight: 25
 
