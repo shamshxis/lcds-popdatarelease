@@ -137,10 +137,6 @@ class LCDSDataEngine:
         self.previous_df = self.load_previous_df()
 
     def is_allowed_by_robots(self, target_url: str) -> bool:
-        """
-        ETHICAL SCRAPING LAYER 1: Parses robots.txt.
-        Public APIs and Syndication engines are inherently whitelisted.
-        """
         parsed = urlparse(target_url)
         domain = f"{parsed.scheme}://{parsed.netloc}"
         
@@ -216,7 +212,6 @@ class LCDSDataEngine:
         except: return pd.DataFrame()
 
     def fetch(self, url: str, source: dict):
-        """Ethical fetcher."""
         if not self.is_allowed_by_robots(url):
             raise Exception("Robots.txt blocked")
 
@@ -227,39 +222,31 @@ class LCDSDataEngine:
             "Referer": "https://www.google.com/"
         }
         custom_headers.update(source.get("headers", {}))
-        
         time.sleep(random.uniform(3.0, 6.0))
         
         try:
             resp = self.session.get(url, headers=custom_headers, timeout=self.timeout)
-            
             if resp.status_code >= 400 or "cloudflare" in resp.text.lower() or "Just a moment..." in resp.text:
                 raise Exception(f"HTTP {resp.status_code} / WAF Block")
-                
             return DummyResponse(resp.text, resp.status_code)
-            
         except Exception as e:
-            # ETHICAL SCRAPING LAYER 2: Public RSS Syndication Fallback.
             if source.get("parser") == "rss" or url.endswith(".xml") or url.endswith(".rss") or "feed" in url:
                 rss_api_url = f"https://api.rss2json.com/v1/api.json?rss_url={quote_plus(url)}"
                 try:
                     fallback_resp = requests.get(rss_api_url, timeout=self.timeout)
                     if fallback_resp.status_code == 200 and fallback_resp.json().get("status") == "ok":
                         return DummyResponse(fallback_resp.text, 200)
-                except:
-                    pass
+                except: pass
             raise e
 
     def strip_html_noise(self, soup: BeautifulSoup) -> BeautifulSoup:
         for tag in soup(["nav", "footer", "header", "aside", "style", "script", "button", "svg", "form"]):
             tag.decompose()
-            
         def is_junk_class(classes):
             if isinstance(classes, list): classes = " ".join(classes)
             if not classes: return False
             c = classes.lower()
             return any(w in c for w in ["menu", "footer", "header", "sidebar", "cookie", "banner", "widget", "pagination", "breadcrumbs", "nav-container", "social", "share"])
-
         for tag in soup.find_all(["div", "section", "ul"], class_=is_junk_class):
             tag.decompose()
         return soup
@@ -267,7 +254,6 @@ class LCDSDataEngine:
     def normalize_whitespace(self, text: str) -> str: 
         if not text: return ""
         text = unescape(text)
-        # Strip HTML tags (crucial for cleaning syndication descriptions)
         text = re.sub(r'<[^>]+>', ' ', text)
         return re.sub(r"\s+", " ", text).strip()
 
@@ -278,7 +264,6 @@ class LCDSDataEngine:
         
         text = str(value).strip()
         if not text or text.lower() in {"nat", "nan", "none", "tbc", "tbd"}: return None
-        
         text = re.sub(r"(?<=\d)(st|nd|rd|th)\b", "", text, flags=re.IGNORECASE)
         text = re.sub(r"\|.*$", "", text).strip()
         text = text.replace("GMT", "").replace("Z", "").strip()
@@ -288,6 +273,18 @@ class LCDSDataEngine:
             parsed = date_parser.parse(text, fuzzy=True, dayfirst=True, default=fallback_default)
             return parsed.replace(tzinfo=None)
         except: return None
+
+    def extract_future_date(self, text: str) -> datetime | None:
+        """Helper to scan raw text specifically for upcoming future dates."""
+        future_date = None
+        for pattern in DATE_PATTERNS:
+            for match in re.finditer(pattern, text, re.IGNORECASE):
+                dt_obj = self.normalize_date(match.group(0))
+                if dt_obj and dt_obj.date() >= self.today.date():
+                    future_date = dt_obj
+                    break
+            if future_date: break
+        return future_date
 
     def in_time_window(self, dt: datetime | None) -> bool:
         if dt is None: return True
@@ -326,21 +323,7 @@ class LCDSDataEngine:
         if re.fullmatch(r"^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}$", t): return True
         if re.fullmatch(r"^\d{1,3}(,\d{3})*\s+results$", t): return True
         if "@" in t or t.startswith("http") or "facebook.com" in t or "twitter.com" in t: return True
-        
-        exact_matches = {
-            "information", "news bulletin", "jobs and vacancies", "registration", 
-            "records and archives", "statistics and data", "database tables", 
-            "publishing calendar", "data collection", "results", "search", 
-            "contact us", "privacy", "cookie", "main contents start here", 
-            "top of section", "skip to", "clear all", "search results", 
-            "data.census.gov", "incremental developmental", "---", "about us",
-            "news and press releases", "finding statistics", "menu", "read more",
-            "view article", "click here", "find out more", "share this", "home",
-            "rss feeds", "email alerts", "sorry, we can't find that!", "sorry, we can’t find that!",
-            "search function", "taking part", "use our data", "featured news and stories",
-            "data.census.gov, microdata access, & api", "incremental developmental code release"
-        }
-        
+        exact_matches = {"information", "news bulletin", "jobs and vacancies", "registration", "records and archives", "statistics and data", "database tables", "publishing calendar", "data collection", "results", "search", "contact us", "privacy", "cookie", "main contents start here", "top of section", "skip to", "clear all", "search results", "data.census.gov", "incremental developmental", "---", "about us", "news and press releases", "finding statistics", "menu", "read more", "view article", "click here", "find out more", "share this", "home", "rss feeds", "email alerts", "sorry, we can't find that!", "sorry, we can’t find that!", "search function", "taking part", "use our data", "featured news and stories", "data.census.gov, microdata access, & api", "incremental developmental code release"}
         if t in exact_matches: return True
         if t.startswith("skip to") or t.startswith("main contents"): return True
         return False
@@ -349,36 +332,13 @@ class LCDSDataEngine:
         combined = f"{title} {summary}".lower()
         exclude_kw = [x.lower() for x in (source.get("exclude_keywords") or [])]
         if exclude_kw and any(x in combined for x in exclude_kw): return False
-        
-        hard_rejects = [
-            "economic census", "turnover", "producer price", "consumer price", "cpi", "inflation", 
-            "gdp", "gross domestic product", "trade in goods", "export", "import", "retail sales", 
-            "crop", "livestock", "agriculture", "fishery", "forestry", "manufacturing", 
-            "industrial production", "financial market", "stock exchange", "interest rate", 
-            "business insights", "company mergers", "acquisitions", "energy consumption", 
-            "electricity", "emissions", "weather", "precipitation", "labour cost index", 
-            "wage index", "price index", "construction index", "services index", "balance of payments", 
-            "bovine", "cattle", "animal", "pig ", "poultry", "economic growth", "ict usage", "enterprises", 
-            "spending", "consumer confidence", "producer confidence", "board of trustees", "governance", 
-            "vacancies", "careers", "fundraising", "the access board", "the trading board", "foi release",
-            "freedom of information", "public employment and payroll", "fish health inspectorate"
-        ]
+        hard_rejects = ["economic census", "turnover", "producer price", "consumer price", "cpi", "inflation", "gdp", "gross domestic product", "trade in goods", "export", "import", "retail sales", "crop", "livestock", "agriculture", "fishery", "forestry", "manufacturing", "industrial production", "financial market", "stock exchange", "interest rate", "business insights", "company mergers", "acquisitions", "energy consumption", "electricity", "emissions", "weather", "precipitation", "labour cost index", "wage index", "price index", "construction index", "services index", "balance of payments", "bovine", "cattle", "animal", "pig ", "poultry", "economic growth", "ict usage", "enterprises", "spending", "consumer confidence", "producer confidence", "board of trustees", "governance", "vacancies", "careers", "fundraising", "the access board", "the trading board", "foi release", "freedom of information", "public employment and payroll", "fish health inspectorate"]
         if any(x in combined for x in hard_rejects): return False
-
-        strong_demographic = [
-            "population estimates", "birth statistics", "fertility", "mortality", "life expectancy", 
-            "census results", "international migration", "demographic trends", "eu population", 
-            "babies' first names", "surnames in birth", "population projections", "death registrations", 
-            "annual births data", "baby names", "europop", "data release", "new data available", 
-            "cohort data", "researcher workbench", "whole genome sequencing", "genomic data", 
-            "health records", "biobank data"
-        ]
+        strong_demographic = ["population estimates", "birth statistics", "fertility", "mortality", "life expectancy", "census results", "international migration", "demographic trends", "eu population", "babies' first names", "surnames in birth", "population projections", "death registrations", "annual births data", "baby names", "europop", "data release", "new data available", "cohort data", "researcher workbench", "whole genome sequencing", "genomic data", "health records", "biobank data"]
         if any(x in title.lower() for x in strong_demographic): return True
 
         context = f"{title} {summary} {source['name']}"
         if len(context) < 10: return False
-        
-        # Local NLM / Semantic Scoring
         embedding = ai_model.encode(context, convert_to_tensor=True)
         target_score = float(util.cos_sim(embedding, self.target_embeddings).max())
         if float(util.cos_sim(embedding, anti_embeddings).max()) > target_score: return False
@@ -387,7 +347,6 @@ class LCDSDataEngine:
         keywords_any = [x.lower() for x in (source.get("keywords_any") or [])]
         if keywords_any and any(x in title.lower() for x in keywords_any): return True
         if self.dynamic_terms and any(t in title.lower() for t in self.dynamic_terms[:10]): return True
-        
         return False
 
     def get_source_quality(self, source_name: str, page_url: str) -> float:
@@ -414,6 +373,7 @@ class LCDSDataEngine:
         title, summary = self.normalize_whitespace(re.sub(r"^\d+\.\s*", "", title or "").strip()), self.normalize_whitespace(summary)
         if not title or self.is_junk_title(title): return None
         if not self.is_relevant(title, summary, source): return None
+        
         action_date = self.normalize_date(date_value)
         if action_date is not None and not self.in_time_window(action_date): return None
 
@@ -441,14 +401,11 @@ class LCDSDataEngine:
         ).to_record()
 
     # --- PARSERS ---
-    
     def parser_ons_release_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
         try: resp = self.fetch(page_url, source)
         except: return []
-        
         soup = self.strip_html_noise(BeautifulSoup(resp.text, "html.parser"))
         results, seen_links = [], set()
-        
         for card in soup.find_all(["li", "div", "article"]):
             text = card.get_text(" ", strip=True)
             if "Release date:" not in text: continue
@@ -481,22 +438,18 @@ class LCDSDataEngine:
         except: return []
         soup = self.strip_html_noise(BeautifulSoup(resp.text, "html.parser"))
         results, seen_texts = [], set()
-        
         for node in soup.find_all(["a", "h2", "h3", "h4", "article"]):
             text = self.normalize_whitespace(node.get_text(" ", strip=True))
             if len(text) < 10 or text in seen_texts: continue
             seen_texts.add(text)
-            
             parent = node.find_parent()
             parent_text = self.normalize_whitespace(parent.get_text(" ", strip=True)) if parent else text
             date_text = next((m.group(0) for p in DATE_PATTERNS if (m := re.search(p, parent_text, re.IGNORECASE))), None)
-            
             title, link = text, None
             if node.name == "a": link = node
             else:
                 link = node.find("a", href=True)
                 if link: title = self.normalize_whitespace(link.get_text(strip=True))
-                
             url = urljoin(page_url, link["href"]) if link else page_url
             if rec := self.record_from_fields(source, title, parent_text.replace(title, "").replace(date_text or "", "").strip(" -:|"), date_text, url, extra_text=parent_text, source_page=page_url, fallback_hit=fallback_hit): 
                 results.append(rec)
@@ -507,19 +460,30 @@ class LCDSDataEngine:
         except: return []
         results = []
         
+        # Parse JSON from Syndication Fallback API
         try:
             data = resp.json()
             if "items" in data:
                 for item in data["items"][:int(source.get("max_items", 50))]:
                     title = self.normalize_whitespace(item.get("title", ""))
                     summary = self.normalize_whitespace(item.get("description", item.get("content", "")))
-                    date_val = item.get("pubDate", "")
+                    rss_pub_date = item.get("pubDate", "")
                     url = item.get("link", page_url)
-                    if rec := self.record_from_fields(source, title, summary, date_val, url, extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit):
+                    
+                    # 💡 UPCOMING DATE EXTRACTOR FOR LAYER 3:
+                    # Search engines timestamp the article for 'today'. We must read the text to find the *future* date.
+                    extracted_date = None
+                    if fallback_hit > 0:
+                        extracted_date = self.extract_future_date(f"{title} {summary}")
+                    
+                    final_date = extracted_date if extracted_date else rss_pub_date
+                    
+                    if rec := self.record_from_fields(source, title, summary, final_date, url, extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit):
                         results.append(rec)
                 return results
         except: pass
 
+        # Parse standard XML RSS
         try:
             root = ET.fromstring(resp.text)
             items = root.findall(".//item") + root.findall(".//{http://www.w3.org/2005/Atom}entry")
@@ -534,7 +498,16 @@ class LCDSDataEngine:
                 else:
                     return next((x.text.strip() for n in names if (x := entry.find(n)) is not None and (x.text or "").strip()), "")
                     
-            title, summary, date_val = self.normalize_whitespace(ft(["title", "{http://www.w3.org/2005/Atom}title"])), self.normalize_whitespace(ft(["description", "summary", "{http://www.w3.org/2005/Atom}summary"])), ft(["pubDate", "published", "updated", "{http://www.w3.org/2005/Atom}updated"])
+            title = self.normalize_whitespace(ft(["title", "{http://www.w3.org/2005/Atom}title"]))
+            summary = self.normalize_whitespace(ft(["description", "summary", "{http://www.w3.org/2005/Atom}summary"]))
+            rss_pub_date = ft(["pubDate", "published", "updated", "{http://www.w3.org/2005/Atom}updated"])
+            
+            # 💡 UPCOMING DATE EXTRACTOR
+            extracted_date = None
+            if fallback_hit > 0:
+                extracted_date = self.extract_future_date(f"{title} {summary}")
+            final_date = extracted_date if extracted_date else rss_pub_date
+
             if "Dataset: updated data" in title or "Dataset: new data" in title:
                 if len(summary) > 10: title, summary = f"{summary} ({title.split('-')[0].strip()})", "Data updated or added in Eurostat database."
             
@@ -545,7 +518,8 @@ class LCDSDataEngine:
                 link = entry.find("link")
                 url = link.text.strip() if link is not None and link.text else (link.attrib.get("href") if link is not None else page_url)
                 
-            if rec := self.record_from_fields(source, title, summary, date_val, url, extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit): results.append(rec)
+            if rec := self.record_from_fields(source, title, summary, final_date, url, extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit): 
+                results.append(rec)
         return results
 
     def parser_xml_release(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
@@ -570,35 +544,15 @@ class LCDSDataEngine:
                 if unf and l.startswith(" "): unf[-1] += l.strip()
                 else: unf.append(l)
             def rf(prefixes): return next((u.split(":", 1)[-1].strip() for u in unf for p in prefixes if u.startswith(p)), "")
-            
             event_url = rf(["URL"])
             if not event_url or event_url.lower() == "none": event_url = page_url
-            
             if rec := self.record_from_fields(source, rf(["SUMMARY"]), rf(["DESCRIPTION"]), rf(["DTSTART", "DTSTART;VALUE=DATE"]), event_url, extra_text=block, source_page=page_url, fallback_hit=fallback_hit): 
-                results.append(rec)
-        return results
-
-    def parser_gdelt_jsonfeed(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
-        try: resp = self.fetch(f"https://api.gdeltproject.org/api/v2/doc/doc?query={quote_plus(source.get('gdelt_query', ''))}&mode=artlist&maxrecords={int(source.get('max_items', 75))}&format=jsonfeed&sort=datedesc&timespan={source.get('gdelt_timespan', '7d')}", source)
-        except: return []
-        if not hasattr(resp, 'json'): return []
-        
-        results, target_keywords = [], [k.lower() for k in source.get("keywords_any", [])]
-        try: items = resp.json().get("items", [])
-        except: items = []
-        
-        for item in items:
-            title, summary = self.normalize_whitespace(item.get("title", "")), self.normalize_whitespace(item.get("summary", item.get("content_text", "")))
-            if not any(k in title.lower() or summary.lower().count(k) >= 2 for k in target_keywords): continue
-            if rec := self.record_from_fields(source, title, summary, item.get("date_published") or item.get("date_modified"), item.get("url", page_url), extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit):
-                if rec["status"] == "Published": rec["status"] = "Announcement"
-                rec["event_type"] = "Media Signal"
                 results.append(rec)
         return results
 
     def parse_page(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
         aliases = {"ons_json_api": "ons_release_calendar", "html_deep_scan": "generic_calendar", "html_table_scan": "generic_calendar", "eurostat_xml": "xml_release", "rss_feed": "rss", "ics": "ics_calendar", "gdelt": "gdelt_jsonfeed", "cbs_calendar": "generic_calendar", "html_signal_scan": "generic_calendar"}
-        parsers = {"ons_release_calendar": self.parser_ons_release_calendar, "census_upcoming": self.parser_census_upcoming, "generic_calendar": self.parser_generic_calendar, "xml_release": self.parser_xml_release, "rss": self.parser_rss, "ics_calendar": self.parser_ics_calendar, "gdelt_jsonfeed": self.parser_gdelt_jsonfeed}
+        parsers = {"ons_release_calendar": self.parser_ons_release_calendar, "census_upcoming": self.parser_census_upcoming, "generic_calendar": self.parser_generic_calendar, "xml_release": self.parser_xml_release, "rss": self.parser_rss, "ics_calendar": self.parser_ics_calendar}
         return parsers.get(aliases.get(source.get("parser", "generic_calendar"), source.get("parser", "generic_calendar")), self.parser_generic_calendar)(source, page_url, fallback_hit)
 
     def parse_source(self, source: dict) -> tuple[dict, list[dict], dict]:
@@ -611,14 +565,16 @@ class LCDSDataEngine:
                     self.update_source_health(source["name"], pu, True, len(items))
                     all_items.extend(items)
                 else:
-                    raise Exception("No items parsed (Possible layout change or silent block)")
+                    raise Exception("No items parsed")
             except Exception as e:
                 # ETHICAL SCRAPING LAYER 3: Multi-Engine Syndication Fallback.
                 print(f"📡 [LAYER 3] {source['name']} failed. Querying Global Syndication Engines (Google, Bing, Yahoo)...")
                 
                 domain_clean = urlparse(pu).netloc.replace("www.", "")
                 kws = source.get("keywords_any", ["statistics"])[:4]
-                query_str = f"site:{domain_clean} ({' OR '.join(kws)})"
+                
+                # 💡 Added "upcoming" and "release" explicitly to the Syndication query to force search engines to find calendar dates
+                query_str = f"site:{domain_clean} (upcoming OR release OR schedule) ({' OR '.join(kws)})"
                 
                 syndication_urls = [
                     f"https://news.google.com/rss/search?q={quote_plus(query_str)}&hl=en-GB&gl=GB&ceid=GB:en",
@@ -629,7 +585,7 @@ class LCDSDataEngine:
                 all_fallback_items = []
                 for syn_url in syndication_urls:
                     try:
-                        time.sleep(1.5) # Polite delay between engines
+                        time.sleep(1.5)
                         fb_items = self.parser_rss(source, syn_url, fallback_hit=2)
                         if fb_items:
                             all_fallback_items.extend(fb_items)
@@ -674,7 +630,6 @@ class LCDSDataEngine:
         missing_key = df["record_key"].fillna("") == ""
         if missing_key.any(): df.loc[missing_key, "record_key"] = df.loc[missing_key].apply(lambda r: self.canonical_key(r.get("dataset_title", ""), r.get("source", ""), r.get("action_date")), axis=1)
 
-        # The postprocessor's deduplication block naturally handles identical items from Google, Bing, and Yahoo
         df = df.sort_values(["deleted_signal", "red_flag", "priority_score", "confidence", "source_quality", "fallback_hit", "action_date"], ascending=[False, False, False, False, False, True, True])
         df = df.drop_duplicates(subset=["record_key"], keep="first")
         df["date_key"] = df["action_date"].dt.strftime("%Y-%m-%d").fillna("nodate")
