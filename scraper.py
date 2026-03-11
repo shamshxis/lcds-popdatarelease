@@ -138,12 +138,15 @@ class LCDSDataEngine:
 
     def is_allowed_by_robots(self, target_url: str) -> bool:
         """
-        ETHICAL SCRAPING LAYER 1: 
-        Parses the website's robots.txt file. If we are not allowed to scrape the URL,
-        we respectfully skip it.
+        ETHICAL SCRAPING LAYER 1: Parses robots.txt.
+        Public APIs and Google RSS feeds are whitelisted inherently.
         """
         parsed = urlparse(target_url)
         domain = f"{parsed.scheme}://{parsed.netloc}"
+        
+        if "api.rss2json.com" in domain or "news.google.com" in domain:
+            return True
+            
         robots_url = f"{domain}/robots.txt"
         
         if domain not in self.robot_parsers:
@@ -213,15 +216,8 @@ class LCDSDataEngine:
         except: return pd.DataFrame()
 
     def fetch(self, url: str, source: dict):
-        """
-        Ethical fetcher incorporating Zyte's bypass philosophy.
-        1. Validates via robots.txt
-        2. Sends polite identification headers.
-        3. Delays to mimic human behavior.
-        4. If IP is banned AND it's an RSS feed, falls back to a public Syndication API ethically.
-        """
+        """Ethical fetcher."""
         if not self.is_allowed_by_robots(url):
-            print(f"✋ [ROBOTS.TXT] {url} explicitly forbids scraping. Skipping gracefully.")
             raise Exception("Robots.txt blocked")
 
         custom_headers = {
@@ -232,7 +228,6 @@ class LCDSDataEngine:
         }
         custom_headers.update(source.get("headers", {}))
         
-        # HUMAN PAUSE: Random delay between 3 to 6 seconds before EVERY click
         time.sleep(random.uniform(3.0, 6.0))
         
         try:
@@ -246,7 +241,6 @@ class LCDSDataEngine:
         except Exception as e:
             # ETHICAL SCRAPING LAYER 2: Public RSS Syndication Fallback.
             if source.get("parser") == "rss" or url.endswith(".xml") or url.endswith(".rss") or "feed" in url:
-                print(f"⚠️ [IP BLOCKED] {url}. Falling back to Public RSS Syndication API...")
                 rss_api_url = f"https://api.rss2json.com/v1/api.json?rss_url={quote_plus(url)}"
                 try:
                     fallback_resp = requests.get(rss_api_url, timeout=self.timeout)
@@ -254,8 +248,6 @@ class LCDSDataEngine:
                         return DummyResponse(fallback_resp.text, 200)
                 except:
                     pass
-                    
-            print(f"🛑 [BLOCKED] {url} explicitly blocked this IP address.")
             raise e
 
     def strip_html_noise(self, soup: BeautifulSoup) -> BeautifulSoup:
@@ -272,7 +264,12 @@ class LCDSDataEngine:
             tag.decompose()
         return soup
 
-    def normalize_whitespace(self, text: str) -> str: return re.sub(r"\s+", " ", unescape(text or "")).strip()
+    def normalize_whitespace(self, text: str) -> str: 
+        if not text: return ""
+        text = unescape(text)
+        # Strip HTML tags (crucial for cleaning Google News RSS descriptions)
+        text = re.sub(r'<[^>]+>', ' ', text)
+        return re.sub(r"\s+", " ", text).strip()
 
     def normalize_date(self, value) -> datetime | None:
         if value is None or (isinstance(value, float) and pd.isna(value)): return None
@@ -446,27 +443,21 @@ class LCDSDataEngine:
     # --- PARSERS ---
     
     def parser_ons_release_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
-        """
-        UPDATED: Scrapes the pure base URL without adding query loops.
-        This respects ONS robots.txt rules and lets our NLM AI filter out 
-        the financial/agricultural junk locally instead of forcing ONS servers to do it.
-        """
-        results = []
-        try: 
-            resp = self.fetch(page_url, source)
+        try: resp = self.fetch(page_url, source)
         except: return []
         
         soup = self.strip_html_noise(BeautifulSoup(resp.text, "html.parser"))
+        results, seen_links = [], set()
+        
         for card in soup.find_all(["li", "div", "article"]):
             text = card.get_text(" ", strip=True)
             if "Release date:" not in text: continue
             link = card.find("a", href=True)
-            if not link: continue
-            url = urljoin(page_url, link["href"])
+            if not link or (url := urljoin(page_url, link["href"])) in seen_links: continue
             title = self.normalize_whitespace(link.get_text())
             if not (m := re.search(r"Release date:\s*([^|]+)\|\s*([A-Za-z]+)", text)): continue
             date_text, label = m.group(1).strip(), m.group(2).strip()
-            
+            seen_links.add(url)
             if rec := self.record_from_fields(source, title, text.replace(title, "").replace(f"Release date: {date_text} | {label}", "").strip(), date_text, url, extra_text=text, source_page=page_url, fallback_hit=fallback_hit):
                 rec["status"] = {"Published": "Published", "Confirmed": "Upcoming", "Cancelled": "Cancelled"}.get(label, rec["status"])
                 results.append(rec)
@@ -619,8 +610,28 @@ class LCDSDataEngine:
                 if items:
                     self.update_source_health(source["name"], pu, True, len(items))
                     all_items.extend(items)
+                else:
+                    raise Exception("No items parsed (Possible layout change or silent block)")
             except Exception as e:
-                self.update_source_health(source["name"], pu, False, 0)
+                # ETHICAL SCRAPING LAYER 3: Google News Syndication Fallback.
+                # If we get a 404, WAF block, or empty page, we ask Google News for their RSS feed of this specific domain!
+                print(f"📡 [LAYER 3] {source['name']} failed ({e}). Querying Google Syndication...")
+                
+                domain_clean = urlparse(pu).netloc.replace("www.", "")
+                kws = source.get("keywords_any", ["statistics"])[:4]
+                query_str = f"site:{domain_clean} ({' OR '.join(kws)})"
+                google_rss_url = f"https://news.google.com/rss/search?q={quote_plus(query_str)}&hl=en-GB&gl=GB&ceid=GB:en"
+                
+                try:
+                    fallback_items = self.parser_rss(source, google_rss_url, fallback_hit=2)
+                    if fallback_items:
+                        print(f"✅ [LAYER 3 SUCCESS] Recovered {len(fallback_items)} items for {source['name']} via Google.")
+                        self.update_source_health(source["name"], pu, True, len(fallback_items))
+                        all_items.extend(fallback_items)
+                    else:
+                        self.update_source_health(source["name"], pu, False, 0)
+                except:
+                    self.update_source_health(source["name"], pu, False, 0)
         
         current_keys = [self.canonical_key(x.get("dataset_title", ""), x.get("source", source["name"]), x.get("action_date")) for x in all_items if x.get("dataset_title")]
         current_snapshot = {k: True for k in current_keys}
