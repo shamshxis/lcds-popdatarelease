@@ -275,7 +275,6 @@ class LCDSDataEngine:
         except: return None
 
     def extract_future_date(self, text: str) -> datetime | None:
-        """Helper to scan raw text specifically for upcoming future dates."""
         future_date = None
         for pattern in DATE_PATTERNS:
             for match in re.finditer(pattern, text, re.IGNORECASE):
@@ -290,10 +289,15 @@ class LCDSDataEngine:
         if dt is None: return True
         return -90 <= (dt.date() - self.today.date()).days <= self.max_abs_days
 
-    def canonical_key(self, title: str, source: str, date_obj) -> str:
+    def canonical_key(self, title: str, source: str) -> str:
+        """
+        DEDUPLICATION FIX:
+        We explicitly DO NOT hash the date. The ID is unique to the exact Title + Publisher.
+        This guarantees that if the Publisher updates the release date (e.g. delays it), 
+        the scraper merges the record and overwrites the date instead of creating a duplicate.
+        """
         base = re.sub(r"[^a-z0-9]+", " ", str(title or "").lower()).strip()
-        date_part = self.normalize_date(date_obj).strftime("%Y-%m-%d") if self.normalize_date(date_obj) else "nodate"
-        return hashlib.md5(f"{source}|{base}|{date_part}".encode("utf-8")).hexdigest()
+        return hashlib.md5(f"{source}|{base}".encode("utf-8")).hexdigest()
 
     def source_page_list(self, source: dict) -> list[tuple[str, int]]:
         pages = [(source.get("url"), 0)] if source.get("url") else []
@@ -397,7 +401,7 @@ class LCDSDataEngine:
             status=status, url=url or source.get("url", ""), summary=" ".join(bits).strip(), theme_primary=theme_primary, theme_secondary=theme_secondary, priority_score=int(priority_score + int(source.get("priority_weight", 0))),
             confidence=round(min(0.48 + (0.15 if title else 0) + (0.10 if summary else 0) + (0.15 if action_date else 0), 0.99), 3), red_flag=int(red_flag), deleted_signal=int(deleted_signal), embargo=0, tags=", ".join(tags), raw_date=str(date_value or ""),
             last_checked=utcnow_naive().strftime("%Y-%m-%d %H:%M:%S"), source_page=source_page or url or source.get("url", ""), fallback_hit=int(fallback_hit), source_quality=float(self.get_source_quality(source["name"], source_page or url or source.get("url", ""))), media_relevance=int(media_relevance),
-            executive_flag=int(priority_score >= 80 or red_flag == 1 or deleted_signal == 1), academic_match=academic_match, record_key=self.canonical_key(title, source["name"], action_date),
+            executive_flag=int(priority_score >= 80 or red_flag == 1 or deleted_signal == 1), academic_match=academic_match, record_key=self.canonical_key(title, source["name"]),
         ).to_record()
 
     # --- PARSERS ---
@@ -460,7 +464,6 @@ class LCDSDataEngine:
         except: return []
         results = []
         
-        # Parse JSON from Syndication Fallback API
         try:
             data = resp.json()
             if "items" in data:
@@ -470,12 +473,9 @@ class LCDSDataEngine:
                     rss_pub_date = item.get("pubDate", "")
                     url = item.get("link", page_url)
                     
-                    # 💡 UPCOMING DATE EXTRACTOR FOR LAYER 3:
-                    # Search engines timestamp the article for 'today'. We must read the text to find the *future* date.
                     extracted_date = None
                     if fallback_hit > 0:
                         extracted_date = self.extract_future_date(f"{title} {summary}")
-                    
                     final_date = extracted_date if extracted_date else rss_pub_date
                     
                     if rec := self.record_from_fields(source, title, summary, final_date, url, extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit):
@@ -483,7 +483,6 @@ class LCDSDataEngine:
                 return results
         except: pass
 
-        # Parse standard XML RSS
         try:
             root = ET.fromstring(resp.text)
             items = root.findall(".//item") + root.findall(".//{http://www.w3.org/2005/Atom}entry")
@@ -502,7 +501,6 @@ class LCDSDataEngine:
             summary = self.normalize_whitespace(ft(["description", "summary", "{http://www.w3.org/2005/Atom}summary"]))
             rss_pub_date = ft(["pubDate", "published", "updated", "{http://www.w3.org/2005/Atom}updated"])
             
-            # 💡 UPCOMING DATE EXTRACTOR
             extracted_date = None
             if fallback_hit > 0:
                 extracted_date = self.extract_future_date(f"{title} {summary}")
@@ -567,13 +565,9 @@ class LCDSDataEngine:
                 else:
                     raise Exception("No items parsed")
             except Exception as e:
-                # ETHICAL SCRAPING LAYER 3: Multi-Engine Syndication Fallback.
                 print(f"📡 [LAYER 3] {source['name']} failed. Querying Global Syndication Engines (Google, Bing, Yahoo)...")
-                
                 domain_clean = urlparse(pu).netloc.replace("www.", "")
                 kws = source.get("keywords_any", ["statistics"])[:4]
-                
-                # 💡 Added "upcoming" and "release" explicitly to the Syndication query to force search engines to find calendar dates
                 query_str = f"site:{domain_clean} (upcoming OR release OR schedule) ({' OR '.join(kws)})"
                 
                 syndication_urls = [
@@ -599,10 +593,11 @@ class LCDSDataEngine:
                 else:
                     self.update_source_health(source["name"], pu, False, 0)
         
-        current_keys = [self.canonical_key(x.get("dataset_title", ""), x.get("source", source["name"]), x.get("action_date")) for x in all_items if x.get("dataset_title")]
+        current_keys = [self.canonical_key(x.get("dataset_title", ""), x.get("source", source["name"])) for x in all_items if x.get("dataset_title")]
         current_snapshot = {k: True for k in current_keys}
         previous_snapshot = self.snapshot.get(source["name"], {})
 
+        # We append deleted things into our processing stream if needed
         if source.get("track_missing_as_deleted", False) and previous_snapshot and not self.previous_df.empty and "source" in self.previous_df.columns:
             prev_lookup = self.previous_df[self.previous_df["source"] == source["name"]]
             if "record_key" in prev_lookup.columns:
@@ -612,39 +607,63 @@ class LCDSDataEngine:
                         r = row.iloc[0].to_dict()
                         r["status"], r["event_type"], r["priority_score"], r["red_flag"], r["deleted_signal"], r["last_checked"] = "Deleted", "Deletion", STATUS_PRIORITY["Deleted"], 1, 1, utcnow_naive().strftime("%Y-%m-%d %H:%M:%S")
                         all_items.append(r)
+                        
         return source, all_items, current_snapshot | previous_snapshot
 
     def postprocess(self, rows: list[dict]) -> pd.DataFrame:
         base_cols = ["dataset_title", "source", "source_group", "source_type", "event_type", "action_date", "status", "url", "summary", "theme_primary", "theme_secondary", "priority_score", "confidence", "red_flag", "deleted_signal", "embargo", "tags", "raw_date", "last_checked", "source_page", "fallback_hit", "source_quality", "media_relevance", "executive_flag", "academic_match", "record_key"]
-        if not rows: return pd.DataFrame(columns=base_cols + ["days_to_event", "display_date", "sort_rank"])
-
-        df = pd.DataFrame(rows)
+        
+        # 1. Create Dataframe from fresh pull
+        df_new = pd.DataFrame(rows)
         for col in base_cols: 
-            if col not in df.columns: df[col] = 0 if col in ["priority_score", "red_flag", "deleted_signal", "embargo", "fallback_hit", "media_relevance", "executive_flag", "academic_match"] else ("" if col != "source_quality" else 0.5)
+            if col not in df_new.columns: 
+                df_new[col] = 0 if col in ["priority_score", "red_flag", "deleted_signal", "embargo", "fallback_hit", "media_relevance", "executive_flag", "academic_match"] else ("" if col != "source_quality" else 0.5)
 
+        # 2. HISTORICAL ACCUMULATOR MERGE
+        if not self.previous_df.empty:
+            # We concat df_new BEFORE previous_df. This ensures the freshest data is at the top.
+            df = pd.concat([df_new, self.previous_df], ignore_index=True)
+        else:
+            df = df_new
+            
+        if df.empty: 
+            return pd.DataFrame(columns=base_cols + ["days_to_event", "display_date", "sort_rank"])
+
+        # 3. Clean Types
         df["action_date"] = pd.to_datetime(df["action_date"], errors="coerce")
-        for col in ["priority_score", "red_flag", "deleted_signal", "embargo", "fallback_hit", "media_relevance", "executive_flag", "academic_match"]: df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
-        for col in ["confidence", "source_quality"]: df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
+        for col in ["priority_score", "red_flag", "deleted_signal", "embargo", "fallback_hit", "media_relevance", "executive_flag", "academic_match"]: 
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
+        for col in ["confidence", "source_quality"]: 
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
 
-        df["dataset_title_norm"] = df["dataset_title"].fillna("").str.lower().str.replace(r"[^a-z0-9]+", " ", regex=True).str.strip()
+        # 4. Generate Keys & Deduplicate
         missing_key = df["record_key"].fillna("") == ""
-        if missing_key.any(): df.loc[missing_key, "record_key"] = df.loc[missing_key].apply(lambda r: self.canonical_key(r.get("dataset_title", ""), r.get("source", ""), r.get("action_date")), axis=1)
+        if missing_key.any(): 
+            df.loc[missing_key, "record_key"] = df.loc[missing_key].apply(lambda r: self.canonical_key(r.get("dataset_title", ""), r.get("source", "")), axis=1)
 
-        df = df.sort_values(["deleted_signal", "red_flag", "priority_score", "confidence", "source_quality", "fallback_hit", "action_date"], ascending=[False, False, False, False, False, True, True])
-        df = df.drop_duplicates(subset=["record_key"], keep="first")
-        df["date_key"] = df["action_date"].dt.strftime("%Y-%m-%d").fillna("nodate")
-        df = df.drop_duplicates(subset=["dataset_title_norm", "date_key"], keep="first").reset_index(drop=True)
-        df = df.drop(columns=["date_key"])
+        # 💡 CRITICAL: We drop duplicates strictly by the canonical 'record_key' (Publisher + Title). 
+        # Because we used `keep="first"`, it automatically keeps the row from `df_new` which contains the UPDATED Date!
+        df = df.drop_duplicates(subset=["record_key"], keep="first").reset_index(drop=True)
 
+        # 5. DYNAMIC STATUS RECALCULATION
         df["days_to_event"] = (df["action_date"].dt.normalize() - pd.Timestamp(self.today)).dt.days
         df["display_date"] = df["action_date"].dt.strftime("%d %b %Y")
         df.loc[df["action_date"].isna(), "display_date"] = "Date TBC"
+        
+        # If an item we kept from history was 'Upcoming', but today is the release date... automatically mark it Published!
+        mask_past = (df["status"] == "Upcoming") & (df["days_to_event"] < 0)
+        df.loc[mask_past, "status"] = "Published"
+        
         df["executive_flag"] = ((df["priority_score"] >= 80) | (df["red_flag"] == 1) | (df["deleted_signal"] == 1)).astype(int)
 
         missing_media = df["media_relevance"] <= 0
-        if missing_media.any(): df.loc[missing_media, "media_relevance"] = df.loc[missing_media].apply(lambda r: self.compute_media_relevance(r["theme_primary"], r["status"], r["days_to_event"], r["source_type"], r["red_flag"], r["dataset_title"]), axis=1)
+        if missing_media.any(): 
+            df.loc[missing_media, "media_relevance"] = df.loc[missing_media].apply(lambda r: self.compute_media_relevance(r["theme_primary"], r["status"], r["days_to_event"], r["source_type"], r["red_flag"], r["dataset_title"]), axis=1)
 
-        df = df[(df["action_date"].isna()) | ((df["days_to_event"] >= -60) & (df["days_to_event"] <= self.max_abs_days))]
+        # 💡 6. 90-DAY RETENTION FIX: We strictly retain items up to 90 days PAST their release date, then delete.
+        df = df[(df["action_date"].isna()) | ((df["days_to_event"] >= -90) & (df["days_to_event"] <= self.max_abs_days))]
+        
+        # 7. Final Output Rank Sort
         df["sort_rank"] = (df["deleted_signal"] * 1000 + df["red_flag"] * 500 + df["priority_score"] + df["media_relevance"] + (df["source_quality"] * 20).round().astype(int) - df["fallback_hit"] * 2 - df["days_to_event"].fillna(9999).clip(lower=-365, upper=365))
 
         return df[base_cols + ["days_to_event", "display_date", "sort_rank"]].sort_values(["sort_rank", "action_date", "source"], ascending=[False, True, True]).reset_index(drop=True)
