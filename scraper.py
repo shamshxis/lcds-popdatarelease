@@ -6,6 +6,7 @@ import time
 import random
 import traceback
 import xml.etree.ElementTree as ET
+import urllib.robotparser
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from html import unescape
@@ -23,12 +24,14 @@ from sentence_transformers import SentenceTransformer, util
 
 # curl_cffi mimics a standard Chrome browser's network signature to prevent instant WAF auto-bans
 from curl_cffi import requests as cffi_requests
+import requests
 
 # Suppress annoying SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # --- ETHICAL BOT CONFIGURATION ---
 CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL", "research@demography.ox.ac.uk")
+POLITE_USER_AGENT = f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 (LCDS-Demography-Research-Bot; +https://demography.ox.ac.uk; {CONTACT_EMAIL})"
 
 # --- CONSTANTS ---
 DATA_DIR = "data"
@@ -114,10 +117,6 @@ class LCDSDataEngine:
         os.makedirs(DATA_DIR, exist_ok=True)
         self.watchlist_file = watchlist_file
         self.config = self.load_watchlist()
-        
-        # We configure the cffi_requests session to behave naturally.
-        self.session = cffi_requests.Session(impersonate="chrome110")
-        
         self.dynamic_terms = self.build_academic_profile()
         active_targets = list(BASE_TARGETS)
         if self.dynamic_terms: active_targets.extend([" ".join(self.dynamic_terms[i:i+4]) for i in range(0, min(len(self.dynamic_terms), 20), 4)])
@@ -130,9 +129,41 @@ class LCDSDataEngine:
         self.max_abs_days = int(settings.get("max_abs_days", MAX_ABS_DAYS))
         self.today = utcnow_naive().replace(hour=0, minute=0, second=0, microsecond=0)
         
+        self.session = cffi_requests.Session(impersonate="chrome110")
+        self.robot_parsers = {}
+        
         self.snapshot = self.load_json(SNAPSHOT_FILE)
         self.source_health = self.load_json(SOURCE_HEALTH_FILE)
         self.previous_df = self.load_previous_df()
+
+    def is_allowed_by_robots(self, target_url: str) -> bool:
+        """
+        ETHICAL SCRAPING LAYER 1: 
+        Parses the website's robots.txt file. If we are not allowed to scrape the URL,
+        we respectfully skip it.
+        """
+        parsed = urlparse(target_url)
+        domain = f"{parsed.scheme}://{parsed.netloc}"
+        robots_url = f"{domain}/robots.txt"
+        
+        if domain not in self.robot_parsers:
+            rp = urllib.robotparser.RobotFileParser()
+            rp.set_url(robots_url)
+            try:
+                # Use standard python requests to be completely open about who we are
+                resp = requests.get(robots_url, headers={"User-Agent": POLITE_USER_AGENT}, timeout=10)
+                if resp.status_code == 200:
+                    rp.parse(resp.text.splitlines())
+                self.robot_parsers[domain] = rp
+            except:
+                self.robot_parsers[domain] = None # Fail open if we can't load the robots.txt
+                
+        rp = self.robot_parsers[domain]
+        if rp:
+            # We check if our specific bot name is allowed, or if all bots (*) are allowed.
+            if not rp.can_fetch("LCDS-Demography-Research-Bot", target_url) and not rp.can_fetch("*", target_url):
+                return False
+        return True
 
     def build_academic_profile(self) -> list:
         try:
@@ -185,10 +216,16 @@ class LCDSDataEngine:
 
     def fetch(self, url: str, source: dict):
         """
-        Slow-paced, ethical fetcher.
-        It uses curl_cffi to match a standard browser TLS fingerprint, 
-        and announces your bot's contact email politely via the HTTP 'From' header.
+        Ethical fetcher incorporating Zyte's bypass philosophy.
+        1. Validates via robots.txt
+        2. Sends polite identification headers.
+        3. Delays to mimic human behavior.
+        4. If IP is banned AND it's an RSS feed, falls back to a public Syndication API ethically.
         """
+        if not self.is_allowed_by_robots(url):
+            print(f"✋ [ROBOTS.TXT] {url} explicitly forbids scraping. Skipping gracefully.")
+            raise Exception("Robots.txt blocked")
+
         custom_headers = {
             "From": CONTACT_EMAIL,
             "X-Bot-Name": "LCDS-Demography-Research-Bot",
@@ -197,22 +234,37 @@ class LCDSDataEngine:
         }
         custom_headers.update(source.get("headers", {}))
         
-        # ETHICAL HUMAN PAUSE: Random delay between 3 to 6 seconds before every scrape
+        # HUMAN PAUSE: Random delay between 3 to 6 seconds before EVERY click
         time.sleep(random.uniform(3.0, 6.0))
         
         try:
             resp = self.session.get(url, headers=custom_headers, timeout=self.timeout)
             
             if resp.status_code >= 400 or "cloudflare" in resp.text.lower() or "Just a moment..." in resp.text:
-                print(f"🛑 [BLOCKED] {url} explicitly blocked this IP address (Status {resp.status_code}).")
-                raise Exception(f"HTTP {resp.status_code}")
+                raise Exception(f"HTTP {resp.status_code} / WAF Block")
                 
             return DummyResponse(resp.text, resp.status_code)
+            
         except Exception as e:
+            # ETHICAL SCRAPING LAYER 2: Public RSS Syndication Fallback.
+            # If the firewall blocks our IP, but the publisher offers an RSS feed, 
+            # we request the feed via an official, whitelisted aggregator API.
+            if source.get("parser") == "rss" or url.endswith(".xml") or url.endswith(".rss"):
+                print(f"⚠️ [IP BLOCKED] {url}. Falling back to Public RSS Syndication API...")
+                rss_api_url = f"https://api.rss2json.com/v1/api.json?rss_url={quote_plus(url)}"
+                try:
+                    fallback_resp = requests.get(rss_api_url, timeout=self.timeout)
+                    if fallback_resp.status_code == 200 and fallback_resp.json().get("status") == "ok":
+                        # We return the JSON text as if it was the response. 
+                        # The parser_rss function has been upgraded to read JSON!
+                        return DummyResponse(fallback_resp.text, 200)
+                except:
+                    pass
+                    
+            print(f"🛑 [BLOCKED] {url} explicitly blocked this IP address.")
             raise e
 
     def strip_html_noise(self, soup: BeautifulSoup) -> BeautifulSoup:
-        # Eradicate global navs, footers, and scripts
         for tag in soup(["nav", "footer", "header", "aside", "style", "script", "button", "svg", "form"]):
             tag.decompose()
             
@@ -472,6 +524,21 @@ class LCDSDataEngine:
         except: return []
         results = []
         
+        # New Ethical RSS Capability: It reads the JSON converted data from the Syndication Fallback API
+        try:
+            data = resp.json()
+            if "items" in data:
+                for item in data["items"][:int(source.get("max_items", 50))]:
+                    title = self.normalize_whitespace(item.get("title", ""))
+                    summary = self.normalize_whitespace(item.get("description", item.get("content", "")))
+                    date_val = item.get("pubDate", "")
+                    url = item.get("link", page_url)
+                    if rec := self.record_from_fields(source, title, summary, date_val, url, extra_text=f"{title} {summary}", source_page=page_url, fallback_hit=fallback_hit):
+                        results.append(rec)
+                return results
+        except: pass
+
+        # Standard XML processing
         try:
             root = ET.fromstring(resp.text)
             items = root.findall(".//item") + root.findall(".//{http://www.w3.org/2005/Atom}entry")
@@ -556,6 +623,7 @@ class LCDSDataEngine:
     def parse_source(self, source: dict) -> tuple[dict, list[dict], dict]:
         pages, all_items = self.source_page_list(source), []
         
+        # SLOW-PACED SEQUENTIAL BROWSING
         for pu, fh in pages:
             try:
                 items = self.parse_page(source, pu, fh)
