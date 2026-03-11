@@ -5,10 +5,9 @@ from pathlib import Path
 from datetime import datetime
 
 # --- CONFIG ---
-# We rely completely on native Streamlit rendering - no hacky HTML CSS!
 st.set_page_config(
-    page_title="LCDS Population Data Release Tracker", 
-    page_icon="📰", 
+    page_title="LCDS Intelligence Feed", 
+    page_icon="🛡️", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -30,23 +29,43 @@ def load_data():
     if df.empty: 
         return df
 
-    # Parse dates for plotting
+    # Parse dates for sorting and grouping
     df["dt"] = pd.to_datetime(df["action_date"], errors="coerce")
     
-    # Clean up abstracts so they don't just repeat the title
+    def get_month_sort(d):
+        if pd.isnull(d): return "9999-12", "Date TBC"
+        return d.strftime("%Y-%m"), d.strftime("%B %Y")
+        
+    month_info = df["dt"].apply(get_month_sort)
+    df["month_sort"] = [x[0] for x in month_info]
+    df["Month"] = [x[1] for x in month_info]
+
+    # Clean up abstracts
     def refine_abstract(row):
         t, s = str(row['dataset_title']).strip(), str(row.get('summary', '')).strip()
         if s.lower().startswith(t.lower()): 
             s = s[len(t):].strip(" -:|")
-        return s if s and len(s) >= 5 else "No additional abstract provided."
-
+        return s if s and len(s) >= 5 else "No abstract provided."
     df["Abstract"] = df.apply(refine_abstract, axis=1)
     
-    # Ensure numeric columns are actually numeric
-    for col in ["academic_match", "executive_flag", "priority_score", "days_to_event"]:
+    # Status Icons
+    status_icons = {
+        "Deleted": "🛑 Deleted", "Cancelled": "❌ Cancelled", "Rescheduled": "🔄 Rescheduled",
+        "Restricted": "🔒 Restricted", "Upcoming": "📅 Upcoming", "Published": "✅ Published",
+        "Announcement": "📢 Announcement", "Monitor": "👁️ Monitor"
+    }
+    df["Status"] = df["status"].map(status_icons).fillna(df["status"])
+
+    # Ensure numeric columns
+    for col in ["academic_match", "executive_flag", "priority_score", "days_to_event", "red_flag"]:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
-            
+
+    # Title Flags
+    df["Title"] = df["dataset_title"].apply(lambda x: str(x).strip())
+    df["Title"] = df.apply(lambda r: f"⚠️ {r['Title']}" if r.get("red_flag", 0) == 1 else r['Title'], axis=1)
+    df["Title"] = df.apply(lambda r: f"🧬 {r['Title']}" if r.get("academic_match", 0) == 1 else r['Title'], axis=1)
+
     return df
 
 df = load_data()
@@ -64,7 +83,6 @@ with st.sidebar:
     all_groups = ["All"] + sorted([x for x in df["source_group"].unique() if x])
     sel_group = st.selectbox("Region / Group", options=all_groups)
     
-    # Dynamically update source dropdown based on group selection
     if sel_group != "All":
         filtered_sources = df[df["source_group"] == sel_group]["source"].unique()
     else:
@@ -82,12 +100,9 @@ with st.sidebar:
 # --- FILTER LOGIC ---
 view = df.copy()
 
-if sel_group != "All": 
-    view = view[view["source_group"] == sel_group]
-if sel_source != "All": 
-    view = view[view["source"] == sel_source]
-if sel_theme != "All": 
-    view = view[view["theme_primary"] == sel_theme]
+if sel_group != "All": view = view[view["source_group"] == sel_group]
+if sel_source != "All": view = view[view["source"] == sel_source]
+if sel_theme != "All": view = view[view["theme_primary"] == sel_theme]
 if search_q:
     mask = (
         view["dataset_title"].str.contains(search_q, case=False, na=False) | 
@@ -97,15 +112,14 @@ if search_q:
     view = view[mask]
 
 # --- MAIN HEADER ---
-st.title("📰 LCDS Demography Watch")
-st.markdown("Automated global intelligence feed for population data, surveys, and biobank releases.")
+st.title("🛡️ LCDS Executive Watch")
+st.markdown("Automated intelligence feed for population data, demographic surveys, and biobank releases.")
 
-# Top-level KPIs
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Total Datasets Tracked", len(view))
+col1.metric("Total Tracked", len(view))
 col2.metric("Upcoming (Next 30 Days)", len(view[(view["days_to_event"] >= 0) & (view["days_to_event"] <= 30)]))
-col3.metric("Academic Profile Matches", len(view[view["academic_match"] == 1]))
-col4.metric("High Priority Flags", len(view[view["executive_flag"] == 1]))
+col3.metric("Academic Matches", len(view[view["academic_match"] == 1]))
+col4.metric("High Priority Alerts", len(view[view["executive_flag"] == 1]))
 
 st.divider()
 
@@ -113,126 +127,80 @@ if view.empty:
     st.warning("No records match the current filters.")
     st.stop()
 
-# --- TABS LAYOUT ---
-tab1, tab2, tab3 = st.tabs(["🗞️ News Feed", "📊 Analytics & Charts", "🗃️ Data & Export"])
+tab1, tab2 = st.tabs(["📅 Release Calendar (Compact View)", "📊 Analytics & Deep Dive"])
 
-# --- TAB 1: NEWS FEED (VERTICAL TIMELINE) ---
+# --- TAB 1: COMPACT CALENDAR VIEW ---
 with tab1:
-    st.subheader("Latest Intelligence Feed")
-    st.caption(f"Showing top 100 most relevant results from current filters. Scroll to view.")
+    st.caption("Grouped by month. Upcoming releases are shown first. Click a table header to sort, or hover over text to read full details.")
     
-    # Sort logically: high priority, then newest/closest date
-    feed_view = view.sort_values(by=["sort_rank", "action_date"], ascending=[False, True]).head(100)
+    months = sorted(view["month_sort"].unique())
+    current_ym = datetime.now().strftime("%Y-%m")
     
-    for _, row in feed_view.iterrows():
-        # Native Streamlit container creates a clean card look
-        with st.container(border=True):
-            c_main, c_meta = st.columns([3, 1])
-            
-            with c_main:
-                # Title as a clickable markdown link
-                st.markdown(f"#### [{row['dataset_title']}]({row['url']})")
-                st.write(row['Abstract'])
-                
-                # Tags as clean markdown inline text
-                tags = [f"*{t.strip()}*" for t in str(row['tags']).split(",") if t.strip()]
-                if tags:
-                    st.markdown(" ".join(tags))
-            
-            with c_meta:
-                st.caption(f"**Publisher:** {row['source']}")
-                st.caption(f"**Theme:** {row['theme_primary']}")
-                
-                # Status formatting
-                status_emoji = "🟢" if row['status'] in ["Published", "Announcement"] else "🟠" if row['status'] == "Upcoming" else "🔴"
-                st.caption(f"**Status:** {status_emoji} {row['status']}")
-                
-                date_str = row['display_date']
-                st.caption(f"**Date:** {date_str}")
-                
-                if row['academic_match'] == 1:
-                    st.success("🧬 Academic Match")
-                if row['executive_flag'] == 1:
-                    st.error("⚠️ High Priority")
+    # Sort months logically: Upcoming/Current -> Future -> Past -> TBC
+    future_months = [m for m in months if m >= current_ym and m != "9999-12"]
+    past_months = sorted([m for m in months if m < current_ym], reverse=True)
+    tbc_months = [m for m in months if m == "9999-12"]
+    
+    ordered_months = future_months + past_months + tbc_months
 
-# --- TAB 2: ANALYTICS (PLOTLY) ---
+    # Determine which months should be expanded by default (Current and Next month)
+    months_to_expand = future_months[:2] if future_months else []
+
+    for ym in ordered_months:
+        month_df = view[view["month_sort"] == ym].sort_values(["dt", "sort_rank"], ascending=[True, False])
+        if month_df.empty: continue
+        
+        month_label = month_df["Month"].iloc[0]
+        is_expanded = (ym in months_to_expand) or (ym == "9999-12" and not future_months)
+        
+        with st.expander(f"🗓️ {month_label} ({len(month_df)} releases)", expanded=is_expanded):
+            
+            display_cols = ["Title", "source", "theme_primary", "display_date", "Status", "url"]
+            table_view = month_df[display_cols].copy()
+            
+            st.dataframe(
+                table_view,
+                column_config={
+                    "Title": st.column_config.TextColumn("Dataset Headline", width="large"),
+                    "source": st.column_config.TextColumn("Publisher", width="medium"),
+                    "theme_primary": st.column_config.TextColumn("Theme", width="small"),
+                    "display_date": st.column_config.TextColumn("Date", width="small"),
+                    "Status": st.column_config.TextColumn("Status", width="small"),
+                    "url": st.column_config.LinkColumn("Link", display_text="Open 🔗", width="small"),
+                },
+                hide_index=True,
+                use_container_width=True
+            )
+
+# --- TAB 2: ANALYTICS & EXPORT ---
 with tab2:
     st.subheader("Intelligence Analytics")
     
-    chart_cols = st.columns(2)
-    
-    with chart_cols[0]:
-        # Donut Chart for Themes
+    c1, c2 = st.columns(2)
+    with c1:
         theme_counts = view["theme_primary"].value_counts().reset_index()
         theme_counts.columns = ["Theme", "Count"]
-        fig_donut = px.pie(
-            theme_counts, values='Count', names='Theme', hole=0.5, 
-            title="Thematic Focus of Datasets",
-            color_discrete_sequence=px.colors.qualitative.Prism
-        )
+        fig_donut = px.pie(theme_counts, values='Count', names='Theme', hole=0.5, title="Thematic Focus", color_discrete_sequence=px.colors.qualitative.Prism)
         fig_donut.update_traces(textposition='inside', textinfo='percent+label')
         fig_donut.update_layout(showlegend=False)
         st.plotly_chart(fig_donut, use_container_width=True)
 
-    with chart_cols[1]:
-        # Bar Chart for Top Publishers
+    with c2:
         source_counts = view["source"].value_counts().head(8).reset_index()
         source_counts.columns = ["Publisher", "Count"]
-        fig_bar = px.bar(
-            source_counts, x="Count", y="Publisher", orientation='h', 
-            title="Top Active Publishers",
-            color_discrete_sequence=["#1f77b4"]
-        )
+        fig_bar = px.bar(source_counts, x="Count", y="Publisher", orientation='h', title="Top Publishers", color_discrete_sequence=["#1f77b4"])
         fig_bar.update_layout(yaxis={'categoryorder': 'total ascending'})
         st.plotly_chart(fig_bar, use_container_width=True)
 
-    # Timeline Scatter Plot for upcoming events
-    time_df = view.dropna(subset=["dt"]).copy()
-    time_df = time_df[(time_df['dt'] >= pd.Timestamp.now() - pd.Timedelta(days=30)) & (time_df['dt'] <= pd.Timestamp.now() + pd.Timedelta(days=120))]
+    st.divider()
+    st.subheader("Export Filtered Data")
+    st.caption("Download the raw data behind your current filter view.")
     
-    if not time_df.empty:
-        fig_timeline = px.scatter(
-            time_df, x="dt", y="source", color="theme_primary", 
-            hover_data=["dataset_title", "display_date"], 
-            title="Release Horizon (Past 30 to Next 120 Days)",
-            labels={"dt": "Release Date", "source": "Publisher", "theme_primary": "Theme"},
-            color_discrete_sequence=px.colors.qualitative.Prism
-        )
-        fig_timeline.update_traces(marker=dict(size=12, opacity=0.8, line=dict(width=1, color='DarkSlateGrey')))
-        st.plotly_chart(fig_timeline, use_container_width=True)
-    else:
-        st.info("No dated releases found in the immediate 120-day horizon for the current filters.")
-
-# --- TAB 3: DATA EXPLORER & EXPORT ---
-with tab3:
-    st.subheader("Raw Data Explorer")
-    st.caption("View and download the tabular data backing the news feed and charts.")
+    export_df = view[["dataset_title", "source", "source_group", "action_date", "status", "theme_primary", "summary", "url"]].copy()
     
-    # Clean up the view for the table
-    export_cols = [
-        "dataset_title", "source", "source_group", "display_date", 
-        "status", "theme_primary", "url"
-    ]
-    
-    table_view = view[export_cols].copy()
-    table_view.rename(columns={
-        "dataset_title": "Headline", "source": "Publisher", "source_group": "Region",
-        "display_date": "Date", "status": "Status", "theme_primary": "Theme", "url": "Link"
-    }, inplace=True)
-    
-    # Display native interactive dataframe
-    st.dataframe(
-        table_view,
-        column_config={"Link": st.column_config.LinkColumn("Link")},
-        use_container_width=True,
-        hide_index=True
-    )
-    
-    # Generate CSV dynamically based on whatever the user filtered
-    csv = view.to_csv(index=False).encode('utf-8')
     st.download_button(
-        label="📥 Download Current View as CSV",
-        data=csv,
+        label="📥 Download Current View (CSV)",
+        data=export_df.to_csv(index=False).encode('utf-8'),
         file_name=f"lcds_intelligence_{datetime.now().strftime('%Y%m%d')}.csv",
         mime="text/csv",
         type="primary"
