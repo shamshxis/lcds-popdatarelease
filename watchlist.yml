@@ -8,6 +8,7 @@ sources:
   - name: "ONS Upcoming Releases"
     group: "UK Official"
     source_type: "Official"
+    # Pure base URL, so robots.txt allows it through.
     url: "https://www.ons.gov.uk/releasecalendar?release-type=type-upcoming"
     parser: "ons_release_calendar"
     keywords_any: ["population", "census", "migration", "fertility", "mortality", "health", "demographic", "admin-based", "births"]
@@ -16,10 +17,9 @@ sources:
   - name: "NRS Scotland"
     group: "UK Official"
     source_type: "Official"
-    url: "https://www.nrscotland.gov.uk/statistics-and-data/upcoming-publications/"
-    fallback_urls: ["https://www.gov.scot/publications/"]
-    parser: "generic_calendar"
-    keywords_any: ["population", "birth", "death", "migration", "household", "names", "surnames", "demographic"]
+    url: "https://news.gov.scot/feed/rss"
+    parser: "rss"
+    keywords_any: ["population", "birth", "death", "migration", "household", "names", "surnames", "demographic", "statistics"]
     priority_weight: 20
 
   - name: "US Census Releases"
@@ -107,8 +107,8 @@ sources:
   - name: "UK Biobank News"
     group: "Biobanks"
     source_type: "Registry"
-    url: "https://www.ukbiobank.ac.uk/explore-your-participation/news-and-events"
-    parser: "generic_calendar"
+    url: "https://www.ukbiobank.ac.uk/feed/"
+    parser: "rss"
     keywords_any: ["data release", "cohort", "genomic", "health data", "update", "researchers", "dataset"]
     priority_weight: 25
 
