@@ -3,7 +3,7 @@ name: Update Global Population Watch
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 6 * * *" # Runs daily at 06:00 UTC
+    - cron: "30 5,17 * * *" # Runs twice a day (5:30 AM and 5:30 PM UTC)
 
 permissions:
   contents: write
