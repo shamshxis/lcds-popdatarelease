@@ -127,74 +127,145 @@ if view.empty:
     st.warning("No records match the current filters.")
     st.stop()
 
-tab1, tab2 = st.tabs(["📅 Release Calendar (Compact View)", "📊 Analytics & Deep Dive"])
+tab1, tab2, tab3 = st.tabs(["📅 Release Calendar", "📊 Analytics & Deep Dive", "🗃️ Raw Data & Export"])
 
 # --- TAB 1: COMPACT CALENDAR VIEW ---
 with tab1:
-    st.caption("Grouped by month. Upcoming releases are shown first. Click a table header to sort, or hover over text to read full details.")
+    st.caption("Releases are logically grouped by timeframe. Click a table header to sort, or hover over text to read full details.")
     
-    months = sorted(view["month_sort"].unique())
     current_ym = datetime.now().strftime("%Y-%m")
     
-    # Sort months logically: Upcoming/Current -> Future -> Past -> TBC
-    future_months = [m for m in months if m >= current_ym and m != "9999-12"]
-    past_months = sorted([m for m in months if m < current_ym], reverse=True)
-    tbc_months = [m for m in months if m == "9999-12"]
+    # Split into Upcoming/Current, Past, and TBC
+    future_mask = (view["month_sort"] >= current_ym) & (view["month_sort"] != "9999-12")
+    past_mask = view["month_sort"] < current_ym
+    tbc_mask = view["month_sort"] == "9999-12"
     
-    ordered_months = future_months + past_months + tbc_months
+    future_months = sorted(view[future_mask]["month_sort"].unique())
+    past_months = sorted(view[past_mask]["month_sort"].unique(), reverse=True)
+    has_tbc = tbc_mask.any()
 
-    # Determine which months should be expanded by default (Current and Next month)
-    months_to_expand = future_months[:2] if future_months else []
+    display_cols = ["Title", "source", "theme_primary", "display_date", "Status", "url"]
+    col_config = {
+        "Title": st.column_config.TextColumn("Dataset Headline", width="large"),
+        "source": st.column_config.TextColumn("Publisher", width="medium"),
+        "theme_primary": st.column_config.TextColumn("Theme", width="small"),
+        "display_date": st.column_config.TextColumn("Date", width="small"),
+        "Status": st.column_config.TextColumn("Status", width="small"),
+        "url": st.column_config.LinkColumn("Link", display_text="Open 🔗", width="small"),
+    }
 
-    for ym in ordered_months:
-        month_df = view[view["month_sort"] == ym].sort_values(["dt", "sort_rank"], ascending=[True, False])
-        if month_df.empty: continue
-        
-        month_label = month_df["Month"].iloc[0]
-        is_expanded = (ym in months_to_expand) or (ym == "9999-12" and not future_months)
-        
-        with st.expander(f"🗓️ {month_label} ({len(month_df)} releases)", expanded=is_expanded):
+    if future_months:
+        st.subheader("🟢 Upcoming & Current Releases")
+        for i, ym in enumerate(future_months):
+            month_df = view[view["month_sort"] == ym].sort_values(["dt", "sort_rank"], ascending=[True, False])
+            month_label = month_df["Month"].iloc[0]
+            # Keep current month and next month open by default to save scrolling
+            is_expanded = (i < 2)
             
-            display_cols = ["Title", "source", "theme_primary", "display_date", "Status", "url"]
-            table_view = month_df[display_cols].copy()
-            
-            st.dataframe(
-                table_view,
-                column_config={
-                    "Title": st.column_config.TextColumn("Dataset Headline", width="large"),
-                    "source": st.column_config.TextColumn("Publisher", width="medium"),
-                    "theme_primary": st.column_config.TextColumn("Theme", width="small"),
-                    "display_date": st.column_config.TextColumn("Date", width="small"),
-                    "Status": st.column_config.TextColumn("Status", width="small"),
-                    "url": st.column_config.LinkColumn("Link", display_text="Open 🔗", width="small"),
-                },
-                hide_index=True,
-                use_container_width=True
-            )
+            with st.expander(f"🗓️ {month_label} ({len(month_df)} releases)", expanded=is_expanded):
+                st.dataframe(month_df[display_cols], column_config=col_config, hide_index=True, use_container_width=True)
 
-# --- TAB 2: ANALYTICS & EXPORT ---
+    if past_months:
+        st.subheader("🕰️ Past Releases")
+        for ym in past_months:
+            month_df = view[view["month_sort"] == ym].sort_values(["dt", "sort_rank"], ascending=[False, False])
+            month_label = month_df["Month"].iloc[0]
+            
+            with st.expander(f"🗓️ {month_label} ({len(month_df)} releases)", expanded=False):
+                st.dataframe(month_df[display_cols], column_config=col_config, hide_index=True, use_container_width=True)
+
+    if has_tbc:
+        st.subheader("⏳ Unscheduled / To Be Confirmed")
+        tbc_df = view[tbc_mask].sort_values("sort_rank", ascending=False)
+        # Only expand this automatically if there are no future dates at all
+        with st.expander(f"🗓️ Date TBC ({len(tbc_df)} releases)", expanded=(not future_months)):
+            st.dataframe(tbc_df[display_cols], column_config=col_config, hide_index=True, use_container_width=True)
+
+
+# --- TAB 2: ANALYTICS & DEEP DIVE ---
 with tab2:
     st.subheader("Intelligence Analytics")
     
+    # ROW 1: Themes and Publishers
     c1, c2 = st.columns(2)
     with c1:
         theme_counts = view["theme_primary"].value_counts().reset_index()
         theme_counts.columns = ["Theme", "Count"]
         fig_donut = px.pie(theme_counts, values='Count', names='Theme', hole=0.5, title="Thematic Focus", color_discrete_sequence=px.colors.qualitative.Prism)
         fig_donut.update_traces(textposition='inside', textinfo='percent+label')
-        fig_donut.update_layout(showlegend=False)
+        fig_donut.update_layout(showlegend=False, margin=dict(t=40, b=0, l=0, r=0))
         st.plotly_chart(fig_donut, use_container_width=True)
 
     with c2:
-        source_counts = view["source"].value_counts().head(8).reset_index()
+        source_counts = view["source"].value_counts().head(10).reset_index()
         source_counts.columns = ["Publisher", "Count"]
         fig_bar = px.bar(source_counts, x="Count", y="Publisher", orientation='h', title="Top Publishers", color_discrete_sequence=["#1f77b4"])
-        fig_bar.update_layout(yaxis={'categoryorder': 'total ascending'})
+        fig_bar.update_layout(yaxis={'categoryorder': 'total ascending'}, margin=dict(t=40, b=0, l=0, r=0))
         st.plotly_chart(fig_bar, use_container_width=True)
 
     st.divider()
-    st.subheader("Export Filtered Data")
-    st.caption("Download the raw data behind your current filter view.")
+    
+    # ROW 2: Timeline & Status
+    c3, c4 = st.columns([2, 1])
+    with c3:
+        # Timeline Histogram
+        valid_dates = view[view["month_sort"] != "9999-12"].copy()
+        if not valid_dates.empty:
+            valid_dates["Month_Fmt"] = valid_dates["dt"].dt.to_period("M").astype(str)
+            timeline_counts = valid_dates.groupby(["Month_Fmt", "status"]).size().reset_index(name="Count")
+            
+            fig_hist = px.bar(
+                timeline_counts, x="Month_Fmt", y="Count", color="status",
+                title="Release Velocity (Over Time)",
+                labels={"Month_Fmt": "Month", "Count": "Number of Releases", "status": "Status"},
+                color_discrete_map={
+                    "Published": "#2ca02c", "Upcoming": "#ff7f0e", 
+                    "Announcement": "#1f77b4", "Cancelled": "#d62728", 
+                    "Deleted": "#9467bd", "Rescheduled": "#8c564b"
+                }
+            )
+            fig_hist.update_layout(xaxis_tickangle=-45, barmode='stack', margin=dict(t=40, b=0, l=0, r=0))
+            st.plotly_chart(fig_hist, use_container_width=True)
+        else:
+            st.info("No dated records available to display timeline.")
+            
+    with c4:
+        # Status Breakdown
+        status_counts = view["status"].value_counts().reset_index()
+        status_counts.columns = ["Status", "Count"]
+        fig_status = px.pie(
+            status_counts, values="Count", names="Status", 
+            title="Status Breakdown",
+            color="Status",
+            color_discrete_map={
+                "Published": "#2ca02c", "Upcoming": "#ff7f0e", 
+                "Announcement": "#1f77b4", "Cancelled": "#d62728", 
+                "Deleted": "#9467bd", "Rescheduled": "#8c564b",
+                "Monitor": "#7f7f7f", "Restricted": "#e377c2"
+            }
+        )
+        fig_status.update_layout(margin=dict(t=40, b=0, l=0, r=0))
+        st.plotly_chart(fig_status, use_container_width=True)
+
+    st.divider()
+    
+    # ROW 3: Deep Dive Treemap
+    st.subheader("Ecosystem Deep Dive")
+    st.caption("Click into regions, then publishers, to explore their specific thematic focuses.")
+    fig_tree = px.treemap(
+        view, 
+        path=[px.Constant("Global Overview"), 'source_group', 'source', 'theme_primary'],
+        color='theme_primary',
+        color_discrete_sequence=px.colors.qualitative.Prism
+    )
+    fig_tree.update_traces(root_color="lightgrey")
+    fig_tree.update_layout(margin=dict(t=20, l=10, r=10, b=10))
+    st.plotly_chart(fig_tree, use_container_width=True)
+
+# --- TAB 3: RAW DATA EXPORT ---
+with tab3:
+    st.subheader("Raw Data & Exports")
+    st.caption("View the full, unfiltered dataset behind your current selection and export it.")
     
     export_df = view[["dataset_title", "source", "source_group", "action_date", "status", "theme_primary", "summary", "url"]].copy()
     
@@ -205,3 +276,5 @@ with tab2:
         mime="text/csv",
         type="primary"
     )
+    
+    st.dataframe(export_df, use_container_width=True, hide_index=True)
