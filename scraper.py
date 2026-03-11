@@ -150,17 +150,15 @@ class LCDSDataEngine:
             rp = urllib.robotparser.RobotFileParser()
             rp.set_url(robots_url)
             try:
-                # Use standard python requests to be completely open about who we are
                 resp = requests.get(robots_url, headers={"User-Agent": POLITE_USER_AGENT}, timeout=10)
                 if resp.status_code == 200:
                     rp.parse(resp.text.splitlines())
                 self.robot_parsers[domain] = rp
             except:
-                self.robot_parsers[domain] = None # Fail open if we can't load the robots.txt
+                self.robot_parsers[domain] = None 
                 
         rp = self.robot_parsers[domain]
         if rp:
-            # We check if our specific bot name is allowed, or if all bots (*) are allowed.
             if not rp.can_fetch("LCDS-Demography-Research-Bot", target_url) and not rp.can_fetch("*", target_url):
                 return False
         return True
@@ -247,16 +245,12 @@ class LCDSDataEngine:
             
         except Exception as e:
             # ETHICAL SCRAPING LAYER 2: Public RSS Syndication Fallback.
-            # If the firewall blocks our IP, but the publisher offers an RSS feed, 
-            # we request the feed via an official, whitelisted aggregator API.
-            if source.get("parser") == "rss" or url.endswith(".xml") or url.endswith(".rss"):
+            if source.get("parser") == "rss" or url.endswith(".xml") or url.endswith(".rss") or "feed" in url:
                 print(f"⚠️ [IP BLOCKED] {url}. Falling back to Public RSS Syndication API...")
                 rss_api_url = f"https://api.rss2json.com/v1/api.json?rss_url={quote_plus(url)}"
                 try:
                     fallback_resp = requests.get(rss_api_url, timeout=self.timeout)
                     if fallback_resp.status_code == 200 and fallback_resp.json().get("status") == "ok":
-                        # We return the JSON text as if it was the response. 
-                        # The parser_rss function has been upgraded to read JSON!
                         return DummyResponse(fallback_resp.text, 200)
                 except:
                     pass
@@ -452,32 +446,30 @@ class LCDSDataEngine:
     # --- PARSERS ---
     
     def parser_ons_release_calendar(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
-        url_parts = list(urlparse(page_url))
-        query = parse_qs(url_parts[4])
-        target_queries = ["population", "migration", "health", "admin-based", "births", "deaths"] 
-        if self.dynamic_terms: target_queries.append(self.dynamic_terms[0])
+        """
+        UPDATED: Scrapes the pure base URL without adding query loops.
+        This respects ONS robots.txt rules and lets our NLM AI filter out 
+        the financial/agricultural junk locally instead of forcing ONS servers to do it.
+        """
+        results = []
+        try: 
+            resp = self.fetch(page_url, source)
+        except: return []
+        
+        soup = self.strip_html_noise(BeautifulSoup(resp.text, "html.parser"))
+        for card in soup.find_all(["li", "div", "article"]):
+            text = card.get_text(" ", strip=True)
+            if "Release date:" not in text: continue
+            link = card.find("a", href=True)
+            if not link: continue
+            url = urljoin(page_url, link["href"])
+            title = self.normalize_whitespace(link.get_text())
+            if not (m := re.search(r"Release date:\s*([^|]+)\|\s*([A-Za-z]+)", text)): continue
+            date_text, label = m.group(1).strip(), m.group(2).strip()
             
-        results, seen_links = [], set()
-        for kw in set(target_queries):
-            query["keywords"] = kw
-            url_parts[4] = urlencode(query, doseq=True)
-            try: 
-                resp = self.fetch(urlunparse(url_parts), source)
-            except: continue
-            
-            soup = self.strip_html_noise(BeautifulSoup(resp.text, "html.parser"))
-            for card in soup.find_all(["li", "div", "article"]):
-                text = card.get_text(" ", strip=True)
-                if "Release date:" not in text: continue
-                link = card.find("a", href=True)
-                if not link or (url := urljoin(page_url, link["href"])) in seen_links: continue
-                title = self.normalize_whitespace(link.get_text())
-                if not (m := re.search(r"Release date:\s*([^|]+)\|\s*([A-Za-z]+)", text)): continue
-                date_text, label = m.group(1).strip(), m.group(2).strip()
-                seen_links.add(url)
-                if rec := self.record_from_fields(source, title, text.replace(title, "").replace(f"Release date: {date_text} | {label}", "").strip(), date_text, url, extra_text=text, source_page=page_url, fallback_hit=fallback_hit):
-                    rec["status"] = {"Published": "Published", "Confirmed": "Upcoming", "Cancelled": "Cancelled"}.get(label, rec["status"])
-                    results.append(rec)
+            if rec := self.record_from_fields(source, title, text.replace(title, "").replace(f"Release date: {date_text} | {label}", "").strip(), date_text, url, extra_text=text, source_page=page_url, fallback_hit=fallback_hit):
+                rec["status"] = {"Published": "Published", "Confirmed": "Upcoming", "Cancelled": "Cancelled"}.get(label, rec["status"])
+                results.append(rec)
         return results
 
     def parser_census_upcoming(self, source: dict, page_url: str, fallback_hit: int) -> list[dict]:
@@ -524,7 +516,6 @@ class LCDSDataEngine:
         except: return []
         results = []
         
-        # New Ethical RSS Capability: It reads the JSON converted data from the Syndication Fallback API
         try:
             data = resp.json()
             if "items" in data:
@@ -538,7 +529,6 @@ class LCDSDataEngine:
                 return results
         except: pass
 
-        # Standard XML processing
         try:
             root = ET.fromstring(resp.text)
             items = root.findall(".//item") + root.findall(".//{http://www.w3.org/2005/Atom}entry")
@@ -623,7 +613,6 @@ class LCDSDataEngine:
     def parse_source(self, source: dict) -> tuple[dict, list[dict], dict]:
         pages, all_items = self.source_page_list(source), []
         
-        # SLOW-PACED SEQUENTIAL BROWSING
         for pu, fh in pages:
             try:
                 items = self.parse_page(source, pu, fh)
