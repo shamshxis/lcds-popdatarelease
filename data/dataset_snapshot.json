@@ -64,17 +64,6 @@
     "63881080c731a2042d1944e4c99e587b": true,
     "f025a1478cc67a30c26a74f78a2b26e2": true
   },
-  "Statistics Japan (e-Stat)": {
-    "381318734eded1569ef546c03b0f0404": true,
-    "ac692d77c4de455d30b20417f9e6907f": true,
-    "d2b4b25916ae67d980628413a7f92647": true,
-    "0f427f625bdb298bf00c722ef0379e10": true,
-    "f002b2ac20c6226bdcc8382ff57df288": true,
-    "ee1d1d7691ea7cc4e583983c849f15fb": true,
-    "f841548078d520819e4538a16159eaaf": true,
-    "5286b57f6cd1b7f7393d1b6a9683f844": true,
-    "2c6cd60d5972d265d045b7b8d3f3da07": true
-  },
   "ONS Upcoming Releases": {
     "e23d55c8913c96a85feeab83f8fc77e8": true,
     "d9dfaeb0e75ca5cbc7da36579ec37ab5": true,
@@ -144,14 +133,25 @@
     "6e80d9ac94f194d0fe305495a8394241": true,
     "b9a5268ecfe64e0de57367f67e838194": true
   },
+  "Statistics Japan (e-Stat)": {
+    "381318734eded1569ef546c03b0f0404": true,
+    "ac692d77c4de455d30b20417f9e6907f": true,
+    "d2b4b25916ae67d980628413a7f92647": true,
+    "0f427f625bdb298bf00c722ef0379e10": true,
+    "f002b2ac20c6226bdcc8382ff57df288": true,
+    "ee1d1d7691ea7cc4e583983c849f15fb": true,
+    "f841548078d520819e4538a16159eaaf": true,
+    "5286b57f6cd1b7f7393d1b6a9683f844": true,
+    "2c6cd60d5972d265d045b7b8d3f3da07": true
+  },
   "US Census Releases": {
     "daa00d18192c0a550755efc1e9c941c6": true,
     "297de8255c2af11f7aedb5cb726ed873": true,
     "1e90b31569b86e5d2d68ccaf652dc6d0": true,
     "ae2c3b37c91ea3a2606ae41a477fe4af": true,
     "b6980431d8fd748227e15ab08481bd5b": true,
-    "5dcbcb30c645408e1d8446447e7cb7e1": true,
     "586e31622d56bd04f128d46b82b61093": true,
+    "5dcbcb30c645408e1d8446447e7cb7e1": true,
     "7ea6ba8d02a3f44dad26eb2b65f3d9a0": true,
     "63df6c024863d3ea36ac410f062f0c9b": true,
     "886046a5c1a4c5d4e981cf4396c54296": true,
@@ -321,51 +321,6 @@
     "2ae99c77fa57dc5e4d85c6d6105a7b00": true,
     "a71f71fedba86520556452a9162f0b11": true
   },
-  "NRS Scotland": {
-    "8ca02fe6330c89fac9b0f72e188bbd9c": true,
-    "d261b4a98ab75e652fa2e40009b1fca3": true,
-    "579151efe2900df48ba9dc0d0c2149c9": true,
-    "0313019954ef8d427f06e2f9cc3dead3": true,
-    "8379cb43ac1bba54df6e3f0a880475b4": true,
-    "7832dbec5d78b7ac8d526287f53c2980": true,
-    "7438da6af44ac2346392e09faf6d1657": true,
-    "df928e910380b575e145fc8502040d45": true,
-    "7fd93479edc9ffa954754d38ca67e9c5": true,
-    "8165252fc4879d4a30e2b0d44217a4a2": true,
-    "1a8e84f64a40cc7ffbc04c49602e0bf2": true,
-    "d829d738d3bb83fa08a042d117e25c92": true,
-    "42adb5867483c151edd6bfcf1a1d58a5": true,
-    "8ecc8357356630bc374ab296f750fc21": true,
-    "0a9b4c0ed930882e9f2f560c125891f9": true,
-    "e16920e5b83c35425a5c108b38914029": true,
-    "0fddad3ba25250a223c086c3f7968970": true,
-    "923e87a1c572025cf2ffb737af4f3f98": true,
-    "8dca4ae167c3da0c116a64a94291333b": true,
-    "f7381f2dd712b033ae173751a48bcbc4": true,
-    "a01228e7b3dc7180f877b53d95e13613": true,
-    "53b723ec7addb9303ba1736f21115bc5": true,
-    "df682dcf53b243b88f38cb5b09abe1b7": true,
-    "371632a7392cab23711fe57b8dfbb75b": true,
-    "999648cec2b5e956659809ca50864f42": true
-  },
-  "UN Population Division": {
-    "a75b6b7df9680a959399f5544a2bb258": true,
-    "4a0f7e17095fba72936ae299ac9fabca": true,
-    "d82ea85686ec38ac7372850df6214fed": true,
-    "c4985fdd5cb024856914da16a17406d0": true,
-    "f537a53863e8455c0606929394585d5c": true,
-    "4aadc49cf2f8636ae47e9281c53d1c23": true,
-    "34ce251255ecfc01469131992aa8b67b": true,
-    "11f5e9033ff2eb209390bdbe081cf0ff": true,
-    "1a916b077b896846b0ecf3c38a21d805": true,
-    "7dee1018e4c10b1eda1d2e4da7b901ca": true,
-    "c2101efa849b513946d0f75a78d64f64": true,
-    "435d1ed96eb2b690805cb4e34c9e43f5": true,
-    "0432b724234bdc4cc709af196f713cc5": true
-  },
-  "DHS Program News": {
-    "2ea1c0ea94744b91636e1b2c1c37b26e": true
-  },
   "CBS Netherlands": {
     "3b33aef7b6d0e25f76344575e7b11afe": true,
     "c618b19bc775e3feb3252e19a7545c9f": true,
@@ -480,11 +435,47 @@
     "e735359755dc3dac33b1bb975798ed27": true,
     "4acbe530b3f00d674c5329d0f4d9b42b": true
   },
-  "NBS China": {
-    "81ef0c8b099e1c6df87f0d12827879a5": true,
-    "0af7712ff6015c6b3fd5d6531c7ad9a5": true,
-    "2062413fa596562b81ec82bc5359a840": true,
-    "56ebff02a42eae95d40a8fe626ea30a6": true
+  "UN Population Division": {
+    "a75b6b7df9680a959399f5544a2bb258": true,
+    "d82ea85686ec38ac7372850df6214fed": true,
+    "4a0f7e17095fba72936ae299ac9fabca": true,
+    "c4985fdd5cb024856914da16a17406d0": true,
+    "f537a53863e8455c0606929394585d5c": true,
+    "4aadc49cf2f8636ae47e9281c53d1c23": true,
+    "34ce251255ecfc01469131992aa8b67b": true,
+    "11f5e9033ff2eb209390bdbe081cf0ff": true,
+    "1a916b077b896846b0ecf3c38a21d805": true,
+    "7dee1018e4c10b1eda1d2e4da7b901ca": true,
+    "c2101efa849b513946d0f75a78d64f64": true,
+    "435d1ed96eb2b690805cb4e34c9e43f5": true,
+    "0432b724234bdc4cc709af196f713cc5": true
+  },
+  "NRS Scotland": {
+    "8ca02fe6330c89fac9b0f72e188bbd9c": true,
+    "d261b4a98ab75e652fa2e40009b1fca3": true,
+    "579151efe2900df48ba9dc0d0c2149c9": true,
+    "0313019954ef8d427f06e2f9cc3dead3": true,
+    "8379cb43ac1bba54df6e3f0a880475b4": true,
+    "7832dbec5d78b7ac8d526287f53c2980": true,
+    "7438da6af44ac2346392e09faf6d1657": true,
+    "df928e910380b575e145fc8502040d45": true,
+    "7fd93479edc9ffa954754d38ca67e9c5": true,
+    "8165252fc4879d4a30e2b0d44217a4a2": true,
+    "1a8e84f64a40cc7ffbc04c49602e0bf2": true,
+    "d829d738d3bb83fa08a042d117e25c92": true,
+    "42adb5867483c151edd6bfcf1a1d58a5": true,
+    "8ecc8357356630bc374ab296f750fc21": true,
+    "0a9b4c0ed930882e9f2f560c125891f9": true,
+    "e16920e5b83c35425a5c108b38914029": true,
+    "0fddad3ba25250a223c086c3f7968970": true,
+    "923e87a1c572025cf2ffb737af4f3f98": true,
+    "8dca4ae167c3da0c116a64a94291333b": true,
+    "f7381f2dd712b033ae173751a48bcbc4": true,
+    "a01228e7b3dc7180f877b53d95e13613": true,
+    "53b723ec7addb9303ba1736f21115bc5": true,
+    "df682dcf53b243b88f38cb5b09abe1b7": true,
+    "371632a7392cab23711fe57b8dfbb75b": true,
+    "999648cec2b5e956659809ca50864f42": true
   },
   "Eurostat Release Calendar": {
     "52c9c576280d6077435880bb2d10bdde": true,
@@ -503,6 +494,15 @@
     "9b3c8f853bd52fa56452a0ed06938dfc": true,
     "99a3aef7f021883b8031bd149d079e0d": true,
     "8546d9816dfc5a73236a6547214310d1": true
+  },
+  "NBS China": {
+    "81ef0c8b099e1c6df87f0d12827879a5": true,
+    "0af7712ff6015c6b3fd5d6531c7ad9a5": true,
+    "2062413fa596562b81ec82bc5359a840": true,
+    "56ebff02a42eae95d40a8fe626ea30a6": true
+  },
+  "DHS Program News": {
+    "2ea1c0ea94744b91636e1b2c1c37b26e": true
   },
   "KOSTAT South Korea": {
     "86a82db87a2ea2d687aa8782925542f0": true,
