@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-19T18:09:37.486973",
+  "generated_at": "2026-03-20T06:13:22.543616",
   "logs": [
     {
       "source": "UK Biobank News",
@@ -7,7 +7,7 @@
     },
     {
       "source": "Statistics Sweden",
-      "items": 6
+      "items": 8
     },
     {
       "source": "Our Future Health UK",
@@ -15,22 +15,26 @@
     },
     {
       "source": "ONS Upcoming Releases",
-      "items": 4
+      "items": 5
     },
     {
       "source": "Statistics Japan (e-Stat)",
       "items": 1
     },
     {
+      "source": "NRS Scotland",
+      "items": 2
+    },
+    {
       "source": "DHS Program News",
       "items": 0
     },
     {
-      "source": "US Census Releases",
-      "items": 8
+      "source": "Eurostat Release Calendar",
+      "items": 4
     },
     {
-      "source": "UN Population Division",
+      "source": "NBS China",
       "items": 0
     },
     {
@@ -38,30 +42,26 @@
       "items": 2
     },
     {
-      "source": "Eurostat Release Calendar",
+      "source": "US Census Releases",
       "items": 5
+    },
+    {
+      "source": "UN Population Division",
+      "items": 0
     },
     {
       "source": "KOSTAT South Korea",
-      "items": 5
-    },
-    {
-      "source": "NRS Scotland",
-      "items": 2
-    },
-    {
-      "source": "NBS China",
       "items": 0
     }
   ],
   "metrics": {
-    "records": 80,
-    "upcoming": 1,
+    "records": 87,
+    "upcoming": 0,
     "red_flags": 0,
     "deletions": 0,
     "academic_matches": 5,
-    "next_14_days": 1,
-    "fallback_hits": 100,
-    "generated_at": "2026-03-19T18:09:37.487647"
+    "next_14_days": 0,
+    "fallback_hits": 104,
+    "generated_at": "2026-03-20T06:13:22.544529"
   }
 }
