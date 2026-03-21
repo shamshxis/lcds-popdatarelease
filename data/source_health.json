@@ -32,13 +32,13 @@
         "items": 240
       },
       "https://www.ons.gov.uk/releasecalendar/data.ics?release-type=type-upcoming": {
-        "attempts": 21,
-        "successes": 21,
+        "attempts": 22,
+        "successes": 22,
         "failures": 0,
-        "items": 109
+        "items": 118
       }
     },
-    "last_success": "2026-03-21T06:02:25.528290",
+    "last_success": "2026-03-21T17:51:36.241064",
     "last_failure": "2026-03-10T08:54:07.812113"
   },
   "Statistics Norway Upcoming Releases": {
@@ -68,10 +68,10 @@
   "US Census Releases": {
     "pages": {
       "https://www.census.gov/data/what-is-data-census-gov/upcoming-releases.html": {
-        "attempts": 39,
-        "successes": 35,
+        "attempts": 40,
+        "successes": 36,
         "failures": 4,
-        "items": 1318
+        "items": 1326
       },
       "https://www.census.gov/newsroom.html": {
         "attempts": 5,
@@ -92,7 +92,7 @@
         "items": 48
       }
     },
-    "last_success": "2026-03-21T06:02:28.046930",
+    "last_success": "2026-03-21T17:51:39.122963",
     "last_failure": "2026-03-10T08:54:07.583432"
   },
   "Finngen Signals": {
@@ -134,13 +134,13 @@
         "items": 0
       },
       "https://ec.europa.eu/eurostat/web/main/news/release-calendar": {
-        "attempts": 29,
-        "successes": 26,
+        "attempts": 30,
+        "successes": 27,
         "failures": 3,
-        "items": 118
+        "items": 121
       }
     },
-    "last_success": "2026-03-21T06:02:31.259079",
+    "last_success": "2026-03-21T17:51:42.271543",
     "last_failure": "2026-03-10T07:32:07.021440"
   },
   "Statistics Sweden Publishing Calendar": {
@@ -242,14 +242,14 @@
   "DHS Program News": {
     "pages": {
       "https://dhsprogram.com/rss/news.cfm": {
-        "attempts": 37,
+        "attempts": 38,
         "successes": 0,
-        "failures": 37,
+        "failures": 38,
         "items": 0
       }
     },
     "last_success": "",
-    "last_failure": "2026-03-21T06:02:29.512785"
+    "last_failure": "2026-03-21T17:51:42.418749"
   },
   "Eurostat Dataset Update RSS": {
     "pages": {
@@ -284,14 +284,14 @@
         "items": 0
       },
       "https://www.un.org/development/desa/pd/news": {
-        "attempts": 26,
+        "attempts": 27,
         "successes": 20,
-        "failures": 6,
+        "failures": 7,
         "items": 60
       }
     },
     "last_success": "2026-03-18T06:40:50.683044",
-    "last_failure": "2026-03-21T06:02:32.203742"
+    "last_failure": "2026-03-21T17:51:42.401565"
   },
   "All of Us Research Program": {
     "pages": {
@@ -398,25 +398,25 @@
         "items": 4
       },
       "https://www.ukbiobank.ac.uk/feed/": {
-        "attempts": 27,
-        "successes": 27,
+        "attempts": 28,
+        "successes": 28,
         "failures": 0,
-        "items": 68
+        "items": 71
       }
     },
-    "last_success": "2026-03-21T06:02:10.932213",
+    "last_success": "2026-03-21T17:51:27.317654",
     "last_failure": "2026-03-10T06:54:46.482953"
   },
   "Our Future Health UK": {
     "pages": {
       "https://ourfuturehealth.org.uk/news/": {
-        "attempts": 38,
-        "successes": 38,
+        "attempts": 39,
+        "successes": 39,
         "failures": 0,
-        "items": 272
+        "items": 277
       }
     },
-    "last_success": "2026-03-21T06:02:17.368910",
+    "last_success": "2026-03-21T17:51:31.476819",
     "last_failure": ""
   },
   "GDELT Demography & Cohorts": {
@@ -434,22 +434,22 @@
   "Statistics Sweden": {
     "pages": {
       "https://www.scb.se/en/finding-statistics/publishing-calendar/": {
-        "attempts": 48,
-        "successes": 44,
+        "attempts": 49,
+        "successes": 45,
         "failures": 4,
-        "items": 273
+        "items": 282
       }
     },
-    "last_success": "2026-03-21T06:02:14.627395",
+    "last_success": "2026-03-21T17:51:23.772716",
     "last_failure": "2026-03-10T08:54:10.067456"
   },
   "CBS Netherlands": {
     "pages": {
       "https://www.cbs.nl/en-gb/publication-calendar": {
-        "attempts": 34,
-        "successes": 30,
+        "attempts": 35,
+        "successes": 31,
         "failures": 4,
-        "items": 278
+        "items": 279
       },
       "https://www.cbs.nl/en-gb/rss": {
         "attempts": 5,
@@ -458,7 +458,7 @@
         "items": 12
       }
     },
-    "last_success": "2026-03-21T06:02:32.820698",
+    "last_success": "2026-03-21T17:51:42.564433",
     "last_failure": "2026-03-10T08:54:08.353280"
   },
   "Eurostat Dataset Updates": {
@@ -494,13 +494,13 @@
         "items": 0
       },
       "https://www.nrscotland.gov.uk/statistics-and-data/upcoming-publications/": {
-        "attempts": 21,
-        "successes": 21,
+        "attempts": 22,
+        "successes": 22,
         "failures": 0,
-        "items": 48
+        "items": 50
       }
     },
-    "last_success": "2026-03-21T06:02:30.640621",
+    "last_success": "2026-03-21T17:51:42.341591",
     "last_failure": "2026-03-11T06:41:19.131165"
   },
   "Statistics Japan (e-Stat)": {
@@ -512,37 +512,37 @@
         "items": 0
       },
       "https://www.stat.go.jp/english/info/news/": {
-        "attempts": 46,
-        "successes": 42,
+        "attempts": 47,
+        "successes": 43,
         "failures": 4,
-        "items": 110
+        "items": 111
       }
     },
-    "last_success": "2026-03-21T06:02:27.844782",
+    "last_success": "2026-03-21T17:51:36.351534",
     "last_failure": "2026-03-10T08:54:10.073122"
   },
   "KOSTAT South Korea": {
     "pages": {
       "https://kostat.go.kr/anse/": {
-        "attempts": 46,
+        "attempts": 47,
         "successes": 30,
-        "failures": 16,
+        "failures": 17,
         "items": 459
       }
     },
     "last_success": "2026-03-21T06:02:33.135295",
-    "last_failure": "2026-03-20T06:13:22.501333"
+    "last_failure": "2026-03-21T17:52:07.064483"
   },
   "NBS China": {
     "pages": {
       "http://www.stats.gov.cn/english/PressRelease/": {
-        "attempts": 42,
+        "attempts": 43,
         "successes": 16,
-        "failures": 26,
+        "failures": 27,
         "items": 18
       }
     },
     "last_success": "2026-03-21T06:02:33.761056",
-    "last_failure": "2026-03-20T18:01:18.065348"
+    "last_failure": "2026-03-21T17:51:45.969421"
   }
 }
