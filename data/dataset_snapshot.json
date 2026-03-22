@@ -164,14 +164,18 @@
     "5286b57f6cd1b7f7393d1b6a9683f844": true,
     "2c6cd60d5972d265d045b7b8d3f3da07": true
   },
+  "DHS Program News": {
+    "2ea1c0ea94744b91636e1b2c1c37b26e": true
+  },
   "US Census Releases": {
+    "aca3e5f000f9c227087aeb8d2e884fff": true,
     "88f68d8fd1c11ff6ce483f946d25d6fc": true,
     "99381e688ceeaac80c32fd402439a38d": true,
+    "b302ed93a95f98bc90df1bc9685ccf0f": true,
+    "060aa1a57a5bc68211830ebc5561f0c2": true,
     "b840ba094486c5eaace1d4bbeed77057": true,
     "5dcbcb30c645408e1d8446447e7cb7e1": true,
-    "060aa1a57a5bc68211830ebc5561f0c2": true,
     "ca5418624a6c4beed11f1020277d124b": true,
-    "b302ed93a95f98bc90df1bc9685ccf0f": true,
     "25b8a58197119307d09c220c469192ba": true,
     "297de8255c2af11f7aedb5cb726ed873": true,
     "daa00d18192c0a550755efc1e9c941c6": true,
@@ -181,7 +185,6 @@
     "1e90b31569b86e5d2d68ccaf652dc6d0": true,
     "e4dde85642539cbf0ae5457026a97c08": true,
     "874ea392a3c89557d96237ccd2f9e675": true,
-    "aca3e5f000f9c227087aeb8d2e884fff": true,
     "586e31622d56bd04f128d46b82b61093": true,
     "b6980431d8fd748227e15ab08481bd5b": true,
     "ae2c3b37c91ea3a2606ae41a477fe4af": true,
@@ -353,24 +356,20 @@
     "2ae99c77fa57dc5e4d85c6d6105a7b00": true,
     "a71f71fedba86520556452a9162f0b11": true
   },
-  "Eurostat Release Calendar": {
-    "52c9c576280d6077435880bb2d10bdde": true,
-    "470609b032cd5afe09aef79589494cd2": true,
-    "ebb8d63d143384afa259c7f8284b8ada": true,
-    "cdbde1b5f9ef6af49b1b59849c4afe2e": true,
-    "7c6a8993a2ddad6a5ce6e51dbb595ea8": true,
-    "279b42f1e2844b8cdf0696c07061b09e": true,
-    "b79bbf3ae2890f1f2519e9ac87bf0714": true,
-    "ee00db5b32d5968ed178b4043e338307": true,
-    "ab27234ea798ab1eae97c48ee04f1add": true,
-    "e5bfc83ee21b69ac60ee86b5790ccccb": true,
-    "1440ff038d75fa17636e27c3f46207c4": true,
-    "fe75025c32ad2e4af729c6ac1fb8eda8": true,
-    "668c50eaa89c3d2844d32857362b045a": true,
-    "1577142fb3d971ebb2c38a7fc4e98e65": true,
-    "9b3c8f853bd52fa56452a0ed06938dfc": true,
-    "99a3aef7f021883b8031bd149d079e0d": true,
-    "8546d9816dfc5a73236a6547214310d1": true
+  "UN Population Division": {
+    "d82ea85686ec38ac7372850df6214fed": true,
+    "a75b6b7df9680a959399f5544a2bb258": true,
+    "4a0f7e17095fba72936ae299ac9fabca": true,
+    "c4985fdd5cb024856914da16a17406d0": true,
+    "f537a53863e8455c0606929394585d5c": true,
+    "4aadc49cf2f8636ae47e9281c53d1c23": true,
+    "34ce251255ecfc01469131992aa8b67b": true,
+    "11f5e9033ff2eb209390bdbe081cf0ff": true,
+    "1a916b077b896846b0ecf3c38a21d805": true,
+    "7dee1018e4c10b1eda1d2e4da7b901ca": true,
+    "c2101efa849b513946d0f75a78d64f64": true,
+    "435d1ed96eb2b690805cb4e34c9e43f5": true,
+    "0432b724234bdc4cc709af196f713cc5": true
   },
   "NRS Scotland": {
     "8ca02fe6330c89fac9b0f72e188bbd9c": true,
@@ -398,24 +397,6 @@
     "df682dcf53b243b88f38cb5b09abe1b7": true,
     "371632a7392cab23711fe57b8dfbb75b": true,
     "999648cec2b5e956659809ca50864f42": true
-  },
-  "UN Population Division": {
-    "d82ea85686ec38ac7372850df6214fed": true,
-    "a75b6b7df9680a959399f5544a2bb258": true,
-    "4a0f7e17095fba72936ae299ac9fabca": true,
-    "c4985fdd5cb024856914da16a17406d0": true,
-    "f537a53863e8455c0606929394585d5c": true,
-    "4aadc49cf2f8636ae47e9281c53d1c23": true,
-    "34ce251255ecfc01469131992aa8b67b": true,
-    "11f5e9033ff2eb209390bdbe081cf0ff": true,
-    "1a916b077b896846b0ecf3c38a21d805": true,
-    "7dee1018e4c10b1eda1d2e4da7b901ca": true,
-    "c2101efa849b513946d0f75a78d64f64": true,
-    "435d1ed96eb2b690805cb4e34c9e43f5": true,
-    "0432b724234bdc4cc709af196f713cc5": true
-  },
-  "DHS Program News": {
-    "2ea1c0ea94744b91636e1b2c1c37b26e": true
   },
   "CBS Netherlands": {
     "c618b19bc775e3feb3252e19a7545c9f": true,
@@ -538,6 +519,25 @@
     "0af7712ff6015c6b3fd5d6531c7ad9a5": true,
     "2062413fa596562b81ec82bc5359a840": true,
     "56ebff02a42eae95d40a8fe626ea30a6": true
+  },
+  "Eurostat Release Calendar": {
+    "470609b032cd5afe09aef79589494cd2": true,
+    "52c9c576280d6077435880bb2d10bdde": true,
+    "ebb8d63d143384afa259c7f8284b8ada": true,
+    "cdbde1b5f9ef6af49b1b59849c4afe2e": true,
+    "7c6a8993a2ddad6a5ce6e51dbb595ea8": true,
+    "279b42f1e2844b8cdf0696c07061b09e": true,
+    "b79bbf3ae2890f1f2519e9ac87bf0714": true,
+    "ee00db5b32d5968ed178b4043e338307": true,
+    "ab27234ea798ab1eae97c48ee04f1add": true,
+    "e5bfc83ee21b69ac60ee86b5790ccccb": true,
+    "1440ff038d75fa17636e27c3f46207c4": true,
+    "fe75025c32ad2e4af729c6ac1fb8eda8": true,
+    "668c50eaa89c3d2844d32857362b045a": true,
+    "1577142fb3d971ebb2c38a7fc4e98e65": true,
+    "9b3c8f853bd52fa56452a0ed06938dfc": true,
+    "99a3aef7f021883b8031bd149d079e0d": true,
+    "8546d9816dfc5a73236a6547214310d1": true
   },
   "KOSTAT South Korea": {
     "8e06074761d8d1350f2150f585d7568b": true,
