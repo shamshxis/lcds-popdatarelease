@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-23T06:48:11.303566",
+  "generated_at": "2026-03-23T18:10:30.047056",
   "logs": [
     {
       "source": "UK Biobank News",
@@ -15,34 +15,10 @@
     },
     {
       "source": "ONS Upcoming Releases",
-      "items": 9
+      "items": 11
     },
     {
       "source": "Statistics Japan (e-Stat)",
-      "items": 1
-    },
-    {
-      "source": "DHS Program News",
-      "items": 0
-    },
-    {
-      "source": "UN Population Division",
-      "items": 1
-    },
-    {
-      "source": "Eurostat Release Calendar",
-      "items": 2
-    },
-    {
-      "source": "US Census Releases",
-      "items": 5
-    },
-    {
-      "source": "NBS China",
-      "items": 0
-    },
-    {
-      "source": "CBS Netherlands",
       "items": 1
     },
     {
@@ -50,18 +26,42 @@
       "items": 2
     },
     {
+      "source": "DHS Program News",
+      "items": 0
+    },
+    {
+      "source": "US Census Releases",
+      "items": 7
+    },
+    {
+      "source": "UN Population Division",
+      "items": 0
+    },
+    {
+      "source": "Eurostat Release Calendar",
+      "items": 2
+    },
+    {
       "source": "KOSTAT South Korea",
       "items": 5
+    },
+    {
+      "source": "CBS Netherlands",
+      "items": 1
+    },
+    {
+      "source": "NBS China",
+      "items": 0
     }
   ],
   "metrics": {
-    "records": 102,
+    "records": 104,
     "upcoming": 0,
     "red_flags": 0,
     "deletions": 0,
     "academic_matches": 5,
     "next_14_days": 0,
-    "fallback_hits": 126,
-    "generated_at": "2026-03-23T06:48:11.304292"
+    "fallback_hits": 130,
+    "generated_at": "2026-03-23T18:10:30.047788"
   }
 }
