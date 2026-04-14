@@ -1,10 +1,6 @@
 {
-  "generated_at": "2026-04-14T07:08:10.214043",
+  "generated_at": "2026-04-14T18:45:24.993240",
   "logs": [
-    {
-      "source": "KOSTAT South Korea",
-      "items": 4
-    },
     {
       "source": "Statistics Sweden",
       "items": 6
@@ -18,50 +14,54 @@
       "items": 1
     },
     {
+      "source": "US Census Releases",
+      "items": 10
+    },
+    {
       "source": "ONS Upcoming Releases",
-      "items": 0
-    },
-    {
-      "source": "Eurostat Release Calendar",
-      "items": 5
-    },
-    {
-      "source": "NBS China",
       "items": 1
-    },
-    {
-      "source": "DHS Program News",
-      "items": 0
-    },
-    {
-      "source": "UK Biobank News",
-      "items": 5
     },
     {
       "source": "NRS Scotland",
       "items": 3
     },
     {
+      "source": "UK Biobank News",
+      "items": 4
+    },
+    {
       "source": "UN Population Division",
       "items": 0
     },
     {
-      "source": "CBS Netherlands",
+      "source": "DHS Program News",
+      "items": 0
+    },
+    {
+      "source": "Eurostat Release Calendar",
+      "items": 4
+    },
+    {
+      "source": "KOSTAT South Korea",
       "items": 1
     },
     {
-      "source": "US Census Releases",
-      "items": 11
+      "source": "NBS China",
+      "items": 1
+    },
+    {
+      "source": "CBS Netherlands",
+      "items": 1
     }
   ],
   "metrics": {
-    "records": 194,
+    "records": 195,
     "upcoming": 0,
     "red_flags": 0,
     "deletions": 0,
     "academic_matches": 5,
     "next_14_days": 0,
-    "fallback_hits": 276,
-    "generated_at": "2026-04-14T07:08:10.215079"
+    "fallback_hits": 278,
+    "generated_at": "2026-04-14T18:45:24.994170"
   }
 }
