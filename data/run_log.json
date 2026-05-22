@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-22T08:38:11.833005",
+  "generated_at": "2026-05-22T19:13:09.214731",
   "logs": [
     {
       "source": "Statistics Sweden",
@@ -10,35 +10,35 @@
       "items": 5
     },
     {
-      "source": "ONS Upcoming Releases",
-      "items": 17
-    },
-    {
       "source": "Statistics Japan (e-Stat)",
       "items": 0
     },
     {
-      "source": "NRS Scotland",
-      "items": 3
-    },
-    {
-      "source": "KOSTAT South Korea",
-      "items": 2
+      "source": "ONS Upcoming Releases",
+      "items": 16
     },
     {
       "source": "US Census Releases",
-      "items": 17
+      "items": 16
     },
     {
       "source": "UN Population Division",
       "items": 3
     },
     {
-      "source": "DHS Program News",
-      "items": 0
+      "source": "UK Biobank News",
+      "items": 8
     },
     {
-      "source": "UK Biobank News",
+      "source": "KOSTAT South Korea",
+      "items": 2
+    },
+    {
+      "source": "DHS Program News",
+      "items": 1
+    },
+    {
+      "source": "Eurostat Release Calendar",
       "items": 8
     },
     {
@@ -50,18 +50,18 @@
       "items": 1
     },
     {
-      "source": "Eurostat Release Calendar",
-      "items": 6
+      "source": "NRS Scotland",
+      "items": 3
     }
   ],
   "metrics": {
-    "records": 293,
-    "upcoming": 1,
+    "records": 295,
+    "upcoming": 2,
     "red_flags": 0,
     "deletions": 0,
     "academic_matches": 3,
-    "next_14_days": 0,
-    "fallback_hits": 436,
-    "generated_at": "2026-05-22T08:38:11.833614"
+    "next_14_days": 1,
+    "fallback_hits": 440,
+    "generated_at": "2026-05-22T19:13:09.215792"
   }
 }
