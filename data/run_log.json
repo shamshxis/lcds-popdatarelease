@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-02T09:50:04.991147",
+  "generated_at": "2026-09-02T20:00:36.584497",
   "logs": [
     {
       "source": "Statistics Japan (e-Stat)",
@@ -15,26 +15,18 @@
     },
     {
       "source": "ONS Upcoming Releases",
-      "items": 12
-    },
-    {
-      "source": "Eurostat Release Calendar",
-      "items": 4
-    },
-    {
-      "source": "US Census Releases",
-      "items": 9
+      "items": 5
     },
     {
       "source": "NBS China",
       "items": 0
     },
     {
-      "source": "CBS Netherlands",
-      "items": 2
+      "source": "US Census Releases",
+      "items": 8
     },
     {
-      "source": "UN Population Division",
+      "source": "DHS Program News",
       "items": 0
     },
     {
@@ -46,8 +38,16 @@
       "items": 6
     },
     {
-      "source": "DHS Program News",
+      "source": "UN Population Division",
       "items": 0
+    },
+    {
+      "source": "Eurostat Release Calendar",
+      "items": 5
+    },
+    {
+      "source": "CBS Netherlands",
+      "items": 2
     },
     {
       "source": "KOSTAT South Korea",
@@ -55,13 +55,13 @@
     }
   ],
   "metrics": {
-    "records": 292,
+    "records": 296,
     "upcoming": 4,
     "red_flags": 0,
     "deletions": 0,
     "academic_matches": 1,
     "next_14_days": 0,
-    "fallback_hits": 384,
-    "generated_at": "2026-09-02T09:50:04.991792"
+    "fallback_hits": 392,
+    "generated_at": "2026-09-02T20:00:36.585710"
   }
 }
